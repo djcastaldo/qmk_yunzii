@@ -1,0 +1,3 @@
+# .gitignore
+secrets.h
+secrets.c
