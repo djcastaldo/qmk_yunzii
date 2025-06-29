@@ -48,3 +48,4 @@ bool dynamic_macro_record_end_user(int8_t direction);
 bool dynamic_macro_valid_key_kb(uint16_t keycode, keyrecord_t *record);
 bool dynamic_macro_valid_key_user(uint16_t keycode, keyrecord_t *record);
 void dynamic_macro_stop_recording(void);
+bool is_macro_playing;

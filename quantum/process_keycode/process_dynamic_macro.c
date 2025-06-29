@@ -22,6 +22,7 @@
 #include "keycodes.h"
 #include "debug.h"
 #include "wait.h"
+#include "features/layer_lock.h"
 
 #ifdef BACKLIGHT_ENABLE
 #    include "backlight.h"
@@ -114,6 +115,14 @@ void dynamic_macro_record_start(keyrecord_t **macro_pointer, keyrecord_t *macro_
  */
 void dynamic_macro_play(keyrecord_t *macro_buffer, keyrecord_t *macro_end, int8_t direction) {
     dprintf("dynamic macro: slot %d playback\n", DYNAMIC_MACRO_CURRENT_SLOT());
+    //added
+    //~=~=~=~=~=~=~=~=~=~=~=~=~
+    bool layers_locked[4];
+    for (int i = 1; i < 4; i++) {
+        layers_locked[i] = is_layer_locked(i);
+    }
+    is_macro_playing = true;
+    //~=~=~=~=~=~=~=~=~=~=~=~=~
 
     layer_state_t saved_layer_state = layer_state;
 
@@ -133,6 +142,15 @@ void dynamic_macro_play(keyrecord_t *macro_buffer, keyrecord_t *macro_end, int8_
     layer_state_set(saved_layer_state);
 
     dynamic_macro_play_kb(direction);
+    //added
+    //~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+    for (int i = 1; i < 4; i++) {
+        if (layers_locked[i]) {
+            layer_lock_on(i);
+        }
+    }
+    is_macro_playing = false;
+    //~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
 }
 
 /**

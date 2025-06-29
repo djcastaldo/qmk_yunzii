@@ -22,3 +22,12 @@
 
 void cancel_key_lock(void);
 bool process_key_lock(uint16_t *keycode, keyrecord_t *record);
+void set_key_lock_watching(void);
+bool is_key_lock_watching(void);
+bool is_key_locked;
+bool lctl_locked;
+bool lalt_locked;
+bool lgui_locked;
+bool lsft_locked;
+bool rsft_locked;
+bool rctl_locked;
