@@ -120,7 +120,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  :   _______________________________________________________________________________________________________________________ .----.   :
 //  :  |  `   || F1   || F2   || F3   || F4   || F5   || F6   || F7   || F8   || F9   || F10  || F11  || F12  ||              |: Zoom :  :
 //  :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
-//  :  |MO(TMUX_L)||WMail2||WMail1||Mail  ||RPhone||      ||      ||      ||      ||      ||      ||MRec1 ||MRec2 ||          || Ins  |  :
+//  :  |MO(TMUX_L)||WMail2||WMail1||Mail  ||RPhone||WPhone||      ||      ||      ||      ||      ||MRec1 ||MRec2 ||          || Ins  |  :
 //  :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
 //  :  |             ||Addr  ||City  ||ZIP   ||Phone ||      ||      ||      ||      || Lead ||SLock || PScr ||               || Home |  :
 //  :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
@@ -131,7 +131,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  `------------------------------------------------------------------------------------------------------------------------------------`
     [FN_LAYR] = LAYOUT_65_ansi_blocker(
         KC_GRV, KC_F1, KC_F2,  KC_F3,  KC_F4,  KC_F5,  KC_F6,   KC_F7,  KC_F8,  KC_F9,  KC_F10,  KC_F11, KC_F12,    _______,    F_ZOOMR,
-        MO(TMUX_LAYR),SECRET3,SECRET2,SECRET1,SECRET8,_______,_______,_______,_______,_______,_______,DM_REC1,DM_REC2, _______,  KC_INS,
+        MO(TMUX_LAYR),SECRET3,SECRET2,SECRET1,SECRET8,SECRET9,_______,_______,_______,_______,_______,DM_REC1,DM_REC2, _______,  KC_INS,
         _______,SECRET4,SECRET5,SECRET6,SECRET7,_______,_______,_______,_______,    QK_LEAD,  KC_SCRL, KC_PSCR,     _______,    KC_HOME,
         MO(SFT_LAYR), _______,SECRET10,SECRET11,_______,_______,_______,_______,DM_PLY1,DM_PLY2, KC_PAUS, MO(SFT_LAYR), _______, KC_END,
         MO(CTL_LAYR), _______, _______,                 _______,                    _______,    MO(CTL_LAYR), _______, _______, _______
@@ -1558,6 +1558,9 @@ void leader_end_user(void) {
     else if (leader_sequence_five_keys(KC_C, KC_O, KC_L, KC_O, KC_R)) {  // start the color test
         color_test_timer = timer_read();
         color_test = true;
+    }
+    else if (leader_sequence_four_keys(KC_G, KC_I, KC_T, KC_L)) {        // git log
+        SEND_STRING("git log\n");
     }
     else if (leader_sequence_four_keys(KC_G, KC_I, KC_T, KC_A)) {        // git add
         SEND_STRING("git add -A\n");
