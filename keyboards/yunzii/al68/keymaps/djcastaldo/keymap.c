@@ -38,6 +38,7 @@ enum layers {
     SFT_LAYR,
     CTL_LAYR,
     TMUX_LAYR,
+    WIDE_TEXT_LAYR,
     LOCK_LAYR
 };
 
@@ -68,9 +69,12 @@ enum my_keycodes {
     ENC_TSIZER,
     ENC_TMON,
     LTRANS,
-    BOOTLDR,
+    STHRU,
+    UNDERLN,
+    BARTEXT,
     COLORTEST,
-    FLASH_KB
+    FLASH_KB,
+    BOOTLDR
 };
 
 // custom tap dance key     
@@ -200,6 +204,27 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______,        LTRANS, LTRANS, LTRANS, _______,  _______,  LTRANS,_______, LTRANS, LTRANS, LTRANS,   _______,  LTRANS, _______,
         KC_LCTL, _______, _______,                        LTRANS,                      _______, KC_RCTL,       LTRANS,  LTRANS,  LTRANS
     ),
+//  [WIDE_TEXT_LAYR]
+//   ____________________________________________________________________________________________________________________________________
+//  :   _______________________________________________________________________________________________________________________ .----.   :
+//  :  |      ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||              |:      :  :
+//  :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
+//  :  |          ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS    ||BarTxt|  :
+//  :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
+//  :  |             ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||               ||SThru |  :
+//  :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
+//  :  |                 ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||           ||      ||UnderL|  :
+//  :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
+//  :  |         ||        ||         ||                    LTRANS                    ||         ||         |  |      ||      ||      |  :
+//  :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
+//  `------------------------------------------------------------------------------------------------------------------------------------`
+    [WIDE_TEXT_LAYR] = LAYOUT_65_ansi_blocker(
+        _______, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,    _______,   _______,
+        _______,   LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,  LTRANS,    BARTEXT,
+        _______,     LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        _______,      STHRU,
+        _______,          LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    _______,  _______, UNDERLN,
+        _______,  _______,  _______,                        LTRANS,                      _______,  _______,   _______, _______, _______
+    ),
 //  [LOCK_LAYR]
 //   ____________________________________________________________________________________________________________________________________
 //  :   _______________________________________________________________________________________________________________________ .----.   :
@@ -242,6 +267,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 enum key_indexes {
     I_INDICATOR = 3,
     I_INDICATOR2 = 4,
+    I_UNDERLN = 8,
+    I_STHRU = 38,
+    I_BARTEXT = 39,
     I_NUMLOCK = 40,
     I_ESC = 54,
     I_TAB = 53,
@@ -404,6 +432,12 @@ uint32_t osl_macro_callback(uint32_t trigger_time, void *cb_arg) {
     return 0;
 }
 
+// for tracking wide-text options for the WIDE_TEXT_LAYR
+bool wide_sthru = false;
+bool wide_underln = false;
+bool wide_bartext = false;
+bool wide_firstchar = false;
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
 
@@ -487,17 +521,46 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     // setup so that I can use LTRANS in the keymap to denote which fallthrough keys get lit up on the layer
     case LTRANS:
         if (record->event.pressed) {
+            uint8_t layer = get_highest_layer(layer_state);
             // prefix to send for the TMUX_LAYR
             // standard KC_TRANS keycodes will not get this prefix which is good for
             // stuff like shift and alt and control
-            if (IS_LAYER_ON(TMUX_LAYR)) {
+            if (layer == TMUX_LAYR) {
                 const uint8_t mods = get_mods();
                 unregister_mods(mods); // temp remove mods
                 tap_code16(C(KC_B));   // send ctrl-b before keycode processing
                 register_mods(mods);   // reapply mods
             }
+            // for some wide modes, should start with the spacing char
+            else if (layer == WIDE_TEXT_LAYR && wide_firstchar) {
+                if (wide_bartext) {
+                    tap_code16(KC_PIPE);
+                }
+                else if (wide_sthru) {
+                    tap_code16(KC_MINS);
+                }
+                else if (wide_underln) {
+                    tap_code16(KC_UNDS);
+                }
+                wide_firstchar = false;
+            }
             // send keydown from the default layer
             register_code(keymap_key_to_keycode(biton32(default_layer_state), record->event.key));
+            // if WIDE_TEXT_LAYER, add the extra spacing char
+            if (layer == WIDE_TEXT_LAYR) {
+                if (wide_bartext) {
+                    tap_code16(KC_PIPE);
+                }
+                else if (wide_sthru) {
+                    tap_code16(KC_MINS);
+                }
+                else if (wide_underln) {
+                    tap_code16(KC_UNDS);
+                }
+                else {
+                    tap_code16(KC_SPC);
+                }
+            }
         }
         else {
             unregister_code(keymap_key_to_keycode(biton32(default_layer_state), record->event.key));
@@ -786,6 +849,48 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case MK_ACCEL2:
         tap_code(record->event.pressed ? KC_MS_ACCEL2 : KC_MS_ACCEL1);
         break;
+    case STHRU:
+        if (record->event.pressed) {
+            if (wide_sthru) {
+                wide_sthru = false;
+                wide_firstchar = false;
+            }
+            else {
+                wide_bartext = false;
+                wide_sthru = true;
+                wide_underln = false;
+                wide_firstchar = true;
+            }
+        }
+        break;
+    case UNDERLN:
+        if (record->event.pressed) {
+            if (wide_underln) {
+                wide_underln = false;
+                wide_firstchar = false;
+            }
+            else {
+                wide_bartext = false;
+                wide_sthru = false;
+                wide_underln = true;
+                wide_firstchar = true;
+            }
+        }
+        break;
+    case BARTEXT:
+        if (record->event.pressed) {
+            if (wide_bartext) {
+                wide_bartext = false;
+                wide_firstchar = false;
+            }
+            else {
+                wide_bartext = true;
+                wide_sthru = false;
+                wide_underln = false;
+                wide_firstchar = true;
+            }
+        }
+        break;
     case COLORTEST:
         if (record->event.pressed) {
             color_test_timer = timer_read();
@@ -844,6 +949,10 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         rgb_matrix_set_color(I_INDICATOR, RGB_CYAN);
         rgb_matrix_set_color(I_INDICATOR2, RGB_CYAN);
         break;
+    case WIDE_TEXT_LAYR:
+        rgb_matrix_set_color(I_INDICATOR, 0x77, 0x77, 0x77);
+        rgb_matrix_set_color(I_INDICATOR2, 0x77, 0x77, 0x77);
+        break;
     case LOCK_LAYR:
         break;
     default:
@@ -876,11 +985,16 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     case CTL_LAYR:
                         rgb_matrix_set_color(index, RGB_RED);
                         break;
+                    case TMUX_LAYR:
+                        rgb_matrix_set_color(index, RGB_CYAN);
+                        break;
+                    case WIDE_TEXT_LAYR:
+                        rgb_matrix_set_color(index, RGB_BLUE);
+                        break;
                     case LOCK_LAYR:
-                        rgb_matrix_set_color(index, 0, 0, 0);
                         break;
                     default:
-                        rgb_matrix_set_color(index, RGB_CYAN);
+                        rgb_matrix_set_color(index, 0x77, 0x77, 0x77);
                         break;
                     }
                 }
@@ -924,6 +1038,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 break;
             case TMUX_LAYR:
                 rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
+                break;
+            case WIDE_TEXT_LAYR:
+                rgb_matrix_set_color(I_RSFT, RGB_BLUE);   // rshift
                 break;
             }
         }
@@ -1159,6 +1276,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             rgb_matrix_set_color(I_L, RGB_YELLOW);
         }
     }
+    // track mode keys on WIDE_TEXT_LAYR
+    if (layer == WIDE_TEXT_LAYR) {
+        if (wide_bartext) {
+            rgb_matrix_set_color(I_BARTEXT, 0x77, 0x77, 0x77);  // bartext toggle
+        }
+        else if (wide_sthru) {
+            rgb_matrix_set_color(I_STHRU, 0x77, 0x77, 0x77);    // sthru toggle
+        }
+        else if (wide_underln) {
+            rgb_matrix_set_color(I_UNDERLN, 0x77, 0x77, 0x77);  // underln toggle
+        }
+    }
     // track caps_lock
     if (host_keyboard_led_state().caps_lock) {
         rgb_matrix_set_color(I_CAPS, RGB_WHITE);         // caps
@@ -1180,10 +1309,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 bool key_should_fade(keytracker key, uint8_t layer) {
     bool should_fade = true;
     if ((key.fade < 1) || 
-      ((layer == FN_LAYR || is_caps_word_on()) && (key.index == I_LSFT || key.index == I_RSFT)) || // left and right shift 
+      ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_TEXT_LAYR || is_caps_word_on()) &&
+        (key.index == I_LSFT || key.index == I_RSFT)) ||                                           // left and right shift
       (layer == FN_LAYR && (key.index == I_LCTL || key.index == I_RCTL)) ||                        // left and right ctrl
       (layer == SFT_LAYR && key.index == I_NUMLOCK) ||                                             // num lock key
       (layer == FN_LAYR && key.index == I_SLOCK) ||                                                // scroll lock
+      (layer == WIDE_TEXT_LAYR &&
+        (key.index == I_BARTEXT || key.index == I_STHRU || key.index == I_UNDERLN)) ||             // wide-text mode toggles
       (layer == CTL_LAYR && (key.index == I_FJLIGHT || key.index == I_HROWLIGHT)) ||               // fj/hrow light keys 
       (layer == BASE_LAYR && key.index == I_FN) ||                                                 // fn on base 
       (key.index == I_CAPS || key.index == I_TAB)) {                                               // caps lock and tab
@@ -1355,6 +1487,15 @@ void rsft_finished (tap_dance_state_t *state, void *user_data) {
           clear_oneshot_layer_state(ONESHOT_PRESSED);
       }
       break;
+    case DOUBLE_TAP:
+      // activate WIDE_TEXT_LAYR
+      if (IS_LAYER_ON(WIDE_TEXT_LAYR)) {
+          layer_lock_off(WIDE_TEXT_LAYR);
+      }
+      else {
+          layer_lock_on(WIDE_TEXT_LAYR);
+      }
+      break;
     case SINGLE_HOLD:
       // check if this is caps word activation, otherwise regular shift
       if (get_mods() & MOD_BIT(KC_LSFT)) {
@@ -1374,6 +1515,8 @@ void rsft_reset (tap_dance_state_t *state, void *user_data) {
           reset_oneshot_layer();
           caps_word_on();
       }
+      break;
+    case DOUBLE_TAP:
       break;
     case SINGLE_HOLD:
       if (get_mods() & MOD_BIT(KC_LSFT)) {
