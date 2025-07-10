@@ -1319,7 +1319,8 @@ bool key_should_fade(keytracker key, uint8_t layer) {
     if ((key.fade < 1) || 
       ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_TEXT_LAYR || is_caps_word_on()) &&
         (key.index == I_LSFT || key.index == I_RSFT)) ||                                           // left and right shift
-      (layer == FN_LAYR && (key.index == I_LALT || key.index == I_RCTL)) ||                        // left alt and right ctrl
+      ((layer == FN_LAYR || layer == CTL_LAYR) &&
+            (key.index == I_LALT || key.index == I_RCTL)) ||                                       // left alt and right ctrl
       (layer == SFT_LAYR && key.index == I_NUMLOCK) ||                                             // num lock key
       (layer == FN_LAYR && key.index == I_SLOCK) ||                                                // scroll lock
       (layer == WIDE_TEXT_LAYR &&
