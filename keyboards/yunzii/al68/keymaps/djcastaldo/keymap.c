@@ -111,7 +111,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
 //  :  | Shift           || Z    || X    || C    || V    || B    || N    || M    || ,    || .    || /    ||TD(SFT_OSL)|| Up   || End  |  :
 //  :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
-//  :  | Ctrl    || GUI    || Alt     ||                   Space                      ||TD(ALT_O)||TD(FN_O) |  | Left || Down || Rght |  :
+//  :  | Ctrl    || GUI    || Alt     ||                   Space                      ||TD(FN_O) ||TD(CTL_O)|  | Left || Down || Rght |  :
 //  :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 //  `------------------------------------------------------------------------------------------------------------------------------------`
     [BASE_LAYR] = LAYOUT_65_ansi_blocker(
@@ -132,7 +132,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
 //  :  | MO(SFT_LAYR)    ||      ||Rout  ||Acct  ||      ||      ||      ||      ||MPly1 ||MPly2 ||Pause || MO(SFT_L) ||      || End  |  :
 //  :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
-//  :  |MO(CTL_L)||        ||         ||                                              ||         ||MO(CTL_L)|  |      ||      ||      |  :
+//  :  |         ||        ||MO(CTL_L)||                                              ||         ||MO(CTL_L)|  |      ||      ||      |  :
 //  :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 //  `------------------------------------------------------------------------------------------------------------------------------------`
     [FN_LAYR] = LAYOUT_65_ansi_blocker(
@@ -140,7 +140,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         MO(TMUX_LAYR),SECRET3,SECRET2,SECRET1,SECRET8,SECRET9,_______,_______,_______,_______,_______,DM_REC1,DM_REC2, _______,  KC_INS,
         _______,SECRET4,SECRET5,SECRET6,SECRET7,_______,_______,_______,_______,    QK_LEAD,  KC_SCRL, KC_PSCR,     _______,    KC_HOME,
         MO(SFT_LAYR), _______,SECRET10,SECRET11,_______,_______,_______,_______,DM_PLY1,DM_PLY2, KC_PAUS, MO(SFT_LAYR), _______, KC_END,
-        MO(CTL_LAYR), _______, _______,                 _______,                    _______,    MO(CTL_LAYR), _______, _______, _______
+        _______, _______, MO(CTL_LAYR),                 _______,                    _______,    MO(CTL_LAYR), _______, _______, _______
     ),
 //  [SFT_LAYR]
 //   ____________________________________________________________________________________________________________________________________
@@ -161,7 +161,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______,_______,_______, _______, _______, _______, KC_P7, KC_P8, KC_P9, DUAL_PLUSMIN,_______,_______,  KC_NUM, MK_REL,
         _______,    _______,_______,_______,_______,_______, _______, KC_P4, KC_P5, KC_P6, DUAL_MULTDIV, _______,   _______,    MK_HOLD,
         _______,   MK_ACCEL2,_______,_______,_______,_______,_______,  KC_P1, KC_P2, KC_P3,  _______,   _______,   KC_MS_UP, KC_MS_BTN2,
-        KC_LCTL,  _______, MK_ACCEL0,                  KC_P0,                  KC_PDOT, KC_MS_BTN1, KC_MS_LEFT, KC_MS_DOWN, KC_MS_RIGHT
+        _______,  _______, MK_ACCEL0,                  KC_P0,                  KC_PDOT, KC_MS_BTN1, KC_MS_LEFT, KC_MS_DOWN, KC_MS_RIGHT
     ),
 //  [CTL_LAYR]
 //   ____________________________________________________________________________________________________________________________________
@@ -597,10 +597,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         static uint8_t wave_phase = 0;
         if (!record->event.pressed) {  // on release
             const uint8_t mods = get_mods();
+            const uint8_t oneshot_mods = get_oneshot_mods();
             cancel_deferred_exec(wave_token);
             wave_token = INVALID_DEFERRED_TOKEN;
             // ensure the pattern always ends on a ">"
-            if (mods & MOD_MASK_CTRL) {         // is ctl held?
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {         // is ctl held?
                 unregister_mods(MOD_MASK_CTRL); // temp remove ctl
                 if ((wave_phase & 1) == 0) {
                     send_string("<~>");
@@ -745,15 +746,14 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
         }
         break;
-    // set up some different zoom (when shift is used) so the zoom knob can be used with multiple apps
+    // set up some different zoom (when ctrl is used) so the zoom knob can be used with multiple apps
     // that support different ways to zoom
     case DUAL_ZOOMI:
         if (record->event.pressed) {
             const uint8_t mods = get_mods();
-            if (mods & MOD_MASK_SHIFT) {
-                unregister_mods(MOD_MASK_SHIFT);  // remove shift 
-                send_string(SS_LCTL(SS_TAP(X_EQL)));
-                register_mods(mods); // add back mods
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
+                send_string(SS_TAP(X_EQL));
             }
             else {
                 tap_code16(F_ZOOMI);
@@ -763,10 +763,9 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case DUAL_ZOOMO:
         if (record->event.pressed) {
             const uint8_t mods = get_mods();
-            if (mods & MOD_MASK_SHIFT) {
-                unregister_mods(MOD_MASK_SHIFT);  // remove shift 
-                send_string(SS_LCTL(SS_TAP(X_MINS)));
-                register_mods(mods); // add back mods
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
+                send_string(SS_TAP(X_MINS));
             }
             else {
                 tap_code16(F_ZOOMO);
@@ -778,7 +777,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case ENC_TSIZEL:
         if (record->event.pressed) {
             const uint8_t mods = get_mods();
-            if (mods & MOD_MASK_CTRL) {
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
                 unregister_mods(MOD_MASK_CTRL);                                  // remove control 
                 send_string_with_delay(SS_LCTL("b") SS_LCTL(SS_TAP(X_UP)),5);    // size up
                 register_mods(mods);                                             // add back mods
@@ -791,7 +791,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case ENC_TSIZER:
         if (record->event.pressed) {
             const uint8_t mods = get_mods();
-            if (mods & MOD_MASK_CTRL) {
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
                 unregister_mods(MOD_MASK_CTRL);                                  // remove control 
                 send_string_with_delay(SS_LCTL("b") SS_LCTL(SS_TAP(X_DOWN)),5);  // size down
                 register_mods(mods);                                             // add back mods
@@ -805,7 +806,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case ENC_TMON:
         if (record->event.pressed) {
             const uint8_t mods = get_mods();
-            if (mods & MOD_MASK_CTRL) {
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
                 unregister_mods(MOD_MASK_CTRL);             // remove control 
                 // turn on window actiivty monitor
                 send_string_with_delay(SS_LCTL("b") ":setw monitor-activity on" SS_TAP(X_ENT),8);
@@ -923,7 +925,8 @@ void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask) {
     // if mod is being held, send mod_keycode
     // get current mod states
     const uint8_t mods = get_mods();
-    if (mods & mod_mask) {
+    const uint8_t oneshot_mods = get_oneshot_mods();
+    if ((mods | oneshot_mods) & mod_mask) {
         unregister_mods(mod_mask);  // remove mod
         tap_code16(alt_keycode);
         register_mods(mods); // restore original mods
@@ -1010,7 +1013,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         if (layer == FN_LAYR) {
           rgb_matrix_set_color(I_LSFT, RGB_ORANGE); // left shift
           rgb_matrix_set_color(I_RSFT, RGB_ORANGE); // right shift
-          rgb_matrix_set_color(I_LCTL, RGB_RED);    // left ctrl
+          rgb_matrix_set_color(I_LALT, RGB_RED);    // left alt
           rgb_matrix_set_color(I_RCTL, RGB_RED);    // right ctrl
           rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
         }  
@@ -1038,7 +1041,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(I_RSFT, RGB_ORANGE); // rshift
                 break;
             case CTL_LAYR:
-                rgb_matrix_set_color(I_LCTL, RGB_RED);    // lctrl
+                rgb_matrix_set_color(I_LALT, RGB_RED);    // lalt
                 rgb_matrix_set_color(I_RCTL, RGB_RED);    // rctrl
                 break;
             case TMUX_LAYR:
@@ -1316,7 +1319,7 @@ bool key_should_fade(keytracker key, uint8_t layer) {
     if ((key.fade < 1) || 
       ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_TEXT_LAYR || is_caps_word_on()) &&
         (key.index == I_LSFT || key.index == I_RSFT)) ||                                           // left and right shift
-      (layer == FN_LAYR && (key.index == I_LCTL || key.index == I_RCTL)) ||                        // left and right ctrl
+      (layer == FN_LAYR && (key.index == I_LALT || key.index == I_RCTL)) ||                        // left alt and right ctrl
       (layer == SFT_LAYR && key.index == I_NUMLOCK) ||                                             // num lock key
       (layer == FN_LAYR && key.index == I_SLOCK) ||                                                // scroll lock
       (layer == WIDE_TEXT_LAYR &&
@@ -1748,6 +1751,12 @@ void leader_end_user(void) {
     }
     else if (leader_sequence_three_keys(KC_Q, KC_F, KC_Y)) {  // qmk flash yunzii firmware
         SEND_STRING("qmk flash -kb yunzii/al68 -km djcastaldo" SS_TAP(X_ENT));
+    }
+    else if (leader_sequence_three_keys(KC_Q, KC_C, KC_L)) {  // qmk compile lemokey p1 firmware
+        SEND_STRING("qmk compile -kb lemokey/p1_pro/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+    }
+    else if (leader_sequence_three_keys(KC_Q, KC_F, KC_L)) {  // qmk flash lemokey p1 firmware
+        SEND_STRING("qmk flash -kb lemokey/p1_pro/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_four_keys(KC_Q, KC_C, KC_K, KC_V)) {  // qmk compile keychron V6 firmware
         SEND_STRING("qmk compile -kb keychron/v6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
