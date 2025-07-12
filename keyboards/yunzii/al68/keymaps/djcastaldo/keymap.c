@@ -1370,13 +1370,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             }   
         }
 // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-        // custom colors for layer keys on layer 1
+        // custom colors for layer keys on fn layer
         if (layer == FN_LAYR) {
           rgb_matrix_set_color(I_LSFT, RGB_ORANGE); // left shift
           rgb_matrix_set_color(I_RSFT, RGB_ORANGE); // right shift
           rgb_matrix_set_color(I_LALT, RGB_RED);    // left alt
           rgb_matrix_set_color(I_RCTL, RGB_RED);    // right ctrl
           rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
+          rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // super
         }  
 // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ */
 // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
