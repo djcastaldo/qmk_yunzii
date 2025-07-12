@@ -38,6 +38,7 @@ enum layers {
     SFT_LAYR,
     CTL_LAYR,
     TMUX_LAYR,
+    SYMBOL_LAYR,
     WIDE_TEXT_LAYR,
     LOCK_LAYR
 };
@@ -69,6 +70,47 @@ enum my_keycodes {
     ENC_TSIZER,
     ENC_TMON,
     LTRANS,
+    OPT2,
+    OPT3,
+    OPT4,
+    OPT5,
+    OPT6,
+    OPT7,
+    OPT8,
+    OPT9,
+    OPT0,
+    OPTMIN,
+    OPTEQ,
+    OPTQ,
+    OPTW,
+    OPTR,
+    OPTT,
+    OPTY,
+    OPTO,
+    OPTP,
+    OPTLBR,
+    OPTRBR,
+    OPTBSL,
+    OPTA,
+    OPTS,
+    OPTD,
+    OPTF,
+    OPTG,
+    OPTH,
+    OPTJ,
+    OPTK,
+    OPTL,
+    OPTSEM,
+    OPTAPO,
+    OPTZ,
+    OPTX,
+    OPTC,
+    OPTV,
+    OPTB,
+    OPTM,
+    OPTCOM,
+    OPTDOT,
+    OPTSLS,
     STHRU,
     UNDERLN,
     BARTEXT,
@@ -83,18 +125,26 @@ enum {
     FN_OSL = 1,
     RCTL_OSL = 2,            
     RSFT_OSL = 3,
-    KB_UNLOCK = 4 
+    ACT_GRV = 4,
+    ACT_1   = 5,
+    ACT_E   = 6,
+    ACT_U   = 7,
+    ACT_I   = 8,
+    ACT_N   = 9,
+    LGUI_OSL = 10,
+    KB_UNLOCK = 11 
 }; 
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [BASE_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU)  },
-    [FN_LAYR]   =  { ENCODER_CCW_CW(DUAL_ZOOMO, DUAL_ZOOMI)  },
-    [SFT_LAYR]  =  { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN)  },
-    [CTL_LAYR]  =  { ENCODER_CCW_CW(RGB_RMOD, RGB_MOD)  },
-    [TMUX_LAYR] =  { ENCODER_CCW_CW(ENC_TSIZEL, ENC_TSIZER)  },
-    [WIDE_TEXT_LAYR] =  { ENCODER_CCW_CW(KC_TRNS, KC_TRNS)  },
-    [LOCK_LAYR] =  { ENCODER_CCW_CW(KC_NO, KC_NO)  }
+    [BASE_LAYR]      =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [FN_LAYR]        =  { ENCODER_CCW_CW(DUAL_ZOOMO, DUAL_ZOOMI) },
+    [SFT_LAYR]       =  { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN) },
+    [CTL_LAYR]       =  { ENCODER_CCW_CW(RGB_RMOD, RGB_MOD) },
+    [TMUX_LAYR]      =  { ENCODER_CCW_CW(ENC_TSIZEL, ENC_TSIZER) },
+    [SYMBOL_LAYR]    =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [WIDE_TEXT_LAYR] =  { ENCODER_CCW_CW(KC_TRNS, KC_TRNS) },
+    [LOCK_LAYR]      =  { ENCODER_CCW_CW(KC_NO, KC_NO) }
 };
 #endif
 
@@ -111,7 +161,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
 //  :  | Shift           || Z    || X    || C    || V    || B    || N    || M    || ,    || .    || /    ||TD(SFT_OSL)|| Up   || End  |  :
 //  :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
-//  :  | Ctrl    || GUI    || Alt     ||                   Space                      ||TD(FN_O) ||TD(CTL_O)|  | Left || Down || Rght |  :
+//  :  | Ctrl    ||TD(GUI) || Alt     ||                   Space                      ||TD(FN_O) ||TD(CTL_O)|  | Left || Down || Rght |  :
 //  :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 //  `------------------------------------------------------------------------------------------------------------------------------------`
     [BASE_LAYR] = LAYOUT_65_ansi_blocker(
@@ -119,7 +169,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         LT(TMUX_LAYR,KC_TAB), KC_Q, KC_W, KC_E, KC_R, KC_T,  KC_Y,  KC_U,   KC_I,   KC_O,   KC_P,  KC_LBRC, KC_RBRC, KC_BSLS, KC_DELETE,
         TD(CAPS_LAYR), KC_A,   KC_S,  KC_D,    KC_F,   KC_G,   KC_H,  KC_J,   KC_K,    KC_L,  KC_SCLN, KC_QUOT,  KC_ENT,     KC_PAGE_UP,
         KC_LSFT,       KC_Z,  KC_X,  KC_C,   KC_V,   KC_B,   KC_N,   KC_M,  KC_COMM, KC_DOT, KC_SLSH, TD(RSFT_OSL), KC_UP, KC_PAGE_DOWN,
-        KC_LCTL,  KC_LGUI,  KC_LALT,                    KC_SPC,                    TD(FN_OSL), TD(RCTL_OSL), KC_LEFT, KC_DOWN, KC_RIGHT
+        KC_LCTL, TD(LGUI_OSL), KC_LALT,                  KC_SPC,                   TD(FN_OSL), TD(RCTL_OSL), KC_LEFT, KC_DOWN, KC_RIGHT
     ),
 //  [FN_LAYR]
 //   ____________________________________________________________________________________________________________________________________
@@ -140,7 +190,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         MO(TMUX_LAYR),SECRET3,SECRET2,SECRET1,SECRET8,SECRET9,_______,_______,_______,_______,_______,DM_REC1,DM_REC2, _______,  KC_INS,
         _______,SECRET4,SECRET5,SECRET6,SECRET7,_______,_______,_______,_______,    QK_LEAD,  KC_SCRL, KC_PSCR,     _______,    KC_HOME,
         MO(SFT_LAYR), _______,SECRET10,SECRET11,_______,_______,_______,_______,DM_PLY1,DM_PLY2, KC_PAUS, MO(SFT_LAYR), _______, KC_END,
-        _______, _______, MO(CTL_LAYR),                 _______,                    _______,    MO(CTL_LAYR), _______, _______, _______
+        _______, MO(SYMBOL_LAYR), MO(CTL_LAYR),              _______,                 _______,  MO(CTL_LAYR), _______, _______, _______
     ),
 //  [SFT_LAYR]
 //   ____________________________________________________________________________________________________________________________________
@@ -204,6 +254,27 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, LTRANS, LTRANS,_______,_______,_______,_______,_______, LTRANS, LTRANS, LTRANS,           _______,     LTRANS,
         _______,        LTRANS, LTRANS, LTRANS, _______,  _______,  LTRANS,_______, LTRANS, LTRANS, LTRANS,   _______,  LTRANS, _______,
         KC_LCTL, _______, _______,                        LTRANS,                      _______, KC_RCTL,       LTRANS,  LTRANS,  LTRANS
+    ),
+//  [SYMBOL_LAYR]
+//   ____________________________________________________________________________________________________________________________________
+//  :   _______________________________________________________________________________________________________________________ .----.   :
+//  :  |TD(G) ||TD(1) ||OPT2  ||OPT3  ||OPT4  ||OPT5  ||OPT6  ||OPT7  ||OPT8  ||OPT9  ||OPT0  ||OPTMIN||OPTEQ ||              |: Vol  :  :
+//  :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
+//  :  |          ||OPTQ  ||OPTW  ||TD(E) ||OPTR  ||OPTT  ||OPTY  ||TD(U) ||TD(I) ||OPTO  ||OPTP  ||OPTLBR||OPTRBR||OPTBSL    ||      |  :
+//  :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
+//  :  |             ||OPTA  ||OPTS  ||OPTD  ||OPTF  ||OPTG  ||OPTH  ||OPTJ  ||OPTK  ||OPTL  ||OPTSEM||OPTAPO||               ||      |  :
+//  :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
+//  :  |                 ||OPTZ  ||OPTX  ||OPTC  ||OPTV  ||OPTB  ||TD(N) ||OPTM  ||OPTCOM||OPTDOT||OPTSLS||           ||      ||      |  :
+//  :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
+//  :  |         ||        ||         ||                                              ||         ||         |  |      ||      ||      |  :
+//  :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
+//  `------------------------------------------------------------------------------------------------------------------------------------`
+    [SYMBOL_LAYR] = LAYOUT_65_ansi_blocker(
+        TD(ACT_GRV), TD(ACT_1), OPT2, OPT3, OPT4, OPT5,  OPT6,   OPT7,  OPT8,   OPT9,  OPT0,   OPTMIN,  OPTEQ,       _______,   KC_MUTE,
+        _______,    OPTQ,  OPTW, TD(ACT_E), OPTR,  OPTT,   OPTY, TD(ACT_U), TD(ACT_I), OPTO, OPTP,  OPTLBR,  OPTRBR, OPTBSL,    _______,
+        _______,        OPTA,  OPTS,  OPTD,  OPTF,   OPTG,     OPTH,   OPTJ,   OPTK,   OPTL,   OPTSEM, OPTAPO,      _______,    _______,
+        _______,           OPTZ,  OPTX,  OPTC,   OPTV,   OPTB, TD(ACT_N),  OPTM,  OPTCOM,  OPTDOT, OPTSLS,   _______,  _______, _______,
+        _______,    _______,  _______,                    _______,                      _______, _______,     _______, _______, _______
     ),
 //  [WIDE_TEXT_LAYR]
 //   ____________________________________________________________________________________________________________________________________
@@ -273,6 +344,19 @@ enum key_indexes {
     I_BARTEXT = 39,
     I_NUMLOCK = 40,
     I_ESC = 54,
+    I_GRV = 54,
+    I_N1 = 55,
+    I_N2 = 56,
+    I_N3 = 57,
+    I_N4 = 58,
+    I_N5 = 59,
+    I_N6 = 60,
+    I_N7 = 61,
+    I_N8 = 62,
+    I_N9 = 63,
+    I_N0 = 64,
+    I_MIN = 65,
+    I_PLUS = 66,
     I_TAB = 53,
     I_Q = 52,
     I_W = 51,
@@ -300,12 +384,20 @@ enum key_indexes {
     I_SLOCK = 35,
     I_FJLIGHT = 36,
     I_HROWLIGHT = 37,
+    I_PGUP = 38,
     I_LSFT = 24,
+    I_N = 15,
+    I_V = 17,
     I_MPLY1 = 13,
     I_MPLY2 = 12,
     I_RSFT = 10,
+    I_UP = 9,
+    I_PGDN = 8,
     I_LCTL = 23,
     I_RCTL = 2,
+    I_LEFT = 5,
+    I_DOWN = 6,
+    I_RIGHT = 7,
     I_LGUI = 22,
     I_LALT = 21,
     I_FN = 1
@@ -336,21 +428,37 @@ enum {
     SINGLE_TAP = 1,
     SINGLE_HOLD = 2,
     DOUBLE_TAP = 3,
-    TRIPLE_TAP = 4,
-    QUAD_TAP = 5,
-    PENT_TAP = 6
+    DOUBLE_HOLD = 4,
+    TRIPLE_TAP = 5,
+    QUAD_TAP = 6,
+    PENT_TAP = 7,
+    HEXA_TAP = 8
 };
 // functions associated with all tap dances
 int cur_dance (tap_dance_state_t *state);
 // functions associated with individual tap dances
 void caps_finished (tap_dance_state_t *state, void *user_data);
 void caps_reset (tap_dance_state_t *state, void *user_data);
+void lgui_finished (tap_dance_state_t *state, void *user_data);
+void lgui_reset (tap_dance_state_t *state, void *user_data);
 void fn_finished (tap_dance_state_t *state, void *user_data);
 void fn_reset (tap_dance_state_t *state, void *user_data);
 void rctl_finished (tap_dance_state_t *state, void *user_data);
 void rctl_reset (tap_dance_state_t *state, void *user_data);
 void rsft_finished (tap_dance_state_t *state, void *user_data);
 void rsft_reset (tap_dance_state_t *state, void *user_data);
+void actgrv_finished (tap_dance_state_t *state, void *user_data);
+void actgrv_reset (tap_dance_state_t *state, void *user_data);
+void act1_finished (tap_dance_state_t *state, void *user_data);
+void act1_reset (tap_dance_state_t *state, void *user_data);
+void acte_finished (tap_dance_state_t *state, void *user_data);
+void acte_reset (tap_dance_state_t *state, void *user_data);
+void actu_finished (tap_dance_state_t *state, void *user_data);
+void actu_reset (tap_dance_state_t *state, void *user_data);
+void acti_finished (tap_dance_state_t *state, void *user_data);
+void acti_reset (tap_dance_state_t *state, void *user_data);
+void actn_finished (tap_dance_state_t *state, void *user_data);
+void actn_reset (tap_dance_state_t *state, void *user_data);
 void kbunlock_finished (tap_dance_state_t *state, void *user_data);
 void kbunlock_reset (tap_dance_state_t *state, void *user_data);
 
@@ -419,6 +527,9 @@ static deferred_token osl_macro_token = INVALID_DEFERRED_TOKEN;
 // funciton to send an alternate key if a modifier is being held
 void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask);
 
+// function to send symbols normally requiring hex codes in linux
+void symbol_key_linux(const char *hex_code, const char *shift_hex_code);
+
 // if rgb color-test is requested, set this bool
 bool color_test;
 // and use a timer so that it can be turned off after a delay even if no further key is pressed
@@ -438,6 +549,15 @@ bool wide_sthru = false;
 bool wide_underln = false;
 bool wide_bartext = false;
 bool wide_firstchar = false;
+
+// for tracking if an accent char tap dance should light up a particular key to show what the tap will send
+int act_char_led_index = 0;
+
+bool is_super_held;
+int super_scut_keys[] = {I_INDICATOR, I_INDICATOR2, I_N1, I_N2, I_N3, I_N4, I_N5, I_N6, I_N7, I_N8, I_N9, I_N0, I_TAB, I_Q, I_A, I_D, I_L, I_PGUP, I_PGDN, I_V};
+int super_scut_altcolor[] = {I_GRV, I_UP, I_DOWN, I_LEFT, I_RIGHT};
+int super_scut_keys_size = sizeof(super_scut_keys) / sizeof(super_scut_keys[0]);
+int super_scut_altcolor_size = sizeof(super_scut_altcolor) / sizeof(super_scut_altcolor[0]);
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
@@ -898,6 +1018,214 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
         }
         break;
+    // the following OPT keycodes mimic a macos option os layer for symbols and accents
+    // symbol_key() is a fn to type a windows alt code on the numpad
+    // symbol_key_linux() uses hex codes to type the same symbols on linux
+    case OPT2:
+        if (record->event.pressed) {
+            symbol_key_linux("2122","20ac");
+        }
+        break;
+    case OPT3:
+        if (record->event.pressed) {
+            symbol_key_linux("00a3","2039");
+        }
+        break;
+    case OPT4:
+        if (record->event.pressed) {
+            symbol_key_linux("00a2","203a");
+        }
+        break;
+    case OPT5:
+        if (record->event.pressed) {
+            symbol_key_linux("221e","fb01");
+        }
+        break;
+    case OPT6:
+        if (record->event.pressed) {
+            symbol_key_linux("00a7","fb02");
+        }
+        break;
+    case OPT7:
+        if (record->event.pressed) {
+            symbol_key_linux("00b6","2021");
+        }
+        break;
+    case OPT8:
+        if (record->event.pressed) {
+            symbol_key_linux("2022","00b0");
+        }
+        break;
+    case OPT9:
+        if (record->event.pressed) {
+            symbol_key_linux("00aa","00b7");
+        }
+        break;
+    case OPT0:
+        if (record->event.pressed) {
+            symbol_key_linux("00ba","201a");
+        }
+        break;
+    case OPTMIN:
+        if (record->event.pressed) {
+            symbol_key_linux("2013","2014");
+        }
+        break;
+    case OPTEQ:
+        if (record->event.pressed) {
+            symbol_key_linux("2260","00b1");
+        }
+        break;
+    case OPTQ:
+        if (record->event.pressed) {
+            symbol_key_linux("0153","0152");
+        }
+        break;
+    case OPTW:
+        if (record->event.pressed) {
+            symbol_key_linux("2211","201e");
+        }
+        break;
+    case OPTR:
+        if (record->event.pressed) {
+            symbol_key_linux("00ae","2030");
+        }
+        break;
+    case OPTT:
+        if (record->event.pressed) {
+            symbol_key_linux("2020","02c7");
+        }
+        break;
+    case OPTY:
+        if (record->event.pressed) {
+            symbol_key_linux("00a5","00c1");
+        }
+        break;
+    case OPTO:
+        if (record->event.pressed) {
+            symbol_key_linux("00f8","00d8");
+        }
+        break;
+    case OPTP:
+        if (record->event.pressed) {
+            symbol_key_linux("03c0","03a0");
+        }
+        break;
+    case OPTLBR:
+        if (record->event.pressed) {
+            symbol_key_linux("201c","201d");
+        }
+        break;
+    case OPTRBR:
+        if (record->event.pressed) {
+            symbol_key_linux("2018","2019");
+        }
+        break;
+    case OPTBSL:
+        if (record->event.pressed) {
+            symbol_key_linux("00ab","00bb");
+        }
+        break;
+    case OPTA:
+        if (record->event.pressed) {
+            symbol_key_linux("00e5","00c5");
+        }
+        break;
+    case OPTS:
+        if (record->event.pressed) {
+            symbol_key_linux("00df","00cd");
+        }
+        break;
+    case OPTD:
+        if (record->event.pressed) {
+            symbol_key_linux("2202","00ce");
+        }
+        break;
+    case OPTF:
+        if (record->event.pressed) {
+            symbol_key_linux("0192","00cf");
+        }
+        break;
+    case OPTG:
+        if (record->event.pressed) {
+            symbol_key_linux("00a9","02dd");
+        }
+        break;
+    case OPTH:
+        if (record->event.pressed) {
+            symbol_key_linux("02d9","00d3");
+        }
+        break;
+    case OPTJ:
+        if (record->event.pressed) {
+            symbol_key_linux("2206","00d4");
+        }
+        break;
+    case OPTK:
+        if (record->event.pressed) {
+            symbol_key_linux("02da","03f0");
+        }
+        break;
+    case OPTL:
+        if (record->event.pressed) {
+            symbol_key_linux("00ac","00d2");
+        }
+        break;
+    case OPTSEM:
+        if (record->event.pressed) {
+            symbol_key_linux("2026","00da");
+        }
+        break;
+    case OPTAPO:
+        if (record->event.pressed) {
+            symbol_key_linux("00e6","00c6");
+        }
+        break;
+    case OPTZ:
+        if (record->event.pressed) {
+            symbol_key_linux("03a9","00b8");
+        }
+        break;
+    case OPTX:
+        if (record->event.pressed) {
+            symbol_key_linux("2248","02db");
+        }
+        break;
+    case OPTC:
+        if (record->event.pressed) {
+            symbol_key_linux("00e7","00c7");
+        }
+        break;
+    case OPTV:
+        if (record->event.pressed) {
+            symbol_key_linux("221a","25ca");
+        }
+        break;
+    case OPTB:
+        if (record->event.pressed) {
+            symbol_key_linux("222b","0131");
+        }
+        break;
+    case OPTM:
+        if (record->event.pressed) {
+            symbol_key_linux("03bc","00c2");
+        }
+        break;
+    case OPTCOM:
+        if (record->event.pressed) {
+            symbol_key_linux("2264","00af");
+        }
+        break;
+    case OPTDOT:
+        if (record->event.pressed) {
+            symbol_key_linux("2265","02d8");
+        }
+        break;
+    case OPTSLS:
+        if (record->event.pressed) {
+            symbol_key_linux("00f7","00bf");
+        }
+        break;
     case COLORTEST:
         if (record->event.pressed) {
             color_test_timer = timer_read();
@@ -937,6 +1265,24 @@ void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask) {
     }       
 }
 
+void symbol_key_linux(const char *hex_code, const char *shift_hex_code) {
+    // get current mod and one-shot mod states.
+    const uint8_t mods = get_mods();
+    const uint8_t oneshot_mods = get_oneshot_mods();
+    const char *ucode = ((mods | oneshot_mods) & MOD_MASK_SHIFT) ? shift_hex_code : hex_code;
+    if (ucode == NULL || *ucode == '\0') { // null or empty string
+        return;
+    }
+    clear_oneshot_mods();
+    unregister_mods(mods); // temp remove mods
+    tap_code16(C(S(KC_U))); // start the unicode sequence
+    // type the hex chars
+    send_string_with_delay(ucode,5);
+    // finish sequence
+    tap_code(KC_SPC);
+    register_mods(mods); // add back mods
+}
+
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     uint8_t layer = get_highest_layer(layer_state);
     // do the indicator bar
@@ -957,9 +1303,21 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         rgb_matrix_set_color(I_INDICATOR, RGB_CYAN);
         rgb_matrix_set_color(I_INDICATOR2, RGB_CYAN);
         break;
+    case SYMBOL_LAYR:
+        if (is_led_on) {    
+            if (timer_elapsed(layer_timer) > 250) {
+                rgb_matrix_set_color(I_INDICATOR, RGB_YELLOW);
+                rgb_matrix_set_color(I_INDICATOR2, RGB_YELLOW);
+            }
+            else {
+                rgb_matrix_set_color(I_INDICATOR, RGB_BLUE);
+                rgb_matrix_set_color(I_INDICATOR2, RGB_BLUE);
+            }
+        }   
+        break;
     case WIDE_TEXT_LAYR:
-        rgb_matrix_set_color(I_INDICATOR, 0x77, 0x77, 0x77);
-        rgb_matrix_set_color(I_INDICATOR2, 0x77, 0x77, 0x77);
+        rgb_matrix_set_color(I_INDICATOR, RGB_PURPLE);
+        rgb_matrix_set_color(I_INDICATOR2, RGB_PURPLE);
         break;
     case LOCK_LAYR:
         break;
@@ -996,8 +1354,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     case TMUX_LAYR:
                         rgb_matrix_set_color(index, RGB_CYAN);
                         break;
-                    case WIDE_TEXT_LAYR:
+                    case SYMBOL_LAYR:
                         rgb_matrix_set_color(index, RGB_BLUE);
+                        break;
+                    case WIDE_TEXT_LAYR:
+                        rgb_matrix_set_color(index, RGB_PURPLE);
                         break;
                     case LOCK_LAYR:
                         break;
@@ -1018,6 +1379,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
           rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
         }  
 // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ */
+// ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+        // custom colors for tap dance keys on symbol layer
+        else if (layer == SYMBOL_LAYR) {
+          rgb_matrix_set_color(I_GRV, RGB_YELLOW); // grave
+          rgb_matrix_set_color(I_N1, RGB_YELLOW);   // 1
+          rgb_matrix_set_color(I_E, RGB_YELLOW);   // e
+          rgb_matrix_set_color(I_U, RGB_YELLOW);   // u
+          rgb_matrix_set_color(I_I, RGB_YELLOW);   // i
+          rgb_matrix_set_color(I_N, RGB_YELLOW);   // n
+        }
+// ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
         // set up the layer key blinking indicator
         if (!layer_timer) {
             is_led_on = true;
@@ -1047,8 +1419,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             case TMUX_LAYR:
                 rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
                 break;
+            case SYMBOL_LAYR:
+                if (timer_elapsed(layer_timer) > 250) {
+                    rgb_matrix_set_color(I_LGUI, RGB_YELLOW); // lgui
+                    rgb_matrix_set_color(I_FN, RGB_YELLOW);   // fn
+                }
+                else {
+                    rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // lgui
+                    rgb_matrix_set_color(I_FN, RGB_BLUE);     // fn
+                }
+                break;
             case WIDE_TEXT_LAYR:
-                rgb_matrix_set_color(I_RSFT, RGB_BLUE);   // rshift
+                rgb_matrix_set_color(I_RSFT, RGB_PURPLE);   // rshift
                 break;
             }
         }
@@ -1067,6 +1449,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     else {
         rgb_matrix_set_color(I_FN, RGB_BLUE);        // fn 
         rgb_matrix_set_color(I_TAB, 0x77,0x77,0x77); // tab
+        if (is_super_held) {
+            for (int i = 0; i < super_scut_keys_size; i++) {
+                rgb_matrix_set_color(super_scut_keys[i], 102, 178, 255);   // gnome super shortcut keys
+            }
+            for (int i = 0; i < super_scut_altcolor_size; i++) {
+                rgb_matrix_set_color(super_scut_altcolor[i], RGB_BLUE);    // gnome super shortcut keys
+            }
+        }
         if (!host_keyboard_led_state().caps_lock) {
           rgb_matrix_set_color(I_CAPS, RGB_BLUE);    // caps
         }
@@ -1284,6 +1674,12 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             rgb_matrix_set_color(I_L, RGB_YELLOW);
         }
     }
+    
+    // track if this is the middle of an accent key tap dance and illuminate the appropriate accent char
+    if (act_char_led_index > 0) {
+        rgb_matrix_set_color(act_char_led_index, RGB_WHITE);  // accent char led
+    }
+
     // track mode keys on WIDE_TEXT_LAYR
     if (layer == WIDE_TEXT_LAYR) {
         if (wide_bartext) {
@@ -1327,6 +1723,9 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         (key.index == I_BARTEXT || key.index == I_STHRU || key.index == I_UNDERLN)) ||             // wide-text mode toggles
       (layer == CTL_LAYR && (key.index == I_FJLIGHT || key.index == I_HROWLIGHT)) ||               // fj/hrow light keys 
       (layer == BASE_LAYR && key.index == I_FN) ||                                                 // fn on base 
+      (layer == SYMBOL_LAYR && (key.index == I_GRV || key.index == I_N1 || key.index == I_E ||
+                                key.index == I_I || key.index == I_U || key.index == I_N ||        // accent keys
+                                key.index == I_FN || key.index == I_LGUI)) ||                      // sym_layr lgui and fn
       (key.index == I_CAPS || key.index == I_TAB)) {                                               // caps lock and tab
         should_fade = false;
     }
@@ -1342,21 +1741,55 @@ int cur_dance (tap_dance_state_t *state) {
       return SINGLE_HOLD;
     }
   } else if (state->count == 2) {
-    return DOUBLE_TAP;
+    if (!state->pressed) {
+        return DOUBLE_TAP;
+    } else {
+        return DOUBLE_HOLD;
+    }
   } else if (state->count == 3) {
     return TRIPLE_TAP; 
   } else if (state->count == 4) {
     return QUAD_TAP;
   } else if (state->count == 5) {
     return PENT_TAP;
+  } else if (state->count == 6) {
+    return HEXA_TAP;
   }
-  else return 8;
+  else return 9;
 }
 
 //Initialize tap structure associated with caps tap dance key
 static tap caps_tap_state = {
   .is_press_action = true,
   .state = 0 
+};
+static tap lgui_tap_state = {
+  .is_press_action = true,
+  .state = 0
+};
+static tap actgrv_tap_state = {
+  .is_press_action = true,
+  .state = 0
+};
+static tap act1_tap_state = {
+  .is_press_action = true,
+  .state = 0
+};
+static tap acte_tap_state = {
+  .is_press_action = true,
+  .state = 0
+};
+static tap actu_tap_state = {
+  .is_press_action = true,
+  .state = 0
+};
+static tap acti_tap_state = {
+  .is_press_action = true,
+  .state = 0
+};
+static tap actn_tap_state = {
+  .is_press_action = true,
+  .state = 0
 };
 static tap fn_tap_state = {
   .is_press_action = true,
@@ -1421,6 +1854,15 @@ void caps_finished (tap_dance_state_t *state, void *user_data) {
         layer_lock_on(TMUX_LAYR);
       }
       break;
+    case HEXA_TAP:
+      if (layer_state_is(SYMBOL_LAYR)) {
+        //if already set, then switch it off
+        layer_lock_off(SYMBOL_LAYR);
+      } else {
+        //if not already set, then switch the layer on
+        layer_lock_on(SYMBOL_LAYR);
+      }
+      break;
   }
 }
 void caps_reset (tap_dance_state_t *state, void *user_data) {
@@ -1429,6 +1871,337 @@ void caps_reset (tap_dance_state_t *state, void *user_data) {
     layer_off(FN_LAYR);
   }
   caps_tap_state.state = 0;
+}
+
+// function for lgui tap dance
+void lgui_finished (tap_dance_state_t *state, void *user_data) {
+  lgui_tap_state.state = cur_dance(state);
+  switch (lgui_tap_state.state) {
+    case SINGLE_TAP:
+      tap_code(KC_LGUI);
+      break;
+    case SINGLE_HOLD:
+      register_code(KC_LGUI);
+      is_super_held = true;
+      break;
+    case DOUBLE_TAP:
+      set_oneshot_layer(SYMBOL_LAYR, ONESHOT_START);
+      clear_oneshot_layer_state(ONESHOT_PRESSED);
+      break;
+    case DOUBLE_HOLD:
+      layer_on(SYMBOL_LAYR);
+      break;
+  }
+}
+void lgui_reset (tap_dance_state_t *state, void *user_data) {
+  switch (lgui_tap_state.state) {
+    case SINGLE_TAP:
+      break;
+    case SINGLE_HOLD:
+      unregister_code(KC_LGUI);
+      is_super_held = false;
+      break;
+    case DOUBLE_TAP:
+      break;
+    case DOUBLE_HOLD:
+      if (!is_layer_locked(SYMBOL_LAYR)) {
+        layer_off(SYMBOL_LAYR);
+      }
+      break;
+  }
+  lgui_tap_state.state = 0;
+}
+
+// function for each press of grv on symbol layer
+void actgrv_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            act_char_led_index = I_A;
+            break;
+        case 2:
+            act_char_led_index = I_E;
+            break;
+        case 3:
+            act_char_led_index = I_I;
+            break;
+        case 4:
+            act_char_led_index = I_O;
+            break;
+        case 5:
+            act_char_led_index = I_U;
+            break;
+        default:
+            act_char_led_index = 0;
+            break;
+    }
+}
+// function for symbol layer grv key tap dance
+void actgrv_finished (tap_dance_state_t *state, void *user_data) {
+  actgrv_tap_state.state = cur_dance(state);
+  switch (actgrv_tap_state.state) {
+    case SINGLE_TAP:
+      symbol_key_linux("00e0","00c0");
+      break;
+    case DOUBLE_TAP:
+      symbol_key_linux("00e8","00c8");
+      break;
+    case TRIPLE_TAP:
+      symbol_key_linux("00ec","00cc");
+      break;
+    case QUAD_TAP:
+      symbol_key_linux("00f2","00d2");
+      break;
+    case PENT_TAP:
+      symbol_key_linux("00f9","00d9");
+      break;
+    case HEXA_TAP:
+      break;
+  }
+}
+void actgrv_reset (tap_dance_state_t *state, void *user_data) {
+    act_char_led_index = 0;
+    actgrv_tap_state.state = 0;
+}
+
+// function for each press of 1 on symbol layer
+void act1_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            act_char_led_index = I_N1;
+            break;
+        case 2:
+            act_char_led_index = I_N2;
+            break;
+        case 3:
+            act_char_led_index = I_N3;
+            break;
+        default:
+            act_char_led_index = 0;
+            break;
+    }
+}
+// function for symbol layer 1 key tap dance
+void act1_finished (tap_dance_state_t *state, void *user_data) {
+  act1_tap_state.state = cur_dance(state);
+  switch (act1_tap_state.state) {
+    case SINGLE_TAP:
+      symbol_key_linux("00a1","00bc");
+      break;
+    case DOUBLE_TAP:
+      symbol_key_linux("00bd","00bd");
+      break;
+    case TRIPLE_TAP:
+      symbol_key_linux("00be","00be");
+      break;
+    case QUAD_TAP:
+      break;
+    case PENT_TAP:
+      break;
+    case HEXA_TAP:
+      break;
+  }
+}
+void act1_reset (tap_dance_state_t *state, void *user_data) {
+    act_char_led_index = 0;
+    act1_tap_state.state = 0;
+}
+
+// function for each press of e on symbol layer
+void acte_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            act_char_led_index = I_E;
+            break;
+        case 2:
+            act_char_led_index = I_A;
+            break;
+        case 3:
+            act_char_led_index = I_I;
+            break;
+        case 4:
+            act_char_led_index = I_O;
+            break;
+        case 5:
+            act_char_led_index = I_U;
+            break;
+        case 6:
+            act_char_led_index = I_Y;
+            break;
+        default:
+            act_char_led_index = 0;
+            break;
+    }
+}
+// function for symbol layer e key tap dance
+void acte_finished (tap_dance_state_t *state, void *user_data) {
+  acte_tap_state.state = cur_dance(state);
+  switch (acte_tap_state.state) {
+    case SINGLE_TAP:
+      symbol_key_linux("00e9","00c9");
+      break;
+    case DOUBLE_TAP:
+      symbol_key_linux("00e1","00c1");
+      break;
+    case TRIPLE_TAP:
+      symbol_key_linux("00ed","00cd");
+      break;
+    case QUAD_TAP:
+      symbol_key_linux("00f3","00d3");
+      break;
+    case PENT_TAP:
+      symbol_key_linux("00fa","00da");
+      break;
+    case HEXA_TAP:
+      symbol_key_linux("00fd","00dd");
+      break;
+  }
+}
+void acte_reset (tap_dance_state_t *state, void *user_data) {
+    act_char_led_index = 0;
+    acte_tap_state.state = 0;
+}
+
+// function for each press of u on symbol layer
+void actu_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            act_char_led_index = I_A;
+            break;
+        case 2:
+            act_char_led_index = I_E;
+            break;
+        case 3:
+            act_char_led_index = I_I;
+            break;
+        case 4:
+            act_char_led_index = I_O;
+            break;
+        case 5:
+            act_char_led_index = I_U;
+            break;
+        case 6:
+            act_char_led_index = I_Y;
+            break;
+        default:
+            act_char_led_index = 0;
+            break;
+    }
+}
+// function for symbol layer u key tap dance
+void actu_finished (tap_dance_state_t *state, void *user_data) {
+  actu_tap_state.state = cur_dance(state);
+  switch (actu_tap_state.state) {
+    case SINGLE_TAP:
+      symbol_key_linux("00e4","00c4");
+      break;
+    case DOUBLE_TAP:
+      symbol_key_linux("00eb","00cb");
+      break;
+    case TRIPLE_TAP:
+      symbol_key_linux("00ef","00cf");
+      break;
+    case QUAD_TAP:
+      symbol_key_linux("00f6","00d6");
+      break;
+    case PENT_TAP:
+      symbol_key_linux("00fc","00dc");
+      break;
+    case HEXA_TAP:
+      symbol_key_linux("00ff","0178");
+      break;
+  }
+}
+void actu_reset (tap_dance_state_t *state, void *user_data) {
+    act_char_led_index = 0;
+    actu_tap_state.state = 0;
+}
+
+// function for each press of i on symbol layer
+void acti_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            act_char_led_index = I_I;
+            break;
+        case 2:
+            act_char_led_index = I_A;
+            break;
+        case 3:
+            act_char_led_index = I_E;
+            break;
+        case 4:
+            act_char_led_index = I_O;
+            break;
+        case 5:
+            act_char_led_index = I_U;
+            break;
+        default:
+            act_char_led_index = 0;
+            break;
+    }
+}
+// function for symbol layer i key tap dance
+void acti_finished (tap_dance_state_t *state, void *user_data) {
+  acti_tap_state.state = cur_dance(state);
+  switch (acti_tap_state.state) {
+    case SINGLE_TAP:
+      symbol_key_linux("00ee","00ce");
+      break;
+    case DOUBLE_TAP:
+      symbol_key_linux("00e2","00c2");
+      break;
+    case TRIPLE_TAP:
+      symbol_key_linux("00ea","00ca");
+      break;
+    case QUAD_TAP:
+      symbol_key_linux("00f4","00d4");
+      break;
+    case PENT_TAP:
+      symbol_key_linux("00fb","00db");
+      break;
+    case HEXA_TAP:
+      break;
+  }
+}
+void acti_reset (tap_dance_state_t *state, void *user_data) {
+    act_char_led_index = 0;
+    acti_tap_state.state = 0;
+}
+
+// function for each press of n on symbol layer
+void actn_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            act_char_led_index = I_N;
+            break;
+        case 2:
+            act_char_led_index = I_A;
+            break;
+        case 3:
+            act_char_led_index = I_O;
+            break;
+        default:
+            act_char_led_index = 0;
+            break;
+    }
+}
+// function for symbol layer n key tap dance
+void actn_finished (tap_dance_state_t *state, void *user_data) {
+  actn_tap_state.state = cur_dance(state);
+  switch (actn_tap_state.state) {
+    case SINGLE_TAP:
+      symbol_key_linux("00f1","00d1");
+      break;
+    case DOUBLE_TAP:
+      symbol_key_linux("00e3","00c3");
+      break;
+    case TRIPLE_TAP:
+      symbol_key_linux("00f5","00d5");
+      break;
+  }
+}
+void actn_reset (tap_dance_state_t *state, void *user_data) {
+    act_char_led_index = 0;
+    actn_tap_state.state = 0;
 }
 
 // function for fn tap dance
@@ -1442,6 +2215,13 @@ void fn_finished (tap_dance_state_t *state, void *user_data) {
     case SINGLE_HOLD:
       layer_on(FN_LAYR);
       break;
+    case DOUBLE_TAP:
+      set_oneshot_layer(SYMBOL_LAYR, ONESHOT_START);
+      clear_oneshot_layer_state(ONESHOT_PRESSED);
+      break;
+    case DOUBLE_HOLD:
+      layer_on(SYMBOL_LAYR);
+      break;
   }
 }
 void fn_reset (tap_dance_state_t *state, void *user_data) {
@@ -1450,6 +2230,13 @@ void fn_reset (tap_dance_state_t *state, void *user_data) {
       break;
     case SINGLE_HOLD:
       layer_off(FN_LAYR);
+      break;
+    case DOUBLE_TAP:
+      break;
+    case DOUBLE_HOLD:
+      if (!is_layer_locked(SYMBOL_LAYR)) {
+        layer_off(SYMBOL_LAYR);
+      }
       break;
   }
   fn_tap_state.state = 0;
@@ -1561,11 +2348,33 @@ void rsft_reset (tap_dance_state_t *state, void *user_data) {
 // associate the tap dance keys with their funcitons  
 tap_dance_action_t tap_dance_actions[] = { 
   [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
+  [LGUI_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lgui_finished, lgui_reset),
   [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
   [RCTL_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rctl_finished, rctl_reset),
   [RSFT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rsft_each, rsft_finished, rsft_reset),
+  [ACT_GRV] = ACTION_TAP_DANCE_FN_ADVANCED(actgrv_each, actgrv_finished, actgrv_reset),
+  [ACT_1] = ACTION_TAP_DANCE_FN_ADVANCED(act1_each, act1_finished, act1_reset),
+  [ACT_E] = ACTION_TAP_DANCE_FN_ADVANCED(acte_each, acte_finished, acte_reset),
+  [ACT_U] = ACTION_TAP_DANCE_FN_ADVANCED(actu_each, actu_finished, actu_reset),
+  [ACT_I] = ACTION_TAP_DANCE_FN_ADVANCED(acti_each, acti_finished, acti_reset),
+  [ACT_N] = ACTION_TAP_DANCE_FN_ADVANCED(actn_each, actn_finished, actn_reset),
   [KB_UNLOCK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, kbunlock_finished, kbunlock_reset),
 };
+
+// accent tap dances should give a little bit longer to see the leds
+uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
+    switch (keycode) {
+        case TD(ACT_GRV):
+        case TD(ACT_1):
+        case TD(ACT_E):
+        case TD(ACT_U):
+        case TD(ACT_I):
+        case TD(ACT_N):
+            return TAPPING_TERM + 400;
+        default:
+            return TAPPING_TERM;
+    }
+}
 
 // this is needed to prevent CAPS_WORD from breaking when some custom key commands are used
 bool caps_word_press_user(uint16_t keycode) {
