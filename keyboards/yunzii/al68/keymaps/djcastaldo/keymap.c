@@ -40,6 +40,7 @@ enum layers {
     TMUX_LAYR,
     SYMBOL_LAYR,
     WIDE_TEXT_LAYR,
+    CIRCLE_TEXT_LAYR,
     LOCK_LAYR
 };
 
@@ -111,6 +112,42 @@ enum my_keycodes {
     OPTCOM,
     OPTDOT,
     OPTSLS,
+    CIRCL1,
+    CIRCL2,
+    CIRCL3,
+    CIRCL4,
+    CIRCL5,
+    CIRCL6,
+    CIRCL7,
+    CIRCL8,
+    CIRCL9,
+    CIRCL0,
+    CIRCLQ,
+    CIRCLW,
+    CIRCLE,
+    CIRCLR,
+    CIRCLT,
+    CIRCLY,
+    CIRCLU,
+    CIRCLI,
+    CIRCLO,
+    CIRCLP,
+    CIRCLA,
+    CIRCLS,
+    CIRCLD,
+    CIRCLF,
+    CIRCLG,
+    CIRCLH,
+    CIRCLJ,
+    CIRCLK,
+    CIRCLL,
+    CIRCLZ,
+    CIRCLX,
+    CIRCLC,
+    CIRCLV,
+    CIRCLB,
+    CIRCLN,
+    CIRCLM,
     STHRU,
     UNDERLN,
     BARTEXT,
@@ -137,14 +174,15 @@ enum {
 
 #if defined(ENCODER_MAP_ENABLE)
 const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
-    [BASE_LAYR]      =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
-    [FN_LAYR]        =  { ENCODER_CCW_CW(DUAL_ZOOMO, DUAL_ZOOMI) },
-    [SFT_LAYR]       =  { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN) },
-    [CTL_LAYR]       =  { ENCODER_CCW_CW(RGB_RMOD, RGB_MOD) },
-    [TMUX_LAYR]      =  { ENCODER_CCW_CW(ENC_TSIZEL, ENC_TSIZER) },
-    [SYMBOL_LAYR]    =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
-    [WIDE_TEXT_LAYR] =  { ENCODER_CCW_CW(KC_TRNS, KC_TRNS) },
-    [LOCK_LAYR]      =  { ENCODER_CCW_CW(KC_NO, KC_NO) }
+    [BASE_LAYR]        =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [FN_LAYR]          =  { ENCODER_CCW_CW(DUAL_ZOOMO, DUAL_ZOOMI) },
+    [SFT_LAYR]         =  { ENCODER_CCW_CW(KC_MS_WH_UP, KC_MS_WH_DOWN) },
+    [CTL_LAYR]         =  { ENCODER_CCW_CW(RGB_RMOD, RGB_MOD) },
+    [TMUX_LAYR]        =  { ENCODER_CCW_CW(ENC_TSIZEL, ENC_TSIZER) },
+    [SYMBOL_LAYR]      =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [WIDE_TEXT_LAYR]   =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [CIRCLE_TEXT_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [LOCK_LAYR]        =  { ENCODER_CCW_CW(KC_NO, KC_NO) }
 };
 #endif
 
@@ -279,7 +317,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  [WIDE_TEXT_LAYR]
 //  ____________________________________________________________________________________________________________________________________
 // :   _______________________________________________________________________________________________________________________ .----.   :
-// :  |      ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||              |:      :  :
+// :  |      ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||              |: Vol  :  :
 // :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
 // :  |          ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS    ||BarTxt|  :
 // :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
@@ -291,11 +329,32 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [WIDE_TEXT_LAYR] = LAYOUT_65_ansi_blocker(
-        _______, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,    _______,   _______,
+        _______, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,    _______,   KC_MUTE,
         _______,   LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,  LTRANS,    BARTEXT,
         _______,     LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        _______,      STHRU,
         _______,          LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    _______,  _______, UNDERLN,
         _______,  _______,  _______,                        LTRANS,                      _______,  _______,   _______, _______, _______
+    ),
+//  [CIRCLE_TEXT_LAYR]
+//  ____________________________________________________________________________________________________________________________________
+// :   _______________________________________________________________________________________________________________________ .----.   :
+// :  |      ||CIRCL1||CIRCL2||CIRCL3||CIRCL4||CIRCL5||CIRCL6||CIRCL7||CIRCL8||CIRCL9||CIRCL0||      ||      ||              |: Vol  :  :
+// :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
+// :  |          ||CIRCLQ||CIRCLW||CIRCLE||CIRCLR||CIRCLT||CIRCLY||CIRCLU||CIRCLI||CIRCLO||CIRCLP||      ||      ||          ||      |  :
+// :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
+// :  |             ||CIRCLA||CIRCLS||CIRCLD||CIRCLF||CIRCLG||CIRCLH||CIRCLJ||CIRCLK||CIRCLL||      ||      ||               ||      |  :
+// :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
+// :  |                 ||CIRCLZ||CIRCLX||CIRCLC||CIRCLV||CIRCLB||CIRCLN||CIRCLM||      ||      ||      ||           ||      ||      |  :
+// :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
+// :  |         ||        ||         ||                                              ||         ||         |  |      ||      ||      |  :
+// :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
+// `------------------------------------------------------------------------------------------------------------------------------------`
+    [CIRCLE_TEXT_LAYR] = LAYOUT_65_ansi_blocker(
+        _______, CIRCL1, CIRCL2, CIRCL3, CIRCL4, CIRCL5, CIRCL6, CIRCL7, CIRCL8, CIRCL9, CIRCL0, _______, _______,   _______,   KC_MUTE,
+        _______,   CIRCLQ, CIRCLW, CIRCLE, CIRCLR, CIRCLT, CIRCLY, CIRCLU, CIRCLI, CIRCLO, CIRCLP, _______, _______,  _______,  _______,
+        _______,     CIRCLA, CIRCLS, CIRCLD, CIRCLF, CIRCLG, CIRCLH, CIRCLJ, CIRCLK, CIRCLL, _______, _______,      _______,    _______,
+        _______,          CIRCLZ, CIRCLX, CIRCLC, CIRCLV, CIRCLB, CIRCLN, CIRCLM, _______, _______, _______,  _______, _______, _______,
+        _______,  _______,  _______,                       _______,                      _______,  _______,   _______, _______, _______
     ),
 //  [LOCK_LAYR]
 //  ____________________________________________________________________________________________________________________________________
@@ -1226,6 +1285,186 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             symbol_key_linux("00f7","00bf");
         }
         break;
+    case CIRCL1:
+        if (record->event.pressed) {
+            symbol_key_linux("2460","246a");
+        }
+        break;
+    case CIRCL2:
+        if (record->event.pressed) {
+            symbol_key_linux("2461","246b");
+        }
+        break;
+    case CIRCL3:
+        if (record->event.pressed) {
+            symbol_key_linux("2462","246c");
+        }
+        break;
+    case CIRCL4:
+        if (record->event.pressed) {
+            symbol_key_linux("2463","246d");
+        }
+        break;
+    case CIRCL5:
+        if (record->event.pressed) {
+            symbol_key_linux("2464","246e");
+        }
+        break;
+    case CIRCL6:
+        if (record->event.pressed) {
+            symbol_key_linux("2465","246f");
+        }
+        break;
+    case CIRCL7:
+        if (record->event.pressed) {
+            symbol_key_linux("2466","2470");
+        }
+        break;
+    case CIRCL8:
+        if (record->event.pressed) {
+            symbol_key_linux("2467","2471");
+        }
+        break;
+    case CIRCL9:
+        if (record->event.pressed) {
+            symbol_key_linux("2468","2472");
+        }
+        break;
+    case CIRCL0:
+        if (record->event.pressed) {
+            symbol_key_linux("24ea","2469");
+        }
+        break;
+    case CIRCLQ:
+        if (record->event.pressed) {
+            symbol_key_linux("24e0","24c6");
+        }
+        break;
+    case CIRCLW:
+        if (record->event.pressed) {
+            symbol_key_linux("24e6","24cc");
+        }
+        break;
+    case CIRCLE:
+        if (record->event.pressed) {
+            symbol_key_linux("24d4","24ba");
+        }
+        break;
+    case CIRCLR:
+        if (record->event.pressed) {
+            symbol_key_linux("24e1","24c7");
+        }
+        break;
+    case CIRCLT:
+        if (record->event.pressed) {
+            symbol_key_linux("24e3","24c9");
+        }
+        break;
+    case CIRCLY:
+        if (record->event.pressed) {
+            symbol_key_linux("24e8","24ce");
+        }
+        break;
+    case CIRCLU:
+        if (record->event.pressed) {
+            symbol_key_linux("24e4","24ca");
+        }
+        break;
+    case CIRCLI:
+        if (record->event.pressed) {
+            symbol_key_linux("24d8","24be");
+        }
+        break;
+    case CIRCLO:
+        if (record->event.pressed) {
+            symbol_key_linux("24de","24c4");
+        }
+        break;
+    case CIRCLP:
+        if (record->event.pressed) {
+            symbol_key_linux("24df","24c5");
+        }
+        break;
+    case CIRCLA:
+        if (record->event.pressed) {
+            symbol_key_linux("24d0","24b6");
+        }
+        break;
+    case CIRCLS:
+        if (record->event.pressed) {
+            symbol_key_linux("24e2","24c8");
+        }
+        break;
+    case CIRCLD:
+        if (record->event.pressed) {
+            symbol_key_linux("24d3","24b9");
+        }
+        break;
+    case CIRCLF:
+        if (record->event.pressed) {
+            symbol_key_linux("24d5","24bb");
+        }
+        break;
+    case CIRCLG:
+        if (record->event.pressed) {
+            symbol_key_linux("24d6","24bc");
+        }
+        break;
+    case CIRCLH:
+        if (record->event.pressed) {
+            symbol_key_linux("24d7","24bd");
+        }
+        break;
+    case CIRCLJ:
+        if (record->event.pressed) {
+            symbol_key_linux("24d9","24bf");
+        }
+        break;
+    case CIRCLK:
+        if (record->event.pressed) {
+            symbol_key_linux("24da","24c0");
+        }
+        break;
+    case CIRCLL:
+        if (record->event.pressed) {
+            symbol_key_linux("24db","24c1");
+        }
+        break;
+    case CIRCLZ:
+        if (record->event.pressed) {
+            symbol_key_linux("24e9","24cf");
+        }
+        break;
+    case CIRCLX:
+        if (record->event.pressed) {
+            symbol_key_linux("24e7","24cd");
+        }
+        break;
+    case CIRCLC:
+        if (record->event.pressed) {
+            symbol_key_linux("24d2","24b8");
+        }
+        break;
+    case CIRCLV:
+        if (record->event.pressed) {
+            symbol_key_linux("24e5","24cb");
+        }
+        break;
+    case CIRCLB:
+        if (record->event.pressed) {
+            symbol_key_linux("24d1","24b7");
+        }
+        break;
+    case CIRCLN:
+        if (record->event.pressed) {
+            symbol_key_linux("24dd","24c3");
+        }
+        break;
+    case CIRCLM:
+        if (record->event.pressed) {
+            symbol_key_linux("24dc","24c2");
+        }
+        break;
     case COLORTEST:
         if (record->event.pressed) {
             color_test_timer = timer_read();
@@ -1319,6 +1558,10 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         rgb_matrix_set_color(I_INDICATOR, RGB_PURPLE);
         rgb_matrix_set_color(I_INDICATOR2, RGB_PURPLE);
         break;
+    case CIRCLE_TEXT_LAYR:
+        rgb_matrix_set_color(I_INDICATOR, RGB_CORAL);
+        rgb_matrix_set_color(I_INDICATOR2, RGB_CORAL);
+        break;
     case LOCK_LAYR:
         break;
     default:
@@ -1359,6 +1602,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         break;
                     case WIDE_TEXT_LAYR:
                         rgb_matrix_set_color(index, RGB_PURPLE);
+                        break;
+                    case CIRCLE_TEXT_LAYR:
+                        rgb_matrix_set_color(index, RGB_CORAL);
                         break;
                     case LOCK_LAYR:
                         break;
@@ -1432,6 +1678,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 break;
             case WIDE_TEXT_LAYR:
                 rgb_matrix_set_color(I_RSFT, RGB_PURPLE);   // rshift
+                break;
+            case CIRCLE_TEXT_LAYR:
+                rgb_matrix_set_color(I_RSFT, RGB_CORAL);      // rshift
                 break;
             }
         }
@@ -1714,7 +1963,8 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 bool key_should_fade(keytracker key, uint8_t layer) {
     bool should_fade = true;
     if ((key.fade < 1) || 
-      ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_TEXT_LAYR || is_caps_word_on()) &&
+      ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_TEXT_LAYR ||
+        layer == CIRCLE_TEXT_LAYR || is_caps_word_on()) &&
         (key.index == I_LSFT || key.index == I_RSFT)) ||                                           // left and right shift
       ((layer == FN_LAYR || layer == CTL_LAYR) &&
             (key.index == I_LALT || key.index == I_RCTL)) ||                                       // left alt and right ctrl
@@ -2284,6 +2534,15 @@ void rsft_finished (tap_dance_state_t *state, void *user_data) {
           clear_oneshot_layer_state(ONESHOT_PRESSED);
       }
       break;
+    case SINGLE_HOLD:
+      // check if this is caps word activation, otherwise regular shift
+      if (get_mods() & MOD_BIT(KC_LSFT)) {
+          caps_word_on();
+      }
+      else {
+          register_code(KC_RSFT);
+      }
+      break;
     case DOUBLE_TAP:
       // activate WIDE_TEXT_LAYR
       if (IS_LAYER_ON(WIDE_TEXT_LAYR)) {
@@ -2293,13 +2552,13 @@ void rsft_finished (tap_dance_state_t *state, void *user_data) {
           layer_lock_on(WIDE_TEXT_LAYR);
       }
       break;
-    case SINGLE_HOLD:
-      // check if this is caps word activation, otherwise regular shift
-      if (get_mods() & MOD_BIT(KC_LSFT)) {
-          caps_word_on();
+    case TRIPLE_TAP:
+      // activate CIRCLE_TEXT_LAYR
+      if (IS_LAYER_ON(CIRCLE_TEXT_LAYR)) {
+          layer_lock_off(CIRCLE_TEXT_LAYR);
       }
       else {
-          register_code(KC_RSFT);
+          layer_lock_on(CIRCLE_TEXT_LAYR);
       }
       break;
   }
@@ -2313,8 +2572,6 @@ void rsft_reset (tap_dance_state_t *state, void *user_data) {
           caps_word_on();
       }
       break;
-    case DOUBLE_TAP:
-      break;
     case SINGLE_HOLD:
       if (get_mods() & MOD_BIT(KC_LSFT)) {
           caps_word_on();
@@ -2322,6 +2579,10 @@ void rsft_reset (tap_dance_state_t *state, void *user_data) {
       else {
           unregister_code(KC_RSFT);
       }
+      break;
+    case DOUBLE_TAP:
+      break;
+    case TRIPLE_TAP:
       break;
   }
   rsft_tap_state.state = 0;
