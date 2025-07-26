@@ -151,6 +151,7 @@ enum my_keycodes {
     STHRU,
     UNDERLN,
     BARTEXT,
+    BBRTEXT,
     COLORTEST,
     FLASH_KB,
     BOOTLDR
@@ -329,7 +330,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [WIDE_TEXT_LAYR] = LAYOUT_65_ansi_blocker(
-        _______, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,    _______,   KC_MUTE,
+        _______, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,    _______,   BBRTEXT,
         _______,   LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,  LTRANS,  LTRANS,    BARTEXT,
         _______,     LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        _______,      STHRU,
         _______,          LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    _______,  _______, UNDERLN,
@@ -416,6 +417,7 @@ enum key_indexes {
     I_N0 = 64,
     I_MIN = 65,
     I_PLUS = 66,
+    I_BBRTEXT = 67,
     I_TAB = 53,
     I_Q = 52,
     I_W = 51,
@@ -604,9 +606,14 @@ uint32_t osl_macro_callback(uint32_t trigger_time, void *cb_arg) {
 }
 
 // for tracking wide-text options for the WIDE_TEXT_LAYR
-bool wide_sthru = false;
-bool wide_underln = false;
-bool wide_bartext = false;
+enum {
+    WIDE_STANDARD,
+    WIDE_STHRU,
+    WIDE_UNDERLN,
+    WIDE_BARTEXT,
+    WIDE_BBRTEXT
+};
+uint8_t wide_text_mode = WIDE_STANDARD;
 bool wide_firstchar = false;
 
 // for tracking if an accent char tap dance should light up a particular key to show what the tap will send
@@ -692,10 +699,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
         }
     }
+
     // layer lock
     if (!process_layer_lock(keycode, record, LLOCK)) {
        return false;
     }  
+
     switch (keycode) {
     // this is a custom version of KC_TRANS to press a key on default layer
     // setup so that I can use LTRANS in the keymap to denote which fallthrough keys get lit up on the layer
@@ -712,38 +721,51 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 register_mods(mods);   // reapply mods
             }
             // for some wide modes, should start with the spacing char
-            else if (layer == WIDE_TEXT_LAYR && wide_firstchar) {
+            if (layer == WIDE_TEXT_LAYR && wide_firstchar) {
                 unregister_mods(mods); // temp remove mods
-                if (wide_bartext) {
-                    tap_code16(KC_PIPE);
-                }
-                else if (wide_sthru) {
+                switch (wide_text_mode) {
+                case WIDE_STHRU:
                     tap_code16(KC_MINS);
-                }
-                else if (wide_underln) {
+                    break;
+                case WIDE_UNDERLN:
                     tap_code16(KC_UNDS);
+                    break;
+                case WIDE_BARTEXT:
+                    tap_code16(KC_PIPE);
+                    break;
+                case WIDE_BBRTEXT:
+                    symbol_key_linux("00a6","");
+                    break;
+                default:
+                    break;
                 }
                 register_mods(mods);   // reapply mods
-                wide_firstchar = false;
             }
-            // send keydown from the default layer
+
             register_code(keymap_key_to_keycode(biton32(default_layer_state), record->event.key));
+
             // if WIDE_TEXT_LAYER, add the extra spacing char
             if (layer == WIDE_TEXT_LAYR) {
                 unregister_mods(mods); // temp remove mods
-                if (wide_bartext) {
-                    tap_code16(KC_PIPE);
-                }
-                else if (wide_sthru) {
+                switch (wide_text_mode) {
+                case WIDE_STHRU:
                     tap_code16(KC_MINS);
-                }
-                else if (wide_underln) {
+                    break;
+                case WIDE_UNDERLN:
                     tap_code16(KC_UNDS);
-                }
-                else {
+                    break;
+                case WIDE_BARTEXT:
+                    tap_code16(KC_PIPE);
+                    break;
+                case WIDE_BBRTEXT:
+                    symbol_key_linux("00a6","");
+                    break;
+                default:
                     tap_code16(KC_SPC);
+                    break;
                 }
                 register_mods(mods);   // reapply mods
+                wide_firstchar = false;
             }
         }
         else {
@@ -1037,42 +1059,48 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         break;
     case STHRU:
         if (record->event.pressed) {
-            if (wide_sthru) {
-                wide_sthru = false;
+            if (wide_text_mode == WIDE_STHRU) {
+                wide_text_mode = WIDE_STANDARD;
                 wide_firstchar = false;
             }
             else {
-                wide_bartext = false;
-                wide_sthru = true;
-                wide_underln = false;
+                wide_text_mode = WIDE_STHRU;
                 wide_firstchar = true;
             }
         }
         break;
     case UNDERLN:
         if (record->event.pressed) {
-            if (wide_underln) {
-                wide_underln = false;
+            if (wide_text_mode == WIDE_UNDERLN) {
+                wide_text_mode = WIDE_STANDARD;
                 wide_firstchar = false;
             }
             else {
-                wide_bartext = false;
-                wide_sthru = false;
-                wide_underln = true;
+                wide_text_mode = WIDE_UNDERLN;
                 wide_firstchar = true;
             }
         }
         break;
     case BARTEXT:
         if (record->event.pressed) {
-            if (wide_bartext) {
-                wide_bartext = false;
+            if (wide_text_mode == WIDE_BARTEXT) {
+                wide_text_mode = WIDE_STANDARD;
                 wide_firstchar = false;
             }
             else {
-                wide_bartext = true;
-                wide_sthru = false;
-                wide_underln = false;
+                wide_text_mode = WIDE_BARTEXT;
+                wide_firstchar = true;
+            }
+        }
+        break;
+    case BBRTEXT:
+        if (record->event.pressed) {
+            if (wide_text_mode == WIDE_BBRTEXT) {
+                wide_text_mode = WIDE_STANDARD;
+                wide_firstchar = false;
+            }
+            else {
+                wide_text_mode = WIDE_BBRTEXT;
                 wide_firstchar = true;
             }
         }
@@ -1600,17 +1628,26 @@ void symbol_key_linux(const char *hex_code, const char *shift_hex_code) {
     const uint8_t mods = get_mods();
     const uint8_t oneshot_mods = get_oneshot_mods();
     const char *ucode = ((mods | oneshot_mods) & MOD_MASK_SHIFT) ? shift_hex_code : hex_code;
+    uint8_t layer = get_highest_layer(layer_state);
     if (ucode == NULL || *ucode == '\0') { // null or empty string
         return;
     }
     clear_oneshot_mods();
     unregister_mods(mods); // temp remove mods
-    tap_code16(C(S(KC_U))); // start the unicode sequence
-    // type the hex chars
-    send_string_with_delay(ucode,5);
-    // finish sequence
-    tap_code(KC_SPC);
-    register_mods(mods); // add back mods
+    // this alternate delay setup is needed specifically on the Yunzii for bbrtext to work right
+    if (layer == WIDE_TEXT_LAYR) {
+        send_string_with_delay(SS_LCTL(SS_LSFT(SS_TAP(X_U))),5); // start the sequence
+        send_string_with_delay(ucode, 5); // type the ucode
+        send_string_with_delay(SS_TAP(X_SPC), 16); // finish sequence
+    }
+    else {
+        tap_code16(C(S(KC_U))); // start the unicode sequence
+        // type the hex chars
+        send_string_with_delay(ucode,5);
+        // finish sequence
+        tap_code(KC_SPC);
+    }
+    register_mods(mods);
 }
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
@@ -2023,14 +2060,21 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 
     // track mode keys on WIDE_TEXT_LAYR
     if (layer == WIDE_TEXT_LAYR) {
-        if (wide_bartext) {
-            rgb_matrix_set_color(I_BARTEXT, 0x77, 0x77, 0x77);  // bartext toggle
-        }
-        else if (wide_sthru) {
-            rgb_matrix_set_color(I_STHRU, 0x77, 0x77, 0x77);    // sthru toggle
-        }
-        else if (wide_underln) {
-            rgb_matrix_set_color(I_UNDERLN, 0x77, 0x77, 0x77);  // underln toggle
+        switch (wide_text_mode) {
+        case WIDE_STHRU:
+            rgb_matrix_set_color(I_STHRU, RGB_WHITE);    // sthru toggle
+            break;
+        case WIDE_UNDERLN:
+            rgb_matrix_set_color(I_UNDERLN, RGB_WHITE);  // underln toggle
+            break;
+        case WIDE_BARTEXT:
+            rgb_matrix_set_color(I_BARTEXT, RGB_WHITE);  // bartext toggle
+            break;
+        case WIDE_BBRTEXT:
+            rgb_matrix_set_color(I_BBRTEXT, RGB_WHITE);  // bbrtext toggle
+            break;
+        default:
+            break;
         }
     }
     // track caps_lock
@@ -2062,7 +2106,8 @@ bool key_should_fade(keytracker key, uint8_t layer) {
       (layer == SFT_LAYR && key.index == I_NUMLOCK) ||                                             // num lock key
       (layer == FN_LAYR && key.index == I_SLOCK) ||                                                // scroll lock
       (layer == WIDE_TEXT_LAYR &&
-        (key.index == I_BARTEXT || key.index == I_STHRU || key.index == I_UNDERLN)) ||             // wide-text mode toggles
+        (key.index == I_BARTEXT || key.index == I_STHRU ||
+         key.index == I_UNDERLN || key.index == I_BBRTEXT)) ||                                     // wide-text mode toggles
       (layer == CTL_LAYR && (key.index == I_FJLIGHT || key.index == I_HROWLIGHT)) ||               // fj/hrow light keys 
       (layer == BASE_LAYR && key.index == I_FN) ||                                                 // fn on base 
       (layer == SYMBOL_LAYR && (key.index == I_GRV || key.index == I_N1 || key.index == I_E ||
