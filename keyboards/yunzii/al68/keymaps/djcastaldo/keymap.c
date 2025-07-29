@@ -1624,16 +1624,17 @@ void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask) {
 }
 
 void symbol_key_linux(const char *hex_code, const char *shift_hex_code) {
-    // get current mod and one-shot mod states.
+    // get current mod states
     const uint8_t mods = get_mods();
+    const uint8_t weak_mods = get_weak_mods();
     const uint8_t oneshot_mods = get_oneshot_mods();
-    const char *ucode = ((mods | oneshot_mods) & MOD_MASK_SHIFT) ? shift_hex_code : hex_code;
+    const char *ucode = ((mods | weak_mods | oneshot_mods) & MOD_MASK_SHIFT) ? shift_hex_code : hex_code;
     uint8_t layer = get_highest_layer(layer_state);
     if (ucode == NULL || *ucode == '\0') { // null or empty string
         return;
     }
-    clear_oneshot_mods();
-    unregister_mods(mods); // temp remove mods
+    clear_mods(); // temp remove mods
+    clear_weak_mods();
     // this alternate delay setup is needed specifically on the Yunzii for bbrtext to work right
     if (layer == WIDE_TEXT_LAYR) {
         send_string_with_delay(SS_LCTL(SS_LSFT(SS_TAP(X_U))),5); // start the sequence
