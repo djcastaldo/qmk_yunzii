@@ -1593,7 +1593,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     case FLASH_KB:
         if (record->event.pressed) {
            // command to flash this keyboard
-           send_string("qmk flash -kb yunzii/al68 -km djcastaldo\n");
+           send_string("qmk flash -j 0 -kb " QMK_KEYBOARD " -km " QMK_KEYMAP "\n");
         }
         break;
     case BOOTLDR:
@@ -2951,34 +2951,34 @@ void leader_end_user(void) {
         SEND_STRING("git checkout .\n");
     }
     else if (leader_sequence_three_keys(KC_Q, KC_C, KC_B)) {  // qmk compile shortcutstudio bridge75 firmware
-        SEND_STRING("qmk compile -kb shortcut/bridge75 -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk compile -j 0 -kb shortcut/bridge75 -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_three_keys(KC_Q, KC_F, KC_B)) {  // qmk flash shortcutstudio bridge75 firmware
-        SEND_STRING("qmk flash -kb shortcut/bridge75 -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk flash -j 0 -kb shortcut/bridge75 -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_three_keys(KC_Q, KC_C, KC_Y)) {  // qmk compile yunzii firmware
-        SEND_STRING("qmk compile -kb yunzii/al68 -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk compile -j 0 -kb yunzii/al68 -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_three_keys(KC_Q, KC_F, KC_Y)) {  // qmk flash yunzii firmware
-        SEND_STRING("qmk flash -kb yunzii/al68 -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk flash -j 0 -kb yunzii/al68 -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_three_keys(KC_Q, KC_C, KC_L)) {  // qmk compile lemokey p1 firmware
-        SEND_STRING("qmk compile -kb lemokey/p1_pro/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk compile -j 0 -kb lemokey/p1_pro/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_three_keys(KC_Q, KC_F, KC_L)) {  // qmk flash lemokey p1 firmware
-        SEND_STRING("qmk flash -kb lemokey/p1_pro/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk flash -j 0 -kb lemokey/p1_pro/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_four_keys(KC_Q, KC_C, KC_K, KC_V)) {  // qmk compile keychron V6 firmware
-        SEND_STRING("qmk compile -kb keychron/v6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk compile -j 0 -kb keychron/v6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_four_keys(KC_Q, KC_F, KC_K, KC_V)) {  // qmk flash keychron V6 firmware
-        SEND_STRING("qmk flash -kb keychron/v6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk flash -j 0 -kb keychron/v6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_four_keys(KC_Q, KC_C, KC_K, KC_Q)) {  // qmk compile keychron Q6 firmware
-        SEND_STRING("qmk compile -kb keychron/q6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk compile -j 0 -kb keychron/q6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_four_keys(KC_Q, KC_F, KC_K, KC_Q)) {  // qmk flash keychron Q6 firmware
-        SEND_STRING("qmk flash -kb keychron/q6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+        SEND_STRING("qmk flash -j 0 -kb keychron/q6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_C)) {  // asp.net decrypt connectionStrings path from clipboard
         send_string_with_delay("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf connectionStrings " SS_LCTL(SS_TAP(X_V)) SS_TAP(X_ENT),9);
