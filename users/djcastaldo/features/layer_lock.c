@@ -23,7 +23,7 @@
 #include "layer_lock.h"
 
 #pragma message \
-    "Layer Lock is now a core QMK feature! To use it, update your QMK set up and see https://docs.qmk.fm/features/layer_lock"
+    "Custom Layer Lock loaded"
 
 
 // The current lock state. The kth bit is on if layer k is locked.

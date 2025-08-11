@@ -40,3 +40,62 @@
 #define RGB_MATRIX_DEFAULT_SAT 255
 #define RGB_MATRIX_DEFAULT_VAL 220
 #define RGB_MATRIX_DEFAULT_SPD 80 
+
+/* for tmux send_string delays */
+#    define TMUX_DELAY 8
+
+/* monitored base layers for macos */
+#    define CONFIG_MACOS_BASE_LAYERS { MAC_BASE }
+#    define CONFIG_MACOS_BASE_LAYERS_COUNT 1
+#    define CONFIG_DEFAULT_MAC_LAYR MAC_BASE
+#    define CONFIG_DEFAULT_WIN_LAYR WIN_BASE
+
+/* monitored base layers for macos */
+#    define CONFIG_ALL_BASE_LAYERS { MAC_BASE, WIN_BASE }
+#    define CONFIG_ALL_BASE_LAYERS_COUNT 2
+
+/* key indexes that changed to shifted version when caps is used */
+#    define CONFIG_CAPSLOCK_SHIFTED ((i > 42 && i < 53) || (i > 25 && i < 35) || (i > 13 && i < 21))
+#    define CONFIG_CAPSWORD_EXTRA (i == 65)
+
+/* keyfade settings */
+#    define CONFIG_KEYFADE_START_DELAY 10
+#    define CONFIG_KEYFADE_START_VAL 119
+#    define CONFIG_KEYFADE_CALLBACK_INTERVAL 20
+
+/* rgb_matrix_indicators_advanced_user settings */
+#    define CONFIG_NO_RALT_KEY
+#    define CONFIG_NO_RCMD_KEY
+#    define CONFIG_RGB_LAYER_INDICATORS { I_INDICATOR, I_INDICATOR2}
+#    define CONFIG_RGB_LAYER_INDICATORS_COUNT 2
+#    define CONFIG_DEFAULT_INDICATOR_COLOR RGB_BLUE
+#    define CONFIG_KEY_INDEX_MAX 67
+#    define CONFIG_FN_LAYR_COLOR RGB_GREEN
+#    define CONFIG_MREC_KEY_COLOR RGB_MAGENTA
+#    define CONFIG_SHIFT_LAYR_COLOR RGB_ORANGE
+#    define CONFIG_KCTL_LAYR_COLOR RGB_RED
+#    define CONFIG_TMUX_LAYR_COLOR RGB_CYAN
+#    define CONFIG_SYM_LAYR_COLOR RGB_BLUE
+#    define CONFIG_WIDE_LAYR_COLOR RGB_PURPLE
+#    define CONFIG_CIRC_LAYR_COLOR RGB_CORAL
+#    define CONFIG_EMO_LAYR_COLOR RGB_YELLOW
+#    define CONFIG_DEFUALT_LAYR_COLOR 0x77,0x77,0x77
+#    define CONFIG_EXTRA_BASE_LAYR_COLORS \
+     { \
+         { I_CAPS, RGB_BLUE }, \
+         { I_FN, RGB_BLUE }, \
+         { I_TAB, 0x77,0x77,0x77 }, \
+     }
+#    define CONFIG_EXTRA_BASE_LAYR_COLORS_COUNT 3
+#    define CONFIG_ACCENT_KEY_COLOR RGB_YELLOW
+#    define CONFIG_CAPS_WORD_SHIFT_COLOR RGB_WHITE 
+#    define CONFIG_HROWLIGHT_COLOR RGB_GREEN
+#    define CONFIG_FJLIGHT_COLOR RGB_WHITE
+#    define CONFIG_LEADER_COLORA RGB_TURQUOISE
+#    define CONFIG_LEADER_COLORB RGB_CYAN
+#    define CONFIG_KEYLIGHT_STD_COLOR RGB_WHITE
+#    define CONFIG_EEPROM_RESET_DEFAULT_LAYER WIN_BASE
+#    define CONFIG_EEPROM_RESET_DEFAULT_IS_LINUX
+#    define CONFIG_LOCK_LAYR_EXTRA_FLASH_KEYS { I_ESC, I_ENT }
+#    define CONFIG_LOCK_LAYR_EXTRA_FLASH_KEYS_COUNT 2
+#    define CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR RGB_BLUE
