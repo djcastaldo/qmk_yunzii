@@ -398,6 +398,8 @@ void lopt_finished (tap_dance_state_t *state, void *user_data);
 void lopt_reset (tap_dance_state_t *state, void *user_data);
 void ropt_finished (tap_dance_state_t *state, void *user_data);
 void ropt_reset (tap_dance_state_t *state, void *user_data);
+void rctl_finished (tap_dance_state_t *state, void *user_data);
+void rctl_reset (tap_dance_state_t *state, void *user_data);
 void macl_finished (tap_dance_state_t *state, void *user_data);
 void macl_reset (tap_dance_state_t *state, void *user_data);
 
