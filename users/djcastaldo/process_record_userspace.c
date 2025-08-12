@@ -772,7 +772,15 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case ENC_UNIMENU:
         if (record->event.pressed) {
             // standard: unicode menu, while command or control is held: enter
-            dual_key(UNICODE,KC_ENT,MOD_MASK_GUI | MOD_MASK_CTRL);
+            if (is_mac_base()) {
+                dual_key(UNICODE,KC_ENT,MOD_MASK_GUI | MOD_MASK_CTRL);
+            }
+            else if (user_config.is_linux_base) {
+                dual_key(LCTL(KC_SCLN),KC_SPC,MOD_MASK_GUI | MOD_MASK_CTRL);
+            }
+            else {
+                dual_key(LGUI(KC_SCLN),KC_SPC,MOD_MASK_GUI | MOD_MASK_CTRL);
+            }
         }
         return false;
     case ENC_MENUL:

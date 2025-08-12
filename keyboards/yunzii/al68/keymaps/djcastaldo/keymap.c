@@ -174,7 +174,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [WSYM_LAYR] = LAYOUT_65_ansi_blocker(
-        TD(ACT_GRV), TD(ACT_1), OPT2, OPT3, OPT4, OPT5,  OPT6,   OPT7,  OPT8,   OPT9,  OPT0,   OPTMIN,  OPTEQ,       _______,   KC_MUTE,
+        TD(ACT_GRV), TD(ACT_1), OPT2, OPT3, OPT4, OPT5,  OPT6,   OPT7,  OPT8,   OPT9,  OPT0,   OPTMIN,  OPTEQ,     _______, ENC_UNIMENU,
         _______,    OPTQ,  OPTW, TD(ACT_E), OPTR,  OPTT,   OPTY, TD(ACT_U), TD(ACT_I), OPTO, OPTP,  OPTLBR,  OPTRBR, OPTBSL,    _______,
         _______,        OPTA,  OPTS,  OPTD,  OPTF,   OPTG,     OPTH,   OPTJ,   OPTK,   OPTL,   OPTSEM, OPTAPO,      _______,    _______,
         _______,           OPTZ,  OPTX,  OPTC,   OPTV,   OPTB, TD(ACT_N),  OPTM,  OPTCOM,  OPTDOT, OPTSLS,   _______,  _______, _______,
@@ -195,7 +195,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [MSYM_LAYR] = LAYOUT_65_ansi_blocker(
-        MSYMGRV, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,       _______, KC_MUTE,
+        MSYMGRV, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,   _______, ENC_UNIMENU,
         _______,  LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    LTRANS,    _______,
         _______,    LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,         _______,    _______,
         KC_LSFT,      LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        KC_RSFT,  _______, _______,
@@ -295,8 +295,8 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [SFT_LAYR]  =  { ENCODER_CCW_CW(ENC_SCROLLAPPL, ENC_SCROLLAPPR) },
     [KCTL_LAYR] =  { ENCODER_CCW_CW(ENC_RGBL, ENC_RGBR) },
     [TMUX_LAYR] =  { ENCODER_CCW_CW(ENC_TSIZEL, ENC_TSIZER) },
-    [WSYM_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
-    [MSYM_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
+    [WSYM_LAYR] =  { ENCODER_CCW_CW(ENC_MENUL, ENC_MENUR) },
+    [MSYM_LAYR] =  { ENCODER_CCW_CW(ENC_MENUL, ENC_MENUR) },
     [WIDE_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
     [CIRC_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
     [EMO_LAYR]  =  { ENCODER_CCW_CW(ENC_MENUL, ENC_MENUR) },
