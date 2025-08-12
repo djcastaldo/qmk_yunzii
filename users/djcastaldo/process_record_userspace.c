@@ -794,14 +794,30 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         return false;
     case ENC_MENUL:
         if (record->event.pressed) {
-            // standard: key up, while command or control is held: keypad left
-            dual_key(KC_UP,KC_LEFT,MOD_MASK_GUI | MOD_MASK_CTRL);
+            uint8_t mods = get_mods();
+            if (mods & (MOD_BIT(KC_LALT) | MOD_BIT(KC_RALT))) {
+                del_mods(MOD_BIT(KC_LALT) | MOD_BIT(KC_RALT));
+                dual_key(KC_UP,KC_LEFT,MOD_MASK_GUI | MOD_MASK_CTRL);
+                set_mods(mods);
+            }
+            else {
+                // standard: key up, while command or control is held: keypad left
+                dual_key(KC_UP,KC_LEFT,MOD_MASK_GUI | MOD_MASK_CTRL);
+            }
         }
         return false;
     case ENC_MENUR:
         if (record->event.pressed) {
-            // standard: key down, while command or control is held: keypad right
-            dual_key(KC_DOWN,KC_RIGHT,MOD_MASK_GUI | MOD_MASK_CTRL);
+            uint8_t mods = get_mods();
+            if (mods & (MOD_BIT(KC_LALT) | MOD_BIT(KC_RALT))) {
+                del_mods(MOD_BIT(KC_LALT) | MOD_BIT(KC_RALT));
+                dual_key(KC_DOWN,KC_RIGHT,MOD_MASK_GUI | MOD_MASK_CTRL);
+                set_mods(mods);
+            }
+            else {
+                // standard: key down, while command or control is held: keypad right
+                dual_key(KC_DOWN,KC_RIGHT,MOD_MASK_GUI | MOD_MASK_CTRL);
+            }
         }
         return false;
     case ENC_APPHIDE:
