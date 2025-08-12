@@ -4433,6 +4433,8 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
         case TRIPLE_TAP:
             layer_off(LOCK_LAYR); // three taps unlocks the LOCK_LAYR
             rgb_matrix_mode(user_config.rgb_mode);
+            // in case dip switch was changed while in lock mode
+            layer_move(get_highest_layer(default_layer_state));
             break;
         case SINGLE_HOLD:
             break;

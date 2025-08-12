@@ -16,7 +16,7 @@
 #include QMK_KEYBOARD_H
 // #include "common/smart_ble.h"
 #include "layers.h"
-#include "users/djcastaldo/process_record_userspace.h"
+#include "process_record_userspace.h"
 
 __attribute__ ((weak))
 bool process_record_secrets(uint16_t keycode, keyrecord_t *record) {

@@ -22,7 +22,7 @@
 #include "keycodes.h"
 #include "debug.h"
 #include "wait.h"
-#include "users/djcastaldo/features/layer_lock.h"
+#include "features/layer_lock.h"
 
 #ifdef BACKLIGHT_ENABLE
 #    include "backlight.h"

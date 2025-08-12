@@ -1,5 +1,7 @@
 USER_NAME := djcastaldo
 USER_PATH := users/$(USER_NAME)
+EFLAG_PATH := -I$(USER_PATH)
+EXTRAFLAGS += $(EFLAG_PATH)
 include $(USER_PATH)/rules.mk
 CONSOLE_ENABLE = no
 LTO_ENABLE = yes
