@@ -790,6 +790,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case ENC_APPHIDE:
         if (record->event.pressed) {
             // standard or app switcher running: h (hide app windows), while cmd is held: mouse jiggler
+            // or just hit enter if running windows or linux mode
             const uint8_t mods = get_mods();
             const uint8_t oneshot_mods = get_oneshot_mods();
             if (((mods | oneshot_mods) & (MOD_MASK_GUI | MOD_MASK_CTRL)) && !app_switch_active()) {
@@ -804,7 +805,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                         del_mods(MOD_BIT(KC_LCTL));
                         ctrl_removed = true;
                     }
-                    tap_code(KC_H);
+                    tap_code(is_mac_base() ? KC_H : KC_ENT);
                     if (ctrl_removed) {
                         register_mods(MOD_BIT(KC_LCTL));
                     }
@@ -833,7 +834,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 if (!is_cmd_shift_tab_active) {
                     is_cmd_shift_tab_active = true;
                     is_cmd_tab_active = false;
-                    register_code(KC_RCMD);
+                    register_code(is_mac_base() || user_config.is_linux_base ? KC_RCMD : KC_RALT);
                     register_code(KC_LSFT);
                 }
                 tap_code(KC_TAB);
@@ -864,7 +865,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 if (!is_cmd_tab_active) {
                     is_cmd_tab_active = true;
                     is_cmd_shift_tab_active = false;
-                    register_code(KC_RCMD);
+                    register_code(is_mac_base() || user_config.is_linux_base ? KC_RCMD : KC_RALT);
                     unregister_code(KC_LSFT);
                 }
                 tap_code(KC_TAB);
@@ -5391,7 +5392,7 @@ uint32_t sim_osl_callback(uint32_t trigger_time, void* cb_arg) {
 }
 // callback to turn off app-switch mode
 uint32_t cmd_tab_callback(uint32_t trigger_time, void* cb_arg) {
-    unregister_code(KC_RCMD);
+    unregister_code(is_mac_base() || user_config.is_linux_base ? KC_RCMD : KC_RALT);
     unregister_code(KC_LSFT);
     is_cmd_tab_active = false;
     is_cmd_shift_tab_active = false;
