@@ -771,9 +771,18 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         return false;
     case ENC_UNIMENU:
         if (record->event.pressed) {
+            // sometimes this keycode is used on a layer where lopt might be held
+            uint8_t mods = get_mods();
             // standard: unicode menu, while command or control is held: enter
             if (is_mac_base()) {
-                dual_key(UNICODE,KC_ENT,MOD_MASK_GUI | MOD_MASK_CTRL);
+                if (mods & (MOD_BIT(KC_LALT) | MOD_BIT(KC_RALT))) {
+                    del_mods(MOD_BIT(KC_LALT) | MOD_BIT(KC_RALT));
+                    dual_key(UNICODE,KC_ENT,MOD_MASK_GUI | MOD_MASK_CTRL);
+                    set_mods(mods);
+                }
+                else {
+                    dual_key(UNICODE,KC_ENT,MOD_MASK_GUI | MOD_MASK_CTRL);
+                }
             }
             else if (user_config.is_linux_base) {
                 dual_key(LCTL(KC_SCLN),KC_SPC,MOD_MASK_GUI | MOD_MASK_CTRL);
