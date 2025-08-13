@@ -562,20 +562,32 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         return false;
     case FJLIGHT:
         if (record->event.pressed) {
-	   // update the var used for f and j home key highlighting
-	   fj_light = !fj_light;
-	}
+            // update the var used for f and j home key highlighting
+            fj_light = !fj_light;
+        }
         return false;
     case HROWLIGHT:
         if (record->event.pressed) {
-	   // update the var used for full home row keys highlighting
-	   hrow_light = !hrow_light;
-	}
+        #ifdef KEYBOARD_IS_65
+            uint8_t layer = get_highest_layer(layer_state);
+            if (get_mods() & MOD_MASK_CTRL) {
+                if (!is_base_layer(layer)) {
+                    if (is_layer_locked(layer))
+                        layer_lock_off(layer);
+                    else
+                        layer_lock_on(layer);
+                    return false;
+                }
+            }
+        #endif
+            // update the var used for full home row keys highlighting
+            hrow_light = !hrow_light;
+        }
         return false;
     case KTRACK:
         if (record->event.pressed) {
-           // update the var used to enable/disable keytracker and per-key fade
-           enable_keytracker = !enable_keytracker;
+            // update the var used to enable/disable keytracker and per-key fade
+            enable_keytracker = !enable_keytracker;
         }
         return false;
     case WAVE:  // Types ~=~=~=~=~=~ or <~>~<~>~<~>~<~>
@@ -2905,6 +2917,22 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
          }
          break;
     #endif
+#endif
+#ifdef KEYBOARD_IS_65
+    case KC_ENT:
+        if (record->event.pressed) {
+            uint8_t layer = get_highest_layer(layer_state);
+            if (get_mods() & MOD_MASK_CTRL) {
+                if (!is_base_layer(layer)) {
+                    if (is_layer_locked(layer))
+                        layer_lock_off(layer);
+                    else
+                        layer_lock_on(layer);
+                    return false;
+                }
+            }
+        }
+        break;
 #endif
     case FLASH_KB:
         if (record->event.pressed) {
