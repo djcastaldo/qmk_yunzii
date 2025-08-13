@@ -14,6 +14,9 @@
 #if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
     #include "quantum.h"
 #endif
+#ifdef KEYBOARD_IS_BRIDGE
+    #include "wireless.h"
+#endif
 
 user_config_t user_config;
 #ifdef CONFIG_MACOS_BASE_LAYERS
@@ -97,6 +100,11 @@ const uint8_t win_base_change_group_count = CONFIG_WIN_BASE_CHANGE_GROUP_COUNT;
 const uint8_t win_base_change_group_count = 0;
 #endif
 
+
+__attribute__ ((weak))
+bool rgb_matrix_indicators_keymap(uint8_t led_min, uint8_t led_max) {
+  return false;
+}
 
 // setup keytracker
 deferred_token key_token = INVALID_DEFERRED_TOKEN;
@@ -197,9 +205,56 @@ deferred_token wireless_mode_token = INVALID_DEFERRED_TOKEN;
 uint32_t wls_action_timer;
 #endif
 #endif
+#ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+static uint32_t lock_anim_timer = 0;
+static bool lock_anim_active = false;
+#endif
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+static uint32_t rgb_last_activity_timer = 0;
+static bool rgb_timeout_active = false;
+static bool bt_is_on = true;
+static bool warning_active = false;
+static uint32_t last_blink = 0;
+static bool warning_led_state = false;
+void reset_rgb_timeout_timer(void) {
+    rgb_last_activity_timer = timer_read32();
+
+    if (get_highest_layer(layer_state) == LOCK_LAYR) {
+        lock_anim_timer = timer_read32();
+        lock_anim_active = true;
+    }
+
+    // cancel warning if it was active
+    if (warning_active) {
+        warning_active = false;
+    }
+
+    // turn bt back on if it was off
+    if (!bt_is_on) {
+        #ifndef KEYBOARD_IS_BRIDGE
+        suspend_wakeup_init_user();
+        #endif
+        #ifdef KEYBOARD_IS_BRIDGE
+        wls_transport_enable(true);
+        #endif
+        bt_is_on = true;
+    }
+
+    // turn rgb back on if it was off
+    if (rgb_timeout_active) {
+        rgb_matrix_enable_noeeprom();
+        rgb_timeout_active = false;
+    }
+}
+#endif
 
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    if (record->event.pressed) {
+        reset_rgb_timeout_timer();
+    }
+#endif
     // record key index pressed for rgb reactive changes
     if (enable_keytracker && !is_macro_playing && keycode != QK_LEAD && keycode != KC_NO) {
         uint8_t key_idx = g_led_config.matrix_co[record->event.key.row][record->event.key.col];
@@ -272,6 +327,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
 #endif
     }
+
+#ifndef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+    // lock animation should come back if key pressed and then timeout again after set time
+    if (get_highest_layer(layer_state) == LOCK_LAYR && record->event.pressed) {
+        if (!rgb_matrix_is_enabled()) { // if currently off
+            lock_anim_timer = timer_read32();
+            lock_anim_active = true;
+            rgb_matrix_enable_noeeprom();
+        }
+    }
+    #endif
+#endif
 
     // stop color test if active and a key is pressed
     if (color_test && record->event.pressed) {
@@ -923,7 +991,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 rgb_matrix_set_speed(RGB_MATRIX_DEFAULT_SPD);
             }
             else if ((mods & MOD_MASK_CTRL) && (mods & (MOD_MASK_ALT | MOD_MASK_GUI))) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_mode(RGB_MATRIX_DEFAULT_MODE);
             }
             else if (mods & MOD_MASK_CTRL) {
@@ -951,19 +1019,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // get current mod states
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_SHIFT) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_decrease_speed();
             }
             else if ((mods & MOD_MASK_CTRL) && (mods & (MOD_MASK_ALT | MOD_MASK_GUI))) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_step_reverse();
             }
             else if (mods & MOD_MASK_CTRL) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_decrease_hue();
             }
             else if (mods & (MOD_MASK_ALT | MOD_MASK_GUI)) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_decrease_sat();
             }
             else {
@@ -978,19 +1046,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // get current mod states
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_SHIFT) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_increase_speed();
             }
             else if ((mods & MOD_MASK_CTRL) && (mods & (MOD_MASK_ALT | MOD_MASK_GUI))) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_step();
             }
             else if (mods & MOD_MASK_CTRL) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_increase_hue();
             }
             else if (mods & (MOD_MASK_ALT | MOD_MASK_GUI)) {
-                rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_increase_sat();
             }
             else {
@@ -1053,7 +1121,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case RGB_SPD:
     case RGB_SPI:
         if (record->event.pressed)
-            rgb_matrix_sethsv(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+            rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
         break;
     case DUAL_PLUSMIN:
         if (record->event.pressed) {
@@ -2982,8 +3050,16 @@ bool process_leader_userspace(void) {
     else if (leader_sequence_four_keys(KC_L, KC_O, KC_C, KC_K)) { // switch to LOCK_LAYR
         user_config.rgb_mode = rgb_matrix_get_mode();
         eeconfig_update_user(user_config.raw);
-        rgb_matrix_mode(RGB_MATRIX_BAND_VAL);
         layer_on(LOCK_LAYR);
+        #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+        lock_anim_timer = timer_read32();
+        lock_anim_active = true;
+        #endif
+        #ifdef CONFIG_LOCK_ANIMATION
+        rgb_matrix_mode_noeeprom(CONFIG_LOCK_ANIMATION);
+        #else
+        rgb_matrix_mode_noeeprom(RGB_MATRIX_BAND_VAL);
+        #endif
     }
 #if defined(CONFIG_MAC_BASE_CHANGE_GROUP) || defined(CONFIG_WIN_BASE_CHANGE_GROUP)
     else if (leader_sequence_four_keys(KC_B, KC_A, KC_S, KC_E)) { // change base within a base group
@@ -3590,19 +3666,21 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 if (is_layer_lock_led_on) {
                 #ifdef CONFIG_HAS_LLOCK_KEY
                     rgb_matrix_set_color(I_LLOCK, RGB_WHITE); // just make it white
-                #endif
+                #else
                     for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                         rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                     }
+                #endif
                 }
                 else if ((timer_elapsed(layer_lock_timer) > 200 && timer_elapsed(layer_lock_timer) < 400) || 
                          (timer_elapsed(layer_lock_timer) > 600)) {
                 #ifdef CONFIG_HAS_LLOCK_KEY
                     rgb_matrix_set_color(I_LLOCK, RGB_WHITE); // white alternate with layer color
-                #endif
+                #else
                     for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                         rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                     }
+                #endif
                 }
             }
         }
@@ -4031,6 +4109,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         if (layer == FN_LAYR && host_keyboard_led_state().scroll_lock) {
             rgb_matrix_set_color(I_SLOCK, RGB_WHITE);
         }
+        #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+        // check if lock animation is on and have it timeout
+        if (lock_anim_active && timer_elapsed32(lock_anim_timer) > CONFIG_LOCK_ANIMATION_TIMEOUT) {
+            #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+            rgb_last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
+            #else
+            rgb_matrix_disable_noeeprom();
+            #endif
+            lock_anim_active = false;
+        }
+        #endif
             
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         #ifdef LK_WIRELESS_ENABLE
@@ -4060,8 +4149,73 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 #ifdef CONFIG_HAS_KCLK_BATTERY
     }
 #endif
-    return false;
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
+    if (warning_active && timer_elapsed32(last_blink) > CONFIG_CUSTOM_BLINK_INTERVAL) {
+    #else
+    if (warning_active && timer_elapsed32(last_blink) > 250) {
+    #endif
+        last_blink        = timer_read32();
+        warning_led_state = !warning_led_state;
+    }
+
+    if (warning_active) {
+        if (I_ESC >= led_min && I_ESC < led_max) {
+            if (warning_led_state) {
+                rgb_matrix_set_color(I_ESC, RGB_RED);
+                for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                    rgb_matrix_set_color(I_ESC, RGB_RED);
+                }
+            } else {
+                rgb_matrix_set_color(I_ESC, RGB_BLACK);
+                for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                    rgb_matrix_set_color(I_ESC, RGB_BLACK);
+                }
+            }
+        }
+    }
+#endif
+    return rgb_matrix_indicators_keymap(led_min, led_max);
 }
+
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+void matrix_scan_user(void) {
+    #ifdef CONFIG_CUSTOM_SLEEP_WARNING
+    if (!rgb_timeout_active && !warning_active &&
+        timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - CONFIG_CUSTOM_SLEEP_WARNING) {
+    #else
+    if (!rgb_timeout_active && !warning_active &&
+        timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - 5000) {
+    #endif
+        warning_active = true;
+        #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
+        last_blink = timer_read32() - CONFIG_CUSTOM_BLINK_INTERVAL;
+        #else
+        last_blink = timer_read32() - 250;
+        #endif
+        warning_led_state = false;
+    }
+    if (!rgb_timeout_active && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
+        rgb_matrix_disable_noeeprom();
+        warning_active = false;
+        rgb_timeout_active = true;
+    }
+    #ifdef CONFIG_CUSTOM_BT_TURN_OFF_DELAY
+    if (bt_is_on && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
+    #else
+    if (bt_is_on && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + 5000) {
+    #endif
+        #ifdef KEYBOARD_IS_BRIDGE
+        wls_transport_enable(false);
+        #endif
+        #ifndef KEYBOARD_IS_BRIDGE
+        wait_ms(50);
+        suspend_power_down();
+        #endif
+        bt_is_on = false;
+    }
+}
+#endif
 
 // determine the current tap dance state
 int cur_dance (tap_dance_state_t *state) {
@@ -4466,9 +4620,12 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
             break;
         case TRIPLE_TAP:
             layer_off(LOCK_LAYR); // three taps unlocks the LOCK_LAYR
-            rgb_matrix_mode(user_config.rgb_mode);
+            #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+            lock_anim_active = false;
+            #endif
             // in case dip switch was changed while in lock mode
             layer_move(get_highest_layer(default_layer_state));
+            rgb_matrix_mode_noeeprom(user_config.rgb_mode);
             break;
         case SINGLE_HOLD:
             break;
@@ -5565,6 +5722,12 @@ bool is_base_layer(uint8_t layer) {
 bool app_switch_active(void) {
     return is_cmd_tab_active || is_cmd_shift_tab_active;
 }
+
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+void matrix_init_user(void) {
+    rgb_last_activity_timer = timer_read32();
+}
+#endif
 
 void keyboard_post_init_user(void) {
     // read the user config from EEPROM

@@ -8,7 +8,6 @@
 #elif defined(KEYBOARD_IS_LEMOKEY)
 #include "lemokey_common.h"
 #endif
-
 #include "features/layer_lock.h"
 
 #define NEWFINDER LOPT(LCMD(KC_SPC))            // open new Finder search window
