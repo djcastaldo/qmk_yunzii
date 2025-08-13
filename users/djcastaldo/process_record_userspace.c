@@ -568,7 +568,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         return false;
     case HROWLIGHT:
         if (record->event.pressed) {
-        #ifdef KEYBOARD_IS_65
+        #ifndef CONFIG_HAS_LLOCK_KEY
             uint8_t layer = get_highest_layer(layer_state);
             if (get_mods() & MOD_MASK_CTRL) {
                 if (!is_base_layer(layer)) {
@@ -2918,7 +2918,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
          break;
     #endif
 #endif
-#ifdef KEYBOARD_IS_65
+#ifndef CONFIG_HAS_LLOCK_KEY
     case KC_ENT:
         if (record->event.pressed) {
             uint8_t layer = get_highest_layer(layer_state);
