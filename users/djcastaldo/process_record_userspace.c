@@ -392,6 +392,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     }
                     else if (user_config.is_linux_base) {
                         symbol_key_linux("00a6","");
+                        wait_ms(10);
                     }
                     else {
                         symbol_key_win("0166","");
