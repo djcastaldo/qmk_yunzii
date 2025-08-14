@@ -3068,11 +3068,16 @@ bool process_leader_userspace(void) {
         }
     }
     else if (leader_sequence_three_keys(KC_L, KC_L, KC_E)) {      // layer lock EMO_LAYR
-        if (is_layer_locked(EMO_LAYR)) {
-            layer_lock_off(EMO_LAYR);
+        if (is_mac_base()) {
+            if (is_layer_locked(EMO_LAYR)) {
+                layer_lock_off(EMO_LAYR);
+            }
+            else {
+                layer_lock_on(EMO_LAYR);
+            }
         }
         else {
-            layer_lock_on(EMO_LAYR);
+            continue_leader_process = true;
         }
     }
     else if (leader_sequence_four_keys(KC_L, KC_O, KC_C, KC_K)) { // switch to LOCK_LAYR
@@ -3580,11 +3585,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_RALT, CONFIG_ACCENT_KEY_COLOR); // ralt
                         #endif
                         rgb_matrix_set_color(I_LGUI, CONFIG_ACCENT_KEY_COLOR); // lgui
+                        rgb_matrix_set_color(I_FN, CONFIG_ACCENT_KEY_COLOR);   // fn
                     #else
                         #ifndef CONFIG_NO_RALT_KEY
                         rgb_matrix_set_color(I_RALT, RGB_YELLOW); // ralt
                         #endif
                         rgb_matrix_set_color(I_LGUI, RGB_YELLOW); // lgui
+                        rgb_matrix_set_color(I_FN, RGB_YELLOW);   // fn
                     #endif
                     }
                     else {
@@ -3593,11 +3600,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_RALT, CONFIG_SYM_LAYR_COLOR);   // ralt
                         #endif
                         rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // lgui
+                        rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // fn
                     #else
                         #ifndef CONFIG_NO_RALT_KEY
                         rgb_matrix_set_color(I_RALT, RGB_BLUE);   // ralt
                         #endif
                         rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // lgui
+                        rgb_matrix_set_color(I_FN, RGB_BLUE);     // fn
                     #endif
                     }
                     break;
@@ -3607,16 +3616,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_LOPT, CONFIG_ACCENT_KEY_COLOR); // lopt
                         #ifdef CONFIG_HAS_ROPT_KEY
                         rgb_matrix_set_color(I_ROPT, CONFIG_ACCENT_KEY_COLOR); // ropt
-                        #else
-                        rgb_matrix_set_color(I_FN, CONFIG_ACCENT_KEY_COLOR);   // if no ropt, light fn
                         #endif
+                        rgb_matrix_set_color(I_FN, CONFIG_ACCENT_KEY_COLOR);   // fn
                     #else
                         rgb_matrix_set_color(I_LOPT, RGB_YELLOW); // lopt
                         #ifdef CONFIG_HAS_ROPT_KEY
                         rgb_matrix_set_color(I_ROPT, RGB_YELLOW); // ropt
-                        #else
-                        rgb_matrix_set_color(I_FN, RGB_YELLOW);   // if no ropt, light fn
                         #endif
+                        rgb_matrix_set_color(I_FN, RGB_YELLOW);   // fn
                     #endif
                     }
                     else {
@@ -3624,16 +3631,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_LOPT, CONFIG_SYM_LAYR_COLOR);   // lopt
                         #ifdef CONFIG_HAS_ROPT_KEY
                         rgb_matrix_set_color(I_ROPT, CONFIG_SYM_LAYR_COLOR);   // ropt
-                        #else
-                        rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // if no ropt, light fn
                         #endif
+                        rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // fn
                     #else
                         rgb_matrix_set_color(I_LOPT, RGB_BLUE);   // lopt
                         #ifdef CONFIG_HAS_ROPT_KEY
                         rgb_matrix_set_color(I_ROPT, RGB_BLUE);   // ropt
-                        #else
-                        rgb_matrix_set_color(I_FN, RGB_BLUE);     // if no ropt, light fn
                         #endif
+                        rgb_matrix_set_color(I_FN, RGB_BLUE);     // fn
                     #endif
                     }
                     break;
