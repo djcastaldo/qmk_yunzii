@@ -7,15 +7,15 @@
 #include "layers.h"
 #include "keyindex.h"
 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-    #include "wireless/battery.h"
-    #include "wireless/bat_level_animation.h"
-    #include "wireless/wireless.h"
+#include "wireless/battery.h"
+#include "wireless/bat_level_animation.h"
+#include "wireless/wireless.h"
 #endif
 #if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
-    #include "quantum.h"
+#include "quantum.h"
 #endif
 #ifdef KEYBOARD_IS_BRIDGE
-    #include "wireless.h"
+#include "wireless.h"
 #endif
 
 user_config_t user_config;
