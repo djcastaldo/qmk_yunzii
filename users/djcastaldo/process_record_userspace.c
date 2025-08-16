@@ -235,7 +235,7 @@ void reset_rgb_timeout_timer(void) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
         #endif
-        #ifdef KEYBOARD_IS_LEMOKEY
+        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
         set_animation_if_lock_layr();
         #else
@@ -246,7 +246,7 @@ void reset_rgb_timeout_timer(void) {
     }
     // if not in suspend yet, but rgb is off, turn rgb back on
     else if (rgb_timeout_active) {
-        #ifdef KEYBOARD_IS_LEMOKEY
+        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
         set_animation_if_lock_layr();
         #else
@@ -4162,7 +4162,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
             rgb_last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
             #else
-            #ifdef KEYBOARD_IS_LEMOKEY
+            #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
             rgb_matrix_sethsv_noeeprom(0, 0, 50);
             #else
             rgb_matrix_disable_noeeprom();
@@ -4247,7 +4247,7 @@ void matrix_scan_user(void) {
         warning_led_state = false;
     }
     if (!rgb_timeout_active && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
-        #ifdef KEYBOARD_IS_LEMOKEY
+        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_sethsv_noeeprom(0, 0, 50);
         #else
         rgb_matrix_disable_noeeprom();
@@ -4265,7 +4265,7 @@ void matrix_scan_user(void) {
         wait_ms(50);
         #endif
         bt_is_on = false;
-        #ifndef KEYBOARD_IS_LEMOKEY
+        #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY)
         suspend_power_down();
         #endif
     }
@@ -4278,11 +4278,8 @@ void suspend_wakeup_init_user(void) {
     set_animation_if_lock_layr();
     // keychron and lemokey need to send something to the host to fully wake up
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        bool prestate = host_keyboard_led_state().scroll_lock;
-        tap_code(KC_SCRL);
-        if (!is_mac_base() && prestate != host_keyboard_led_state().scroll_lock) {
-            tap_code(KC_SCRL);
-        }
+    tap_code(KC_CAPS);
+    tap_code(KC_CAPS);
     #endif
 }
 
