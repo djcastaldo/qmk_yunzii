@@ -205,9 +205,7 @@ deferred_token wireless_mode_token = INVALID_DEFERRED_TOKEN;
 uint32_t wls_action_timer;
 #endif
 #endif
-#ifdef CONFIG_HAS_KCLK_BATTERY
-static bool resume_from_suspend = false;
-#endif
+static bool rgb_indicators_enabled = true;
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
 static uint32_t lock_anim_timer = 0;
 static bool lock_anim_active = false;
@@ -219,14 +217,18 @@ static bool bt_is_on = true;
 static bool warning_active = false;
 static uint32_t last_blink = 0;
 static bool warning_led_state = false;
+#endif
 
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 void reset_rgb_timeout_timer(void) {
     rgb_last_activity_timer = timer_read32();
 
+    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
     if (get_highest_layer(layer_state) == LOCK_LAYR) {
         lock_anim_timer = timer_read32();
         lock_anim_active = true;
     }
+    #endif
 
     // cancel warning if it was active
     if (warning_active) {
@@ -244,7 +246,7 @@ void reset_rgb_timeout_timer(void) {
         #else
         suspend_wakeup_init_kb();
         #endif
-        rgb_timeout_active = false;
+        rgb_timeout_enable(false);
         bt_is_on = true;
     }
     // if not in suspend yet, but rgb is off, turn rgb back on
@@ -255,8 +257,15 @@ void reset_rgb_timeout_timer(void) {
         #else
         rgb_matrix_enable_noeeprom();
         #endif
-        rgb_timeout_active = false;
+        rgb_timeout_enable(false);
     }
+}
+#endif
+
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+void rgb_timeout_enable(bool enable) {
+    rgb_timeout_active = enable;
+    rgb_indicators_enabled = !enable;
 }
 #endif
 
@@ -345,10 +354,15 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // lock animation should come back if key pressed and then timeout again after set time
     if (get_highest_layer(layer_state) == LOCK_LAYR && record->event.pressed) {
         if (!rgb_matrix_is_enabled()) { // if currently off
-            lock_anim_timer = timer_read32();
-            lock_anim_active = true;
             rgb_matrix_enable_noeeprom();
         }
+        else if (!lock_anim_active) {
+            rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+            set_animation_if_lock_layr();
+        }
+        lock_anim_timer = timer_read32();
+        lock_anim_active = true;
+        rgb_indicators_enabled = true;
     }
     #endif
 #endif
@@ -3382,9 +3396,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     }
 #endif
 
+    if (rgb_indicators_enabled
 #ifdef CONFIG_HAS_KCLK_BATTERY
-    if (!bat_level_animiation_actived() && !battery_is_empty() && !resume_from_suspend) {
+        && !bat_level_animiation_actived() && !battery_is_empty()
 #endif
+    ) {
         if (!is_base_layer(layer)) {
             for (uint8_t row = 0; row < MATRIX_ROWS; ++row) {
                 for (uint8_t col = 0; col < MATRIX_COLS; ++col) {
@@ -4165,13 +4181,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
             rgb_last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
             #else
-            #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-            rgb_matrix_sethsv_noeeprom(0, 0, 50);
-            #else
-            rgb_matrix_disable_noeeprom();
-            #endif
+                #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+                rgb_matrix_sethsv_noeeprom(0, 0, 50);
+                #else
+                rgb_matrix_disable_noeeprom();
+                #endif
             #endif
             lock_anim_active = false;
+            rgb_indicators_enabled = false;
         }
         #endif
             
@@ -4200,35 +4217,35 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         }
         #endif
     #endif
-#ifdef CONFIG_HAS_KCLK_BATTERY
-    }
-#endif
-#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
-    #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
-    if (warning_active && timer_elapsed32(last_blink) > CONFIG_CUSTOM_BLINK_INTERVAL) {
-    #else
-    if (warning_active && timer_elapsed32(last_blink) > 250) {
-    #endif
-        last_blink        = timer_read32();
-        warning_led_state = !warning_led_state;
-    }
+    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+        if (warning_active &&
+        #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
+            timer_elapsed32(last_blink) > CONFIG_CUSTOM_BLINK_INTERVAL
+        #else
+            timer_elapsed32(last_blink) > 250
+        #endif
+        ) {
+            last_blink        = timer_read32();
+            warning_led_state = !warning_led_state;
+        }
 
-    if (warning_active) {
-        if (I_ESC >= led_min && I_ESC < led_max) {
-            if (warning_led_state) {
-                rgb_matrix_set_color(I_ESC, RGB_RED);
-                for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+        if (warning_active) {
+            if (I_ESC >= led_min && I_ESC < led_max) {
+                if (warning_led_state) {
                     rgb_matrix_set_color(I_ESC, RGB_RED);
-                }
-            } else {
-                rgb_matrix_set_color(I_ESC, RGB_BLACK);
-                for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                    for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                        rgb_matrix_set_color(I_ESC, RGB_RED);
+                    }
+                } else {
                     rgb_matrix_set_color(I_ESC, RGB_BLACK);
+                    for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                        rgb_matrix_set_color(I_ESC, RGB_BLACK);
+                    }
                 }
             }
         }
+    #endif
     }
-#endif
     return rgb_matrix_indicators_keymap(led_min, led_max);
 }
 
@@ -4256,7 +4273,7 @@ void matrix_scan_user(void) {
         rgb_matrix_disable_noeeprom();
         #endif
         warning_active = false;
-        rgb_timeout_active = true;
+        rgb_timeout_enable(true);
     }
     #ifdef CONFIG_CUSTOM_BT_TURN_OFF_DELAY
     if (bt_is_on && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
@@ -4276,20 +4293,17 @@ void matrix_scan_user(void) {
 #endif
 
 void suspend_wakeup_init_user(void) {
-    #ifdef CONFIG_HAS_KCLK_BATTERY
-    resume_from_suspend = true;
-    #endif
-    wait_ms(30);
+    rgb_indicators_enabled = false;
+    wait_ms(50);
     rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
     set_animation_if_lock_layr();
     // keychron and lemokey need to send something to the host to fully wake up
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+    wait_ms(20);
     tap_code(KC_CAPS);
     tap_code(KC_CAPS);
     #endif
-    #ifdef CONFIG_HAS_KCLK_BATTERY
-    resume_from_suspend = false;
-    #endif
+    rgb_indicators_enabled = true;
 }
 
 void set_animation_if_lock_layr(void) {

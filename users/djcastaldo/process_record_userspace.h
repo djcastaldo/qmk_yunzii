@@ -462,6 +462,7 @@ bool key_should_fade(keytracker key, uint8_t layer);
 bool is_capslock_shifted(uint8_t i);
 bool is_capsword_shifted(uint8_t i);
 void set_animation_if_lock_layr(void);
+void rgb_timeout_enable(bool enable);
 void jiggle_mouse(void);
 void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask);
 void symbol_key_mac(const char *unicode, const char *shift_unicode);
