@@ -205,6 +205,9 @@ deferred_token wireless_mode_token = INVALID_DEFERRED_TOKEN;
 uint32_t wls_action_timer;
 #endif
 #endif
+#ifdef CONFIG_HAS_KCLK_BATTERY
+static bool resume_from_suspend = false;
+#endif
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
 static uint32_t lock_anim_timer = 0;
 static bool lock_anim_active = false;
@@ -3380,7 +3383,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 #endif
 
 #ifdef CONFIG_HAS_KCLK_BATTERY
-    if (!bat_level_animiation_actived() && !battery_is_empty()) {
+    if (!bat_level_animiation_actived() && !battery_is_empty() && !resume_from_suspend) {
 #endif
         if (!is_base_layer(layer)) {
             for (uint8_t row = 0; row < MATRIX_ROWS; ++row) {
@@ -4273,6 +4276,9 @@ void matrix_scan_user(void) {
 #endif
 
 void suspend_wakeup_init_user(void) {
+    #ifdef CONFIG_HAS_KCLK_BATTERY
+    resume_from_suspend = true;
+    #endif
     wait_ms(30);
     rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
     set_animation_if_lock_layr();
@@ -4280,6 +4286,9 @@ void suspend_wakeup_init_user(void) {
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
     tap_code(KC_CAPS);
     tap_code(KC_CAPS);
+    #endif
+    #ifdef CONFIG_HAS_KCLK_BATTERY
+    resume_from_suspend = false;
     #endif
 }
 
