@@ -216,6 +216,7 @@ static bool bt_is_on = true;
 static bool warning_active = false;
 static uint32_t last_blink = 0;
 static bool warning_led_state = false;
+
 void reset_rgb_timeout_timer(void) {
     rgb_last_activity_timer = timer_read32();
 
@@ -231,18 +232,26 @@ void reset_rgb_timeout_timer(void) {
 
     // turn bt back on if it was off
     if (!bt_is_on) {
-        #ifndef KEYBOARD_IS_BRIDGE
-        suspend_wakeup_init_user();
-        #endif
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
         #endif
+        #ifdef KEYBOARD_IS_LEMOKEY
+        rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+        set_animation_if_lock_layr();
+        #else
+        suspend_wakeup_init_kb();
+        #endif
+        rgb_timeout_active = false;
         bt_is_on = true;
     }
-
-    // turn rgb back on if it was off
-    if (rgb_timeout_active) {
+    // if not in suspend yet, but rgb is off, turn rgb back on
+    else if (rgb_timeout_active) {
+        #ifdef KEYBOARD_IS_LEMOKEY
+        rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+        set_animation_if_lock_layr();
+        #else
         rgb_matrix_enable_noeeprom();
+        #endif
         rgb_timeout_active = false;
     }
 }
@@ -4153,7 +4162,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
             rgb_last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
             #else
+            #ifdef KEYBOARD_IS_LEMOKEY
+            rgb_matrix_sethsv_noeeprom(0, 0, 50);
+            #else
             rgb_matrix_disable_noeeprom();
+            #endif
             #endif
             lock_anim_active = false;
         }
@@ -4234,7 +4247,11 @@ void matrix_scan_user(void) {
         warning_led_state = false;
     }
     if (!rgb_timeout_active && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
+        #ifdef KEYBOARD_IS_LEMOKEY
+        rgb_matrix_sethsv_noeeprom(0, 0, 50);
+        #else
         rgb_matrix_disable_noeeprom();
+        #endif
         warning_active = false;
         rgb_timeout_active = true;
     }
@@ -4245,15 +4262,39 @@ void matrix_scan_user(void) {
     #endif
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(false);
-        #endif
-        #ifndef KEYBOARD_IS_BRIDGE
         wait_ms(50);
-        suspend_power_down();
         #endif
         bt_is_on = false;
+        #ifndef KEYBOARD_IS_LEMOKEY
+        suspend_power_down();
+        #endif
     }
 }
 #endif
+
+void suspend_wakeup_init_user(void) {
+    wait_ms(30);
+    rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+    set_animation_if_lock_layr();
+    // keychron and lemokey need to send something to the host to fully wake up
+    #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+        bool prestate = host_keyboard_led_state().scroll_lock;
+        tap_code(KC_SCRL);
+        if (!is_mac_base() && prestate != host_keyboard_led_state().scroll_lock) {
+            tap_code(KC_SCRL);
+        }
+    #endif
+}
+
+void set_animation_if_lock_layr(void) {
+    if (get_highest_layer(layer_state) == LOCK_LAYR) {
+        #ifdef CONFIG_LOCK_ANIMATION
+        rgb_matrix_mode_noeeprom(CONFIG_LOCK_ANIMATION);
+        #else
+        rgb_matrix_mode_noeeprom(RGB_MATRIX_BAND_VAL);
+        #endif
+    }
+}
 
 // determine the current tap dance state
 int cur_dance (tap_dance_state_t *state) {
