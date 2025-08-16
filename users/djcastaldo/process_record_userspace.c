@@ -159,6 +159,8 @@ bool is_leader_error;
 bool is_leader_error_led_on;
 uint16_t leader_error_timer;
 deferred_token leader_error_token = INVALID_DEFERRED_TOKEN;
+extern bool leading;
+extern uint8_t leader_sequence_size;
 // for tracking whether to blink an led as an indicator, used to show which layer is active
 bool is_led_on;
 uint16_t layer_timer;
@@ -1176,14 +1178,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         return false;
     case DUAL_ESC:
         if (record->event.pressed) {
-           if (!macro_recording) {
-               // send escapse
-               register_code(KC_ESC);
-           }
-           else {
-               // if macro is recording, stop it
-               dynamic_macro_stop_recording();
-           }
+            if (is_in_leader_sequence) {
+                leading = false;
+                leader_sequence_size = 0;
+                is_in_leader_sequence = false;
+            }
+            else if (macro_recording) {
+                // if macro is recording, stop it
+                dynamic_macro_stop_recording();
+            }
+            else {
+                // send escape
+                register_code(KC_ESC);
+            }
         }
         else {
             unregister_code(KC_ESC);
