@@ -3599,11 +3599,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_LALT, CONFIG_KCTL_LAYR_COLOR);  // lalt
                     #ifndef CONFIG_NO_RALT_KEY
                     rgb_matrix_set_color(I_RALT, CONFIG_KCTL_LAYR_COLOR);  // ralt
+                    #elif !defined(CONFIG_NO_RCTL_KEY)
+                    rgb_matrix_set_color(I_RCTL, CONFIG_KCTL_LAYR_COLOR);  // right control
                     #endif
                 #else
                     rgb_matrix_set_color(I_LALT, RGB_RED);    // lalt
                     #ifndef CONFIG_NO_RALT_KEY
                     rgb_matrix_set_color(I_RALT, RGB_RED);    // ralt
+                    #elif !defined(CONFIG_NO_RCTL_KEY)
+                    rgb_matrix_set_color(I_RCTL, RGB_RED);    // right control
                     #endif
                 #endif
                     break;
