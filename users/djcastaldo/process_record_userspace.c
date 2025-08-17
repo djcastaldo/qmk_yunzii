@@ -1342,26 +1342,31 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         break;
     case LOCKSCR:
         if (record->event.pressed) {
-           // send control + command + q
-           send_string(SS_LCTL(SS_LCMD("q")) SS_DELAY(300) SS_LCTL(SS_LCMD("q")));
+            if (is_mac_base()) {
+                // send control + command + q
+                send_string(SS_LCTL(SS_LCMD("q")) SS_DELAY(300) SS_LCTL(SS_LCMD("q")));
+            }
+            else {
+                send_string(SS_LGUI("l"));
+            }
         }
         return false;
     case BACKDIR:
         if (record->event.pressed) {
-          // command to go back a dir in terminal
-          send_string("cd .." SS_TAP(X_ENT));
+            // command to go back a dir in terminal
+            send_string("cd .." SS_TAP(X_ENT));
         }
         return false;
     case HOMEDIR:
         if (record->event.pressed) {
-          // command to go home in terminal
-          send_string("cd ~" SS_TAP(X_ENT));
+            // command to go home in terminal
+            send_string("cd ~" SS_TAP(X_ENT));
         }
         return false;
     case LSLTRAH:
         if (record->event.pressed) {
-          // command to ls -ltrah in terminal
-          send_string("ls -ltrah" SS_TAP(X_ENT));
+            // command to ls -ltrah in terminal
+            send_string("ls -ltrah" SS_TAP(X_ENT));
         }
         return false;
     // get dynamic macros to work even with oneshot layers
@@ -1380,20 +1385,20 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_VOLD:
     case KC_VOLU:
         if (oneshot_layer_active || sim_osl) {
-          reset_oneshot_layer();
-          if (sim_osl_token) {
-              cancel_deferred_exec(sim_osl_token);
-              sim_osl_token = INVALID_DEFERRED_TOKEN;
-          }
-          if (record->event.pressed) {
-              sim_osl = true;
-              uint8_t layer = get_highest_layer(layer_state);
-              layer_on(layer); // simulate that oneshot is still going
-          }
-          else {   // key release should use a delay for layer deactivation
-              // this turns off the layer if further volume controls are not used within 500ms
-              sim_osl_token = defer_exec(500, sim_osl_callback, NULL);
-          }
+            reset_oneshot_layer();
+            if (sim_osl_token) {
+                cancel_deferred_exec(sim_osl_token);
+                sim_osl_token = INVALID_DEFERRED_TOKEN;
+            }
+            if (record->event.pressed) {
+                sim_osl = true;
+                uint8_t layer = get_highest_layer(layer_state);
+                layer_on(layer); // simulate that oneshot is still going
+            }
+            else {   // key release should use a delay for layer deactivation
+                     // this turns off the layer if further volume controls are not used within 500ms
+                sim_osl_token = defer_exec(500, sim_osl_callback, NULL);
+            }
         }
         break;
     // functionality for opt keys that may use lopt with holds for mouse control or on MSYM_LAYR
