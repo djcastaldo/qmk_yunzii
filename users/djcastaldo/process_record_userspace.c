@@ -4299,6 +4299,27 @@ void matrix_scan_user(void) {
 }
 #endif
 
+// the custom sleep and lock animation timeout routines set most of these values alreday
+// but putting it here also ensures that if the keyboard enters suspend for any other reason
+// the values are what they need to be
+void suspend_power_down_user(void) {
+    if (rgb_matrix_is_enabled()) {
+        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+        rgb_matrix_sethsv_noeeprom(0, 0, 50);
+        #else
+        rgb_matrix_disable_noeeprom();
+        #endif
+    }
+    rgb_indicators_enabled = false;
+    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+    lock_anim_active = false;
+    #endif
+    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    warning_active = false;
+    rgb_timeout_active = true;
+    #endif
+}
+
 void suspend_wakeup_init_user(void) {
     rgb_indicators_enabled = false;
     wait_ms(50);
@@ -4306,7 +4327,7 @@ void suspend_wakeup_init_user(void) {
     set_animation_if_lock_layr();
     // keychron and lemokey need to send something to the host to fully wake up
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-    wait_ms(20);
+    wait_ms(50);
     tap_code(KC_CAPS);
     tap_code(KC_CAPS);
     #endif
