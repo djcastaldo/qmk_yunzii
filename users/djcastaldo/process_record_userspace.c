@@ -6,16 +6,19 @@
 #include "config.h"
 #include "layers.h"
 #include "keyindex.h"
-#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-#include "wireless/battery.h"
-#include "wireless/bat_level_animation.h"
-#include "wireless/wireless.h"
-#endif
 #if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
 #include "quantum.h"
 #endif
 #ifdef KEYBOARD_IS_BRIDGE
 #include "wireless.h"
+#endif
+#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+#include "wireless/battery.h"
+#include "wireless/bat_level_animation.h"
+#include "wireless/wireless.h"
+#include "wireless/transport.h"
+__attribute__((weak)) void bt_transport_enable(bool enable);
+__attribute__((weak)) void p24g_transport_enable(bool enable);
 #endif
 
 user_config_t user_config;
@@ -241,6 +244,12 @@ void reset_rgb_timeout_timer(void) {
     if (!bt_is_on) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
+        #elif defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+        wireless_transport_enable(true);
+        uint32_t timeout = timer_read32() + 200;  // max 200ms wait
+        while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
+            wait_ms(5);
+        }
         #endif
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
@@ -4326,15 +4335,27 @@ void suspend_power_down_user(void) {
 
 void suspend_wakeup_init_user(void) {
     rgb_indicators_enabled = false;
-    wait_ms(50);
-    rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-    set_animation_if_lock_layr();
-    // keychron and lemokey need to send something to the host to fully wake up
+    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+    lock_anim_timer = timer_read32();
+    #endif
+    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    rgb_last_activity_timer = timer_read32();
+    #endif
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+    wireless_transport_enable(true);
+    // wait until the wireless stack is ready (adjust timeout if necessary)
+    uint32_t timeout = timer_read32() + 200;  // max 200ms wait
+    while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
+        wait_ms(5);
+    }
+    // keychron and lemokey need to send something to the host to fully wake up
     wait_ms(50);
     tap_code(KC_CAPS);
     tap_code(KC_CAPS);
     #endif
+    wait_ms(50);
+    rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+    set_animation_if_lock_layr();
     rgb_indicators_enabled = true;
 }
 
@@ -5853,6 +5874,42 @@ bool is_base_layer(uint8_t layer) {
 bool app_switch_active(void) {
     return is_cmd_tab_active || is_cmd_shift_tab_active;
 }
+
+#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+void wireless_transport_enable(bool enable) {
+    switch (get_transport()) {
+        case TRANSPORT_USB:
+            usb_transport_enable(enable);
+            if (enable) {
+                bt_transport_enable(false);
+                p24g_transport_enable(false);
+            }
+            break;
+
+        case TRANSPORT_BLUETOOTH:
+            bt_transport_enable(enable);
+            if (enable) {
+                usb_transport_enable(false);
+                p24g_transport_enable(false);
+            }
+            break;
+
+        case TRANSPORT_P2P4:
+            p24g_transport_enable(enable);
+            if (enable) {
+                usb_transport_enable(false);
+                bt_transport_enable(false);
+            }
+            break;
+
+        default:
+            usb_transport_enable(false);
+            bt_transport_enable(false);
+            p24g_transport_enable(false);
+            break;
+    }
+}
+#endif
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 void matrix_init_user(void) {
