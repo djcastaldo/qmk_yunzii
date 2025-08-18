@@ -462,7 +462,7 @@ bool key_should_fade(keytracker key, uint8_t layer);
 bool is_capslock_shifted(uint8_t i);
 bool is_capsword_shifted(uint8_t i);
 void set_animation_if_lock_layr(void);
-void rgb_timeout_enable(bool enable);
+void rgb_set_sleep_mode(bool enable);
 void wireless_transport_enable(bool enable);
 void send_key_to_host_after_wait(uint8_t ms);
 void jiggle_mouse(void);

@@ -217,7 +217,7 @@ static bool lock_anim_active = false;
 #endif
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 static uint32_t rgb_last_activity_timer = 0;
-static bool rgb_timeout_active = false;
+static bool rgb_reached_timeout = false;
 static bool bt_is_on = true;
 static bool warning_active = false;
 static uint32_t last_blink = 0;
@@ -263,25 +263,25 @@ void reset_rgb_timeout_timer(void) {
         #else
         suspend_wakeup_init_kb();
         #endif
-        rgb_timeout_enable(false);
+        rgb_set_sleep_mode(false);
         bt_is_on = true;
     }
     // if not in suspend yet, but rgb is off, turn rgb back on
-    else if (rgb_timeout_active) {
+    else if (rgb_reached_timeout) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
         set_animation_if_lock_layr();
         #else
         rgb_matrix_enable_noeeprom();
         #endif
-        rgb_timeout_enable(false);
+        rgb_set_sleep_mode(false);
     }
 }
 #endif
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
-void rgb_timeout_enable(bool enable) {
-    rgb_timeout_active = enable;
+void rgb_set_sleep_mode(bool enable) {
+    rgb_reached_timeout = enable;
     rgb_indicators_enabled = !enable;
 }
 #endif
@@ -4283,10 +4283,10 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 void matrix_scan_user(void) {
     #ifdef CONFIG_CUSTOM_SLEEP_WARNING
-    if (!rgb_timeout_active && !warning_active &&
+    if (!rgb_reached_timeout && !warning_active &&
         timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - CONFIG_CUSTOM_SLEEP_WARNING) {
     #else
-    if (!rgb_timeout_active && !warning_active &&
+    if (!rgb_reached_timeout && !warning_active &&
         timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - 5000) {
     #endif
         warning_active = true;
@@ -4297,14 +4297,14 @@ void matrix_scan_user(void) {
         #endif
         warning_led_state = false;
     }
-    if (!rgb_timeout_active && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
+    if (!rgb_reached_timeout && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_sethsv_noeeprom(0, 0, 50);
         #else
         rgb_matrix_disable_noeeprom();
         #endif
         warning_active = false;
-        rgb_timeout_enable(true);
+        rgb_set_sleep_mode(true);
     }
     #ifdef CONFIG_CUSTOM_BT_TURN_OFF_DELAY
     if (bt_is_on && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
@@ -4340,7 +4340,7 @@ void suspend_power_down_user(void) {
     #endif
     #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     warning_active = false;
-    rgb_timeout_active = true;
+    rgb_reached_timeout = true;
     #endif
 }
 
