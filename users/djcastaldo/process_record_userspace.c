@@ -245,10 +245,17 @@ void reset_rgb_timeout_timer(void) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
         #elif defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        wireless_transport_enable(true);
-        uint32_t timeout = timer_read32() + 200;  // max 200ms wait
-        while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
-            wait_ms(5);
+        transport_t t = get_transport();
+        wt_state_t state = wireless_get_state();
+        // Check if any wireless transport is active and connected
+        if ((t & TRANSPORT_WIRELESS) && state != WT_CONNECTED) {
+            wireless_transport_enable(true);
+            uint32_t timeout = timer_read32() + 200;  // max 200ms wait
+            while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
+                wait_ms(5);
+            }
+            tap_code(KC_CAPS);
+            tap_code(KC_CAPS);
         }
         #endif
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
@@ -4211,9 +4218,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 #else
                 rgb_matrix_disable_noeeprom();
                 #endif
+            rgb_indicators_enabled = false;
             #endif
             lock_anim_active = false;
-            rgb_indicators_enabled = false;
         }
         #endif
             
