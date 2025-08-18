@@ -211,6 +211,7 @@ uint32_t wls_action_timer;
 #endif
 #endif
 static bool rgb_indicators_enabled = true;
+static bool housekeeping_restore_lock_anim = false;
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
 static uint32_t lock_anim_timer = 0;
 static bool lock_anim_active = false;
@@ -4352,8 +4353,16 @@ void suspend_wakeup_init_user(void) {
     wait_ms(50);
     #endif
     rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-    set_animation_if_lock_layr();
+    housekeeping_restore_lock_anim = true;
     rgb_indicators_enabled = true;
+}
+
+// --- housekeeping (runs after layers are fully restored) ---
+void housekeeping_task_user(void) {
+    if (housekeeping_restore_lock_anim) {
+        set_animation_if_lock_layr();
+        housekeeping_restore_lock_anim = false; // only once per wake
+    }
 }
 
 void set_animation_if_lock_layr(void) {
