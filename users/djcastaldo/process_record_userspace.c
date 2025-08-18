@@ -245,17 +245,7 @@ void reset_rgb_timeout_timer(void) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
         #elif defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        transport_t t = get_transport();
-        wt_state_t state = wireless_get_state();
-        // Check if any wireless transport is active and connected
-        if ((t & TRANSPORT_WIRELESS) && state != WT_CONNECTED) {
-            wireless_transport_enable(true);
-            uint32_t timeout = timer_read32() + 200;  // max 200ms wait
-            while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
-                wait_ms(5);
-            }
-            send_key_to_host_after_wait(50);
-        }
+        wakeup_if_not_connected();
         #endif
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
@@ -370,6 +360,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
     // lock animation should come back if key pressed and then timeout again after set time
     if (get_highest_layer(layer_state) == LOCK_LAYR && record->event.pressed) {
+        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+        wakeup_if_not_connected();
+        #endif
         if (!rgb_matrix_is_enabled()) { // if currently off
             rgb_matrix_enable_noeeprom();
         }
@@ -4327,6 +4320,7 @@ void matrix_scan_user(void) {
 // but putting it here also ensures that if the keyboard enters suspend for any other reason
 // the values are what they need to be
 void suspend_power_down_user(void) {
+    dprintf("suspend_power_down_user. . .");
     if (rgb_matrix_is_enabled()) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_sethsv_noeeprom(0, 0, 50);
@@ -4353,14 +4347,7 @@ void suspend_wakeup_init_user(void) {
     rgb_last_activity_timer = timer_read32();
     #endif
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-    wireless_transport_enable(true);
-    // wait until the wireless stack is ready (adjust timeout if necessary)
-    uint32_t timeout = timer_read32() + 200;  // max 200ms wait
-    while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
-        wait_ms(5);
-    }
-    // keychron and lemokey need to send something to the host to fully wake up
-    send_key_to_host_after_wait(50);
+    wakeup_if_not_connected();
     #else
     wait_ms(50);
     #endif
@@ -5927,6 +5914,24 @@ void wireless_transport_enable(bool enable) {
             break;
     }
 }
+#endif
+
+#if defined(CONFIG_CUSTOM_SLEEP_TIMEOUT) || defined(CONFIG_LOCK_ANIMATION_TIMEOUT)
+#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+void wakeup_if_not_connected(void) {
+    transport_t t = get_transport();
+    wt_state_t state = wireless_get_state();
+    // Check if any wireless transport is active and connected
+    if ((t & TRANSPORT_WIRELESS) && state != WT_CONNECTED) {
+        wireless_transport_enable(true);
+        uint32_t timeout = timer_read32() + 400;  // max 400ms wait
+        while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
+            wait_ms(5);
+        }
+        send_key_to_host_after_wait(50);
+    }
+}
+#endif
 #endif
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT

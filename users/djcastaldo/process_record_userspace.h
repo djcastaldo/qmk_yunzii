@@ -464,6 +464,7 @@ bool is_capsword_shifted(uint8_t i);
 void set_animation_if_lock_layr(void);
 void rgb_set_sleep_mode(bool enable);
 void wireless_transport_enable(bool enable);
+void wakeup_if_not_connected(void);
 void send_key_to_host_after_wait(uint8_t ms);
 void jiggle_mouse(void);
 void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask);
