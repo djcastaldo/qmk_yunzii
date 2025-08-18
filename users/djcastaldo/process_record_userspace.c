@@ -254,8 +254,7 @@ void reset_rgb_timeout_timer(void) {
             while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(timeout) < 0) {
                 wait_ms(5);
             }
-            tap_code(KC_CAPS);
-            tap_code(KC_CAPS);
+            send_key_to_host_after_wait(50);
         }
         #endif
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
@@ -4361,11 +4360,10 @@ void suspend_wakeup_init_user(void) {
         wait_ms(5);
     }
     // keychron and lemokey need to send something to the host to fully wake up
+    send_key_to_host_after_wait(50);
+    #else
     wait_ms(50);
-    tap_code(KC_CAPS);
-    tap_code(KC_CAPS);
     #endif
-    wait_ms(50);
     rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
     set_animation_if_lock_layr();
     rgb_indicators_enabled = true;
@@ -4378,6 +4376,14 @@ void set_animation_if_lock_layr(void) {
         #else
         rgb_matrix_mode_noeeprom(RGB_MATRIX_BAND_VAL);
         #endif
+    }
+}
+
+void send_key_to_host_after_wait(uint8_t ms) {
+    if (get_highest_layer(layer_state) == LOCK_LAYR) {
+        wait_ms(ms);
+        tap_code(KC_CAPS);
+        tap_code(KC_CAPS);
     }
 }
 
