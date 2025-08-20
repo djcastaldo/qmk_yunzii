@@ -279,11 +279,11 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [LOCK_LAYR] = LAYOUT_65_ansi_blocker(
-        KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO, KC_NO,  KC_NO,    TD(KB_UNLOCK),
-        KC_NO,     KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,   KC_NO,   KC_NO, KC_NO,  KC_NO,  KC_NO,       KC_NO,   KC_NO,
-        KC_NO,         KC_NO,  KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,      KC_NO,        KC_NO,
-        KC_NO,              KC_NO,  KC_NO,  KC_NO, KC_NO,  KC_NO,   KC_NO,  KC_NO,  KC_NO,  KC_NO,  KC_NO,    KC_NO,     KC_NO,   KC_NO,
-        KC_NO,     KC_NO,     KC_NO,                       KC_NO,                        KC_NO,    KC_NO,        KC_NO,  KC_NO,   KC_NO
+        NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,   NOKEY,  NOKEY,  NOKEY,  NOKEY, NOKEY,  NOKEY,    TD(KB_UNLOCK),
+        NOKEY,     NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,   NOKEY,   NOKEY, NOKEY,  NOKEY,  NOKEY,       NOKEY,   NOKEY,
+        NOKEY,         NOKEY,  NOKEY,   NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,      NOKEY,        NOKEY,
+        NOKEY,              NOKEY,  NOKEY,  NOKEY, NOKEY,  NOKEY,   NOKEY,  NOKEY,  NOKEY,  NOKEY,  NOKEY,    NOKEY,     NOKEY,   NOKEY,
+        NOKEY,     NOKEY,     NOKEY,                       NOKEY,                        NOKEY,    NOKEY,        NOKEY,  NOKEY,   NOKEY
     )
 };
 
@@ -300,7 +300,7 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [WIDE_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
     [CIRC_LAYR] =  { ENCODER_CCW_CW(ENC_VOLD, ENC_VOLU) },
     [EMO_LAYR]  =  { ENCODER_CCW_CW(ENC_MENUL, ENC_MENUR) },
-    [LOCK_LAYR] =  { ENCODER_CCW_CW(KC_NO, KC_NO) }
+    [LOCK_LAYR] =  { ENCODER_CCW_CW(NOKEY, NOKEY) }
 };
 #endif
 

@@ -289,6 +289,8 @@ enum userspace_keycodes {
     E_OK,
     E_SGLASS,
     E_BOTTLE,
+    NOKEY,
+    CSTMTOG,
     KB_RESET,
     FLASH_KB,
     BOOTLDR,
