@@ -2947,10 +2947,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 	}
         return false;
     // this is needed for keyboards like keychron and lemokey that will freeze up if standard RGB_TOG is used
+    // also nice to have a way to turn off the animation without turning off the indicators
     case CSTMTOG:
 	if (record->event.pressed) {
-            if (rgb_matrix_get_val() > 50) {
-                rgb_matrix_sethsv(0, 0, 10);
+            if (rgb_matrix_get_val() > 1) {
+                rgb_matrix_sethsv(0, 0, 1);
             }
             else {
                 rgb_matrix_sethsv(RGB_MATRIX_DEFAULT_HUE, RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_DEFAULT_VAL);
@@ -4001,7 +4002,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 os_change_timer = 0;
                 #ifdef CONFIG_HAS_BASE_LAYER_TOGGLE
                 // this helps when keychron with physical os switch returns from deep sleep
-                lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms + 1000;
+                lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms + 3000;
                 housekeeping_restore_lock_anim = true;
                 #endif
             }
@@ -4245,7 +4246,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             rgb_last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
             #else
                 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-                rgb_matrix_sethsv_noeeprom(0, 0, 10);
+                rgb_matrix_sethsv_noeeprom(0, 0, 1);
                 #else
                 rgb_matrix_disable_noeeprom();
                 #endif
@@ -4331,7 +4332,7 @@ void matrix_scan_user(void) {
     }
     if (!rgb_reached_timeout && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        rgb_matrix_sethsv_noeeprom(0, 0, 10);
+        rgb_matrix_sethsv_noeeprom(0, 0, 1);
         #else
         rgb_matrix_disable_noeeprom();
         #endif
@@ -4362,7 +4363,7 @@ void suspend_power_down_user(void) {
     dprintf("suspend_power_down_user. . .");
     if (rgb_matrix_is_enabled()) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        rgb_matrix_sethsv_noeeprom(0, 0, 10);
+        rgb_matrix_sethsv_noeeprom(0, 0, 1);
         #else
         rgb_matrix_disable_noeeprom();
         #endif
