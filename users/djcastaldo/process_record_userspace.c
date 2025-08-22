@@ -220,6 +220,7 @@ static bool was_suspended = false;
 static bool power_down_ran = false;
 static bool wakeup_ran = false;
 static bool housekeeping_restore_lock_anim = false;
+static bool housekeeping_deep_sleep_restore = false;
 static uint32_t lock_anim_restore_timer = 0;
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
 static uint32_t lock_anim_timer = 0;
@@ -303,7 +304,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             keycode != ENC_TSIZEL && keycode != ENC_TSIZER && keycode != ENC_MENUL && keycode != ENC_MENUR) {
 #endif
             if (record->event.pressed) {
-                dprintf("%u \n", key_idx);
+                dprintf("key index: %u \n", key_idx);
                 for (int i = tk_length - 1; i > 0; i--) {
                     tracked_keys[i] = tracked_keys[i-1];
                     if (tracked_keys[i].index == key_idx) {
@@ -2936,14 +2937,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_NO:
         if (record->event.pressed) {
             wakeup_if_not_connected();
-            housekeeping_restore_lock_anim = true;
         }
         break;
     #endif
     // this is needed for the Yunzii to wake from suspend bc KC_NO doesn't work
     case NOKEY:
 	if (record->event.pressed) {
-            housekeeping_restore_lock_anim = true;
+            dprintf("keycode: NOKEY\n");
+            dprintf("housekeeping_restore_lock_anim: %u\n", housekeeping_restore_lock_anim);
 	}
         return false;
     // this is needed for keyboards like keychron and lemokey that will freeze up if standard RGB_TOG is used
@@ -4000,11 +4001,6 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             if (timer_elapsed(os_change_timer) > 1800) {
                 os_changed = false;
                 os_change_timer = 0;
-                #ifdef CONFIG_HAS_BASE_LAYER_TOGGLE
-                // this helps when keychron with physical os switch returns from deep sleep
-                lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms + 3000;
-                housekeeping_restore_lock_anim = true;
-                #endif
             }
         }
 
@@ -4360,7 +4356,7 @@ void matrix_scan_user(void) {
 // but putting it here also ensures that if the keyboard enters suspend for any other reason
 // the values are what they need to be
 void suspend_power_down_user(void) {
-    dprintf("suspend_power_down_user. . .");
+    dprintf("suspend_power_down_user. . .\n");
     if (rgb_matrix_is_enabled()) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_sethsv_noeeprom(0, 0, 1);
@@ -4381,6 +4377,7 @@ void suspend_power_down_user(void) {
 
 // --- wakeup hook ----
 void suspend_wakeup_init_user(void) {
+    dprintf("suspend_wakeup_init_user()\n");
     rgb_indicators_enabled = false;
     rgb_last_activity_timer = timer_read32();
     #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
@@ -4394,9 +4391,8 @@ void suspend_wakeup_init_user(void) {
     rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
     wait_ms(10);
     rgb_indicators_enabled = true;
-    housekeeping_restore_lock_anim = true;
-    lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms;
     wakeup_ran = true;
+    dprintf("suspend_wakeup_init_user complete, wakeup_ran: %u\n", wakeup_ran);
 }
 
 // --- housekeeping detect suspend ---
@@ -4416,8 +4412,10 @@ void housekeeping_task_user(void) {
             suspend_power_down_user();
         }
         was_suspended = true;
+        // yunzii does weird things if both of these are not reset
+        wakeup_ran = false; // reset
         power_down_ran = false; // reset
-        dprintf("suspend detected\n");
+        dprintf("housekeeping suspend complete\n");
     }
 
     // --- handle wake ---
@@ -4427,16 +4425,47 @@ void housekeeping_task_user(void) {
             suspend_wakeup_init_user();
         }
         was_suspended = false;
+        power_down_ran = false; // reset
         wakeup_ran = false; // reset
+        housekeeping_restore_lock_anim = true;
+        housekeeping_deep_sleep_restore = true;
+        dprintf("set housekeeping_deep_sleep_restore: %u\n", housekeeping_deep_sleep_restore);
+        lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms;
+        dprintf("housekeeping wakeup complete\n");
     }
 
     // --- delayed lock animation ---
     if (housekeeping_restore_lock_anim && timer_expired32(timer_read32(), lock_anim_restore_timer)) {
         #ifdef KEYBOARD_IS_YUNZII
-        rgb_matrix_enable_noeeprom();
+        dprintf("check to run housekeeping_deep_sleep_restore: %u\n", housekeeping_deep_sleep_restore);
+        dprintf("check rgb_matrix_is_enabled(): %u\n", rgb_matrix_is_enabled());
+        if (housekeeping_deep_sleep_restore) {
+            dprintf("running housekeeping rgb_matrix_enable_noeeprom() from deep sleep\n");
+            rgb_matrix_enable_noeeprom();
+        }
+        else if (!rgb_matrix_is_enabled()) {
+            dprintf("running standard housekeeping rgb_matrix_enable_noeeprom()\n");
+            rgb_matrix_enable_noeeprom();
+        }
         #endif
-        set_animation_if_lock_layr();
-        housekeeping_restore_lock_anim = false;
+        dprintf("housekeeping set_animation_if_lock_layr()\n");
+        if (rgb_matrix_is_enabled()) {
+            set_animation_if_lock_layr();
+        }
+        // if this is coming back from deep sleep, try it again after a longer delay
+        if (housekeeping_deep_sleep_restore) {
+            // schedule another retry ~2s later
+            lock_anim_restore_timer = timer_read32() + 2000;
+            dprintf("retrying lock animation restore\n");
+            // stop only after a few retries have been made
+            static uint8_t retries = 3; // this will cause the set_animation to run at start, 2, 4, 6 seconds out
+            if (--retries == 0) {
+                housekeeping_deep_sleep_restore = false;
+            }
+        }
+        else {
+            housekeeping_restore_lock_anim = false;
+        }
     }
 }
 
@@ -4855,10 +4884,6 @@ void rsft_reset (tap_dance_state_t *state, void *user_data) {
 void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
     kbunlock_tap_state.state = cur_dance(state);
     switch (kbunlock_tap_state.state) {
-        case SINGLE_TAP:
-            break;
-        case DOUBLE_TAP:
-            break;
         case TRIPLE_TAP:
             layer_off(LOCK_LAYR); // three taps unlocks the LOCK_LAYR
             #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
@@ -4868,7 +4893,8 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
             layer_move(get_highest_layer(default_layer_state));
             rgb_matrix_mode_noeeprom(user_config.rgb_mode);
             break;
-        case SINGLE_HOLD:
+        default:
+            tap_code(KC_NO);
             break;
     }
 }
