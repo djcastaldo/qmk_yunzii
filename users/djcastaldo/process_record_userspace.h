@@ -82,6 +82,8 @@ enum userspace_keycodes {
     LLOCK,
     BASE_CHG,
     WM_SYM,
+    VSEMOLR,
+    DYN_LT,
     JIGGLE,
     FJLIGHT,
     HROWLIGHT,
@@ -289,6 +291,30 @@ enum userspace_keycodes {
     E_OK,
     E_SGLASS,
     E_BOTTLE,
+    VSMVLNU,
+    VSMVLND,
+    VSDUPLN,
+    VSDELLN,
+    VSINSLN,
+    VSLBCMT,
+    VSLNCMC,
+    VSLNCMU,
+    VSWRDWP,
+    VSLNSRT,
+    VSLJOIN,
+    VSMATCH,
+    VSINFO,
+    VSNOTIF,
+    VSFIND,
+    VSREPL,
+    VSRNAME,
+    VSGOTO,
+    VSSOLU,
+    VSERR,
+    VSOUTPT,
+    VSPUB,
+    VSBASE,
+    VSCLIPB,
     NOKEY,
     CSTMTOG,
     KB_RESET,
@@ -315,7 +341,8 @@ enum {
     LOPT_OSL    = 13,
     ROPT_OSL    = 14,
     RCTL_OSL    = 15,
-    MOUSE_ACCEL = 16
+    MOUSE_ACCEL = 16,
+    DYN_LAYR    = 17
 };
 
 // tap dance setup
@@ -369,7 +396,7 @@ enum {
 extern uint8_t wide_text_mode;
 extern bool wide_firstchar;
 
-extern tap_dance_action_t tap_dance_actions[17];
+extern tap_dance_action_t tap_dance_actions[18];
 // functions associated with all tap dances
 int cur_dance (tap_dance_state_t *state);
 // functions associated with individual tap dances
@@ -407,6 +434,8 @@ void rctl_finished (tap_dance_state_t *state, void *user_data);
 void rctl_reset (tap_dance_state_t *state, void *user_data);
 void macl_finished (tap_dance_state_t *state, void *user_data);
 void macl_reset (tap_dance_state_t *state, void *user_data);
+void dyn_finished (tap_dance_state_t *state, void *user_data);
+void dyn_reset (tap_dance_state_t *state, void *user_data);
 
 extern deferred_token jiggler_token;
 extern report_mouse_t jiggler_report;

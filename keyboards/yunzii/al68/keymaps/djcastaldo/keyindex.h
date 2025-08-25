@@ -26,6 +26,7 @@ enum key_indexes {
     I_MHLD = 38,
     I_BARTEXT = 39,
     I_NUMLOCK = 39,
+    I_BSLS = 40,
     I_ESC = 54,
     I_GRV = 54,
     I_N1 = 55,

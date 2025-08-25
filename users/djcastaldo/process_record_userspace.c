@@ -87,6 +87,11 @@ const uint16_t lock_restore_animation_from_suspend_ms = CONFIG_LOCK_RESTORE_ANIM
 #else
 const uint16_t lock_restore_animation_from_suspend_ms = 0;
 #endif
+#ifdef CONFIG_LOCK_ANIMATION
+const uint8_t lock_animation = CONFIG_LOCK_ANIMATION;
+#else
+const uint8_t lock_animation = RGB_MATRIX_BAND_VAL;
+#endif
 #ifdef CONFIG_MAC_BASE_CHANGE_GROUP
 const uint8_t mac_base_change_group[] = CONFIG_MAC_BASE_CHANGE_GROUP;
 #else
@@ -106,6 +111,11 @@ const uint8_t win_base_change_group[] = {};
 const uint8_t win_base_change_group_count = CONFIG_WIN_BASE_CHANGE_GROUP_COUNT;
 #else
 const uint8_t win_base_change_group_count = 0;
+#endif
+#ifdef CONFIG_VS_LAYR_SEND_STRING_DELAY
+const uint8_t vs_delay = CONFIG_VS_LAYR_SEND_STRING_DELAY;
+#else
+const uint8_t vs_delay = 0;
 #endif
 
 
@@ -220,7 +230,7 @@ static bool was_suspended = false;
 static bool power_down_ran = false;
 static bool wakeup_ran = false;
 static bool housekeeping_restore_lock_anim = false;
-static bool housekeeping_deep_sleep_restore = false;
+static bool housekeeping_retry_anim_restore = false;
 static uint32_t lock_anim_restore_timer = 0;
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
 static uint32_t lock_anim_timer = 0;
@@ -237,8 +247,8 @@ static bool warning_led_state = false;
 
 void reset_rgb_timeout_timer(void) {
     rgb_last_activity_timer = timer_read32();
-#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 
+#ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
     if (get_highest_layer(layer_state) == LOCK_LAYR) {
         lock_anim_timer = timer_read32();
@@ -255,23 +265,17 @@ void reset_rgb_timeout_timer(void) {
     if (!bt_is_on) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
-        #elif defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        wakeup_if_not_connected();
-        #endif
-        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-        set_animation_if_lock_layr();
-        #else
         suspend_wakeup_init_kb();
         #endif
         rgb_set_sleep_mode(false);
         bt_is_on = true;
+        housekeeping_restore_lock_anim = true;
     }
     // if not in suspend yet, but rgb is off, turn rgb back on
     else if (rgb_reached_timeout) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-        set_animation_if_lock_layr();
+        housekeeping_restore_lock_anim = true;
         #else
         rgb_matrix_enable_noeeprom();
         #endif
@@ -377,7 +381,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         else if (!lock_anim_active) {
             rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-            set_animation_if_lock_layr();
+            housekeeping_restore_lock_anim = true;
         }
         lock_anim_timer = timer_read32();
         lock_anim_active = true;
@@ -556,6 +560,36 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             else {
                 if (!is_layer_locked(WSYM_LAYR)) {
                     layer_off(WSYM_LAYR);
+                }
+            }
+        }
+        return false;
+    case VSEMOLR:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                layer_on(EMO_LAYR);
+            }
+            else if (user_config.is_linux_base) {
+                layer_on(CIRC_LAYR);
+            }
+            else {
+                layer_on(VS_LAYR);
+            }
+        }
+        else {
+            if (is_mac_base()) {
+                if (!is_layer_locked(EMO_LAYR)) {
+                    layer_off(EMO_LAYR);
+                }
+            }
+            else if (user_config.is_linux_base) {
+                if (!is_layer_locked(CIRC_LAYR)) {
+                    layer_off(CIRC_LAYR);
+                }
+            }
+            else {
+                if (!is_layer_locked(VS_LAYR)) {
+                    layer_off(VS_LAYR);
                 }
             }
         }
@@ -2933,6 +2967,227 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             symbol_key_mac("d83cdf7c","d83cdf7e");
 	}
 	return false;
+    // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
+    // added keycodes for visual studio
+    // if being used over remote desktop, these all need delays to process correctly
+    // <~>~<~>~<~>~<~>~<~>~<~>
+    // move line up
+    case VSMVLNU:
+        if (record->event.pressed) {
+            register_code(KC_LALT);
+            wait_ms(vs_delay);
+            register_code(KC_UP);
+            wait_ms(vs_delay);
+            unregister_code(KC_UP);
+            wait_ms(vs_delay);
+            unregister_code(KC_LALT);
+            wait_ms(vs_delay);
+        }
+        return false;
+    // move line down
+    case VSMVLND:
+        if (record->event.pressed) {
+            register_code(KC_LALT);
+            wait_ms(vs_delay);
+            register_code(KC_DOWN);
+            wait_ms(vs_delay);
+            unregister_code(KC_DOWN);
+            wait_ms(vs_delay);
+            unregister_code(KC_LALT);
+            wait_ms(vs_delay);
+        }
+        return false;
+    // duplicate line
+    case VSDUPLN:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL("d"), vs_delay);
+        }
+        return false;
+    // delete line
+    case VSDELLN:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL(SS_LSFT("l")), vs_delay);
+        }
+        return false;
+    // insert line above / below
+    case VSINSLN:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) {
+                // below
+                register_code(KC_LSFT);
+                wait_ms(vs_delay);
+                register_code(KC_ENT);
+                wait_ms(vs_delay);
+                unregister_code(KC_ENT);
+                wait_ms(vs_delay);
+                unregister_code(KC_LSFT);
+                wait_ms(vs_delay);
+            }
+            else {
+                // above
+                register_code(KC_LCTL);
+                wait_ms(vs_delay);
+                register_code(KC_ENT);
+                wait_ms(vs_delay);
+                unregister_code(KC_ENT);
+                wait_ms(vs_delay);
+                unregister_code(KC_LCTL);
+                wait_ms(vs_delay);
+            }
+        }
+        return false;
+    // toggle line / block comment
+    case VSLBCMT:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) {
+                send_string_with_delay(SS_LSFT("/"), vs_delay);
+            }
+            else {
+                send_string_with_delay(SS_LCTL("k/"), vs_delay);
+            }
+        }
+        return false;
+    // comment line
+    case VSLNCMC:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) { // uncomment
+                send_string_with_delay("ku", vs_delay);
+            }
+            else {  // comment
+                send_string_with_delay(SS_LCTL("kc"), vs_delay);
+            }
+        }
+        return false;
+    // uncomment line
+    case VSLNCMU:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) { // comment
+                send_string_with_delay("kc", vs_delay);
+            }
+            else {  // uncomment
+                send_string_with_delay(SS_LCTL("ku"), vs_delay);
+            }
+        }
+        return false;
+    // toggle word wrap / view whitespace
+    case VSWRDWP:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) { // view whitespace
+                send_string_with_delay("rw", vs_delay);
+            }
+            else { // toggle word warp
+                send_string_with_delay(SS_LCTL("ew"), vs_delay);
+            }
+        }
+        return false;
+    // sort lines
+    case VSLNSRT:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LSFT(SS_LALT("ls")), vs_delay);
+        }
+        return false;
+    // join lines
+    case VSLJOIN:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LSFT(SS_LALT("lj")), vs_delay);
+        }
+        return false;
+    // goto matching brace
+    case VSMATCH:
+        if (record->event.pressed) {
+            register_code(KC_LCTL);
+            wait_ms(vs_delay);
+            register_code(KC_RBRC);
+            wait_ms(vs_delay);
+            unregister_code(KC_RBRC);
+            wait_ms(vs_delay);
+            unregister_code(KC_LCTL);
+            wait_ms(vs_delay);
+        }
+        return false;
+    // show info / show immediate window
+    case VSINFO:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) { // show immediate
+                send_string_with_delay(SS_LALT("i"), vs_delay);
+            }
+            else { // show info
+                send_string_with_delay(SS_LCTL("ki"), vs_delay);
+            }
+        }
+        return false;
+    // show notifications
+    case VSNOTIF:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL("\\n"), vs_delay);
+        }
+        return false;
+    // find
+    case VSFIND:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL("f"), vs_delay);
+        }
+        return false;
+    // replace
+    case VSREPL:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL("h"), vs_delay);
+        }
+        return false;
+    // rename
+    case VSRNAME:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL("rr"), vs_delay);
+        }
+        return false;
+    // goto line
+    case VSGOTO:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL("g"), vs_delay);
+        }
+        return false;
+    // view solution explorer
+    case VSSOLU:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL(SS_LALT("l")), vs_delay);
+        }
+        return false;
+    // activate error list / exception settings
+    case VSERR:
+        if (record->event.pressed) {
+            if (get_mods() & MOD_MASK_CTRL) { // exception settings
+                send_string_with_delay(SS_LALT("e"), vs_delay);
+            }
+            else { // show error window
+                send_string_with_delay(SS_LCTL("\\e"), vs_delay);
+            }
+        }
+        return false;
+    // activate output window
+    case VSOUTPT:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL(SS_LALT("o")), vs_delay);
+        }
+        return false;
+    // publish solution
+    case VSPUB:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL(SS_LALT("l")) SS_DELAY(150) SS_LALT("b") SS_DELAY(50) "h", vs_delay);
+        }
+        return false;
+    // goto base class
+    case VSBASE:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LALT(SS_TAP(X_HOME)), vs_delay);
+        }
+        return false;
+    // clipboard history
+    case VSCLIPB:
+        if (record->event.pressed) {
+            send_string_with_delay(SS_LCTL(SS_LSFT("v")), vs_delay);
+        }
+        return false;
+    // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
     case KC_NO:
         if (record->event.pressed) {
@@ -3099,6 +3354,19 @@ bool process_leader_userspace(void) {
             layer_lock_on(TMUX_LAYR);
         }
     }
+    else if (leader_sequence_three_keys(KC_L, KC_L, KC_V)) {      // layer lock VS_LAYR
+        if (!is_mac_base() && !user_config.is_linux_base) {
+            if (is_layer_locked(VS_LAYR)) {
+                layer_lock_off(VS_LAYR);
+            }
+            else {
+                layer_lock_on(VS_LAYR);
+            }
+        }
+        else {
+            continue_leader_process = true;
+        }
+    }
     else if (leader_sequence_three_keys(KC_L, KC_L, KC_S)) {      // layer lock SFT_LAYR
         if (is_layer_locked(SFT_LAYR)) {
             layer_lock_off(SFT_LAYR);
@@ -3170,10 +3438,10 @@ bool process_leader_userspace(void) {
         lock_anim_timer = timer_read32();
         lock_anim_active = true;
         #endif
-        #ifdef CONFIG_LOCK_ANIMATION
-        rgb_matrix_mode_noeeprom(CONFIG_LOCK_ANIMATION);
-        #else
-        rgb_matrix_mode_noeeprom(RGB_MATRIX_BAND_VAL);
+        housekeeping_restore_lock_anim = true;
+        #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+        // some keyboards need a 2nd retry before the color sets correctly
+        housekeeping_retry_anim_restore = true;
         #endif
     }
 #if defined(CONFIG_MAC_BASE_CHANGE_GROUP) || defined(CONFIG_WIN_BASE_CHANGE_GROUP)
@@ -3418,6 +3686,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(rgb_layer_indicators[i], RGB_CYAN);
             #endif
                 break;
+            case VS_LAYR:
+            #ifdef CONFIG_VS_LAYR_COLOR
+                rgb_matrix_set_color(rgb_layer_indicators[i], CONFIG_VS_LAYR_COLOR);
+            #else
+                rgb_matrix_set_color(rgb_layer_indicators[i], RGB_PURPLE);
+            #endif
+                break;
             case WSYM_LAYR:
             case MSYM_LAYR:
             #ifdef CONFIG_SYM_LAYR_COLOR
@@ -3501,6 +3776,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                             rgb_matrix_set_color(index, RGB_CYAN);
                         #endif
                             break;
+                        case VS_LAYR:
+                        #ifdef CONFIG_VS_LAYR_COLOR
+                            rgb_matrix_set_color(index, CONFIG_VS_LAYR_COLOR);
+                        #else
+                            rgb_matrix_set_color(index, RGB_PURPLE);
+                        #endif
+                            break;
                         case WSYM_LAYR:
                         case MSYM_LAYR:
                         #ifdef CONFIG_SYM_LAYR_COLOR
@@ -3572,6 +3854,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(I_TAB, CONFIG_TMUX_LAYR_COLOR);   // tab
             #else
                 rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
+            #endif
+            #ifdef CONFIG_VS_LAYR_COLOR
+                rgb_matrix_set_color(I_BSLS, CONFIG_VS_LAYR_COLOR);    // backslash
+            #else
+                rgb_matrix_set_color(I_BSLS, RGB_PURPLE);    // backslash
             #endif
             #ifdef CONFIG_SYM_LAYR_COLOR
                 rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // left win / left opt 
@@ -3666,6 +3953,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
                 #endif
                     break;
+                case VS_LAYR:
+                #ifdef CONFIG_VS_LAYR_COLOR
+                    rgb_matrix_set_color(I_BSLS, CONFIG_VS_LAYR_COLOR); // backslash
+                #else
+                    rgb_matrix_set_color(I_BSLS, RGB_PURPLE); // backslash
+                #endif
+                    break;
                 case WSYM_LAYR:
                     if (timer_elapsed(layer_timer) > 250) {
                     #ifdef CONFIG_ACCENT_KEY_COLOR
@@ -3740,8 +4034,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 case CIRC_LAYR:
                 #ifdef CONFIG_CIRC_LAYR_COLOR
                     rgb_matrix_set_color(I_RSFT, CONFIG_CIRC_LAYR_COLOR);      // rshift
+                    if (!is_mac_base() && user_config.is_linux_base) {
+                        rgb_matrix_set_color(I_BSLS, CONFIG_CIRC_LAYR_COLOR);  // backslash
+                    }
                 #else
-                    rgb_matrix_set_color(I_RSFT, RGB_CORAL);      // rshift
+                    rgb_matrix_set_color(I_RSFT, RGB_CORAL);                   // rshift
+                    if (!is_mac_base() && user_config.is_linux_base) {
+                        rgb_matrix_set_color(I_BSLS, RGB_CORAL);               // backslash
+                    }
                 #endif
                     break;
                 case EMO_LAYR:
@@ -3756,6 +4056,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_RCTL, CONFIG_EMO_LAYR_COLOR);      // rctl
                     #endif
                     #endif
+                    rgb_matrix_set_color(I_BSLS, CONFIG_EMO_LAYR_COLOR);      // backslash
                 #else
                     #ifndef CONFIG_NO_RCMD_KEY
                     rgb_matrix_set_color(I_RCMD, RGB_YELLOW);     // rcmd
@@ -3767,6 +4068,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_RCTL, RGB_YELLOW);     // rctl
                     #endif
                     #endif
+                    rgb_matrix_set_color(I_BSLS, RGB_YELLOW);     // backslash
                 #endif
                     break;
                 case LOCK_LAYR:
@@ -4420,7 +4722,7 @@ void housekeeping_task_user(void) {
 
     // --- handle wake ---
     if (!is_suspended_now && was_suspended) {
-        // if Keychron skipped suspend_wakeup_init_user, run it here
+        // if keychron skipped suspend_wakeup_init_user, run it here
         if (!wakeup_ran) {
             suspend_wakeup_init_user();
         }
@@ -4428,8 +4730,8 @@ void housekeeping_task_user(void) {
         power_down_ran = false; // reset
         wakeup_ran = false; // reset
         housekeeping_restore_lock_anim = true;
-        housekeeping_deep_sleep_restore = true;
-        dprintf("set housekeeping_deep_sleep_restore: %u\n", housekeeping_deep_sleep_restore);
+        housekeeping_retry_anim_restore = true;
+        dprintf("set housekeeping_retry_anim_restore: %u\n", housekeeping_retry_anim_restore);
         lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms;
         dprintf("housekeeping wakeup complete\n");
     }
@@ -4437,9 +4739,9 @@ void housekeeping_task_user(void) {
     // --- delayed lock animation ---
     if (housekeeping_restore_lock_anim && timer_expired32(timer_read32(), lock_anim_restore_timer)) {
         #ifdef KEYBOARD_IS_YUNZII
-        dprintf("check to run housekeeping_deep_sleep_restore: %u\n", housekeeping_deep_sleep_restore);
+        dprintf("check to run housekeeping_retry_anim_restore: %u\n", housekeeping_retry_anim_restore);
         dprintf("check rgb_matrix_is_enabled(): %u\n", rgb_matrix_is_enabled());
-        if (housekeeping_deep_sleep_restore) {
+        if (housekeeping_retry_anim_restore) {
             dprintf("running housekeeping rgb_matrix_enable_noeeprom() from deep sleep\n");
             rgb_matrix_enable_noeeprom();
         }
@@ -4452,15 +4754,17 @@ void housekeeping_task_user(void) {
         if (rgb_matrix_is_enabled()) {
             set_animation_if_lock_layr();
         }
-        // if this is coming back from deep sleep, try it again after a longer delay
-        if (housekeeping_deep_sleep_restore) {
-            // schedule another retry ~2s later
-            lock_anim_restore_timer = timer_read32() + 2000;
+        // if retries are needed, loop through this some more times
+        // some keyboards (keychron) need the retries to take the setting after a deep sleep
+        if (housekeeping_retry_anim_restore) {
+            // schedule another retry ~1s later
+            lock_anim_restore_timer = timer_read32() + 1000;
             dprintf("retrying lock animation restore\n");
-            // stop only after a few retries have been made
-            static uint8_t retries = 3; // this will cause the set_animation to run at start, 2, 4, 6 seconds out
+            // stop only after a some retries have been made
+            static uint8_t retries = 6; // this will cause the set_animation to run at start, 1, 2, 3, 4, 5, 6 seconds out
             if (--retries == 0) {
-                housekeeping_deep_sleep_restore = false;
+                housekeeping_retry_anim_restore = false;
+                retries = 6;
             }
         }
         else {
@@ -4470,11 +4774,16 @@ void housekeeping_task_user(void) {
 }
 
 void set_animation_if_lock_layr(void) {
+    dprintf("set_animation_if_lock_layr()\n");
     if (get_highest_layer(layer_state) == LOCK_LAYR) {
-        #ifdef CONFIG_LOCK_ANIMATION
-        rgb_matrix_mode_noeeprom(CONFIG_LOCK_ANIMATION);
-        #else
-        rgb_matrix_mode_noeeprom(RGB_MATRIX_BAND_VAL);
+        if (rgb_matrix_get_mode() != lock_animation) {
+            dprintf("set_animation_if_lock_layr(): set animation\n");
+            rgb_matrix_mode_noeeprom(lock_animation);
+            wait_ms(50);
+        }
+        #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+        dprintf("set_animation_if_lock_layr(): set color\n");
+        rgb_matrix_sethsv_noeeprom(CONFIG_LOCK_ANIMATION_COLOR_HSV);
         #endif
     }
 }
@@ -4583,6 +4892,10 @@ static tap rctl_tap_state = {
     .state = 0
 };
 static tap macl_tap_state = {
+    .is_press_action = true,
+    .state = 0
+};
+static tap dyn_tap_state = {
     .is_press_action = true,
     .state = 0
 };
@@ -5539,8 +5852,55 @@ void macl_reset (tap_dance_state_t *state, void *user_data) {
     macl_tap_state.state = 0;
 }
 
+void dyn_finished(tap_dance_state_t *state, void *user_data) {
+    dyn_tap_state.state = cur_dance(state);
+    if (state->interrupted) {
+        for (uint8_t i = 0; i < state->count; i++) {
+            tap_code(KC_BSLS);
+        }
+    }
+    else {
+        switch (dyn_tap_state.state) {
+            case SINGLE_HOLD:
+                if (user_config.is_linux_base) {
+                    layer_on(CIRC_LAYR);
+                }
+                else {
+                    layer_on(VS_LAYR);
+                }
+                break;
+            case DOUBLE_TAP:
+            case DOUBLE_HOLD:
+                tap_code(KC_BSLS);
+                tap_code(KC_BSLS);
+                break;
+            default:
+                tap_code(KC_BSLS);
+                break;
+        }
+    }
+}
+
+void dyn_reset (tap_dance_state_t *state, void *user_data) {
+    switch (dyn_tap_state.state) {
+        case SINGLE_HOLD:
+            if (user_config.is_linux_base) {
+                if (!is_layer_locked(CIRC_LAYR)) {
+                    layer_off(CIRC_LAYR);
+                }
+            }
+            else {
+                if (!is_layer_locked(VS_LAYR)) {
+                    layer_off(VS_LAYR);
+                }
+            }
+            break;
+    }
+    dyn_tap_state.state = 0;
+}
+
 // associate the tap dance keys with their funcitons
-tap_dance_action_t tap_dance_actions[17] = {
+tap_dance_action_t tap_dance_actions[18] = {
     [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
     [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
     [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ralt_finished, ralt_reset),
@@ -5557,12 +5917,15 @@ tap_dance_action_t tap_dance_actions[17] = {
     [LOPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lopt_finished, lopt_reset),
     [ROPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ropt_finished, ropt_reset),
     [RCTL_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rctl_finished, rctl_reset),
-    [MOUSE_ACCEL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, macl_finished, macl_reset)
+    [MOUSE_ACCEL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, macl_finished, macl_reset),
+    [DYN_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, dyn_finished, dyn_reset)
 };
 
 // accent tap dances should give a little bit longer to see the leds
 uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
+        case TD(DYN_LAYR):
+            return 150;
         case TD(ACT_GRV):
         case TD(ACT_1):
         case TD(ACT_E):
@@ -5783,7 +6146,7 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         (layer == EMO_LAYR && key.index == I_RCMD) ||                                                 // emo_layr rcmd, rpot
     #endif
 #endif
-        (key.index == I_CAPS || key.index == I_FN || key.index == I_TAB)) {                           // caps lock, fn, tab
+        (key.index == I_CAPS || key.index == I_FN || key.index == I_TAB || key.index == I_BSLS)) {    // caps lock, fn, tab, bsls
             should_fade = false;
         }
     return should_fade;

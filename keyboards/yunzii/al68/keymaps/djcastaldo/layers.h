@@ -10,6 +10,7 @@ enum layers {
     SFT_LAYR,
     KCTL_LAYR,
     TMUX_LAYR,
+    VS_LAYR,
     WSYM_LAYR,
     MSYM_LAYR,
     WIDE_LAYR,
