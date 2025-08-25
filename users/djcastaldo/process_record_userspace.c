@@ -265,7 +265,6 @@ void reset_rgb_timeout_timer(void) {
     if (!bt_is_on) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
-        suspend_wakeup_init_kb();
         #endif
         rgb_set_sleep_mode(false);
         bt_is_on = true;
@@ -4724,7 +4723,11 @@ void housekeeping_task_user(void) {
     if (!is_suspended_now && was_suspended) {
         // if keychron skipped suspend_wakeup_init_user, run it here
         if (!wakeup_ran) {
+            #ifdef KEYBOARD_IS_BRIDGE
+            suspend_wakeup_init_kb();
+            #else
             suspend_wakeup_init_user();
+            #endif
         }
         was_suspended = false;
         power_down_ran = false; // reset
