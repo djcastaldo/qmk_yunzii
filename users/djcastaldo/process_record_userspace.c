@@ -6352,6 +6352,51 @@ bool is_base_layer(uint8_t layer) {
     return false;
 }
 
+#if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
+bool dip_switch_update_userspace(uint8_t index, bool active) {
+    if (index == 0) {
+        uint8_t current_layer = get_highest_layer(layer_state);
+        uint8_t current_base = get_highest_layer(default_layer_state);
+        if (active) {
+            #ifdef CONFIG_DEFAULT_WIN_LAYR
+            if (current_base != CONFIG_DEFAULT_WIN_LAYR) {
+                set_single_persistent_default_layer(CONFIG_DEFAULT_WIN_LAYR);
+            }
+            if (current_layer != LOCK_LAYR) {
+                layer_move(CONFIG_DEFAULT_WIN_LAYR);
+            }
+            #else
+            if (current_base != WIN_BASE) {
+                set_single_persistent_default_layer(WIN_BASE);
+            }
+            if (current_layer != LOCK_LAYR) {
+                layer_move(WIN_BASE);
+            }
+            #endif
+        }
+        else {
+            #ifdef CONFIG_DEFAULT_MAC_LAYR
+            if (current_base != CONFIG_DEFAULT_MAC_LAYR) {
+                set_single_persistent_default_layer(CONFIG_DEFAULT_MAC_LAYR);
+            }
+            if (current_layer != LOCK_LAYR) {
+                layer_move(CONFIG_DEFAULT_MAC_LAYR);
+            }
+            #else
+            if (current_base != MAC_BASE) {
+                set_single_persistent_default_layer(MAC_BASE);
+            }
+            if (current_layer != LOCK_LAYR) {
+                layer_move(MAC_BASE);
+            }
+            #endif
+        }
+        os_changed = true;
+    }
+    return true;
+}
+#endif
+
 bool app_switch_active(void) {
     return is_cmd_tab_active || is_cmd_shift_tab_active;
 }
