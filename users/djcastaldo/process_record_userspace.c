@@ -232,11 +232,10 @@ static bool wakeup_ran = false;
 static bool housekeeping_restore_lock_anim = false;
 static bool housekeeping_retry_anim_restore = false;
 static uint32_t lock_anim_restore_timer = 0;
+static uint32_t last_activity_timer = 0;
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
-static uint32_t lock_anim_timer = 0;
 static bool lock_anim_active = false;
 #endif
-static uint32_t rgb_last_activity_timer = 0;
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 static bool rgb_reached_timeout = false;
 static bool bt_is_on = true;
@@ -245,13 +244,12 @@ static uint32_t last_blink = 0;
 static bool warning_led_state = false;
 #endif
 
-void reset_rgb_timeout_timer(void) {
-    rgb_last_activity_timer = timer_read32();
+void reset_last_activity_timer(void) {
+    last_activity_timer = timer_read32();
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
     if (get_highest_layer(layer_state) == LOCK_LAYR) {
-        lock_anim_timer = timer_read32();
         lock_anim_active = true;
     }
     #endif
@@ -293,7 +291,7 @@ void rgb_set_sleep_mode(bool enable) {
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
     if (record->event.pressed) {
-        reset_rgb_timeout_timer();
+        reset_last_activity_timer();
     }
     // record key index pressed for rgb reactive changes
     if (enable_keytracker && !is_macro_playing && keycode != QK_LEAD && keycode != KC_NO && keycode != NOKEY) {
@@ -382,7 +380,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
             housekeeping_restore_lock_anim = true;
         }
-        lock_anim_timer = timer_read32();
         lock_anim_active = true;
         rgb_indicators_enabled = true;
     }
@@ -3434,7 +3431,6 @@ bool process_leader_userspace(void) {
         eeconfig_update_user(user_config.raw);
         layer_on(LOCK_LAYR);
         #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
-        lock_anim_timer = timer_read32();
         lock_anim_active = true;
         #endif
         housekeeping_restore_lock_anim = true;
@@ -4538,9 +4534,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         }
         #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
         // check if lock animation is on and have it timeout
-        if (lock_anim_active && timer_elapsed32(lock_anim_timer) > CONFIG_LOCK_ANIMATION_TIMEOUT) {
+        if (lock_anim_active && timer_elapsed32(last_activity_timer) > CONFIG_LOCK_ANIMATION_TIMEOUT) {
             #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
-            rgb_last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
+            last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
             #else
                 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
                 rgb_matrix_sethsv_noeeprom(0, 0, 1);
@@ -4614,10 +4610,10 @@ void matrix_scan_user(void) {
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     #ifdef CONFIG_CUSTOM_SLEEP_WARNING
     if (!rgb_reached_timeout && !warning_active &&
-        timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - CONFIG_CUSTOM_SLEEP_WARNING) {
+        timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - CONFIG_CUSTOM_SLEEP_WARNING) {
     #else
     if (!rgb_reached_timeout && !warning_active &&
-        timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - 5000) {
+        timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - 5000) {
     #endif
         warning_active = true;
         #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
@@ -4627,7 +4623,7 @@ void matrix_scan_user(void) {
         #endif
         warning_led_state = false;
     }
-    if (!rgb_reached_timeout && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
+    if (!rgb_reached_timeout && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_sethsv_noeeprom(0, 0, 1);
         #else
@@ -4637,9 +4633,9 @@ void matrix_scan_user(void) {
         rgb_set_sleep_mode(true);
     }
     #ifdef CONFIG_CUSTOM_BT_TURN_OFF_DELAY
-    if (bt_is_on && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
+    if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
     #else
-    if (bt_is_on && timer_elapsed32(rgb_last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + 5000) {
+    if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + 5000) {
     #endif
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(false);
@@ -4680,10 +4676,7 @@ void suspend_power_down_user(void) {
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
     rgb_indicators_enabled = false;
-    rgb_last_activity_timer = timer_read32();
-    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
-    lock_anim_timer = timer_read32();
-    #endif
+    last_activity_timer = timer_read32();
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
     wakeup_if_not_connected();
     #else
@@ -4704,7 +4697,7 @@ void housekeeping_task_user(void) {
         idle_ms_for_suspend = CONFIG_CUSTOM_SLEEP_TIMEOUT;
     }
     #endif
-    bool is_suspended_now = (timer_elapsed32(rgb_last_activity_timer) > idle_ms_for_suspend);
+    bool is_suspended_now = (timer_elapsed32(last_activity_timer) > idle_ms_for_suspend);
 
     // --- handle suspend ---
     if (is_suspended_now && !was_suspended) {
@@ -6454,7 +6447,7 @@ void wakeup_if_not_connected(void) {
 #endif
 
 void matrix_init_user(void) {
-    rgb_last_activity_timer = timer_read32();
+    last_activity_timer = timer_read32();
 }
 
 void keyboard_post_init_user(void) {
