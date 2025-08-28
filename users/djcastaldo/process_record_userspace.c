@@ -236,12 +236,27 @@ static uint32_t last_activity_timer = 0;
 #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
 static bool lock_anim_active = false;
 #endif
+#ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+deferred_token anim_color_token = INVALID_DEFERRED_TOKEN;
+#endif
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
 static bool rgb_reached_timeout = false;
 static bool bt_is_on = true;
 static bool warning_active = false;
 static uint32_t last_blink = 0;
 static bool warning_led_state = false;
+#endif
+#if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
+static bool os_changed_while_locked = false;
+#endif
+static bool deferred_indicator_enable = false;
+static uint32_t deferred_indicator_timer = 0;
+#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+// --- Wake sequence state ---
+static bool wake_seq_active = false;
+static uint8_t wake_step = 0;
+static uint32_t wake_t = 0;
+static uint8_t wake_retry = 0;
 #endif
 
 void reset_last_activity_timer(void) {
@@ -260,6 +275,7 @@ void reset_last_activity_timer(void) {
     }
 
     // turn bt back on if it was off
+    // there are some cases where bt is turned off but no full suspend power down happened
     if (!bt_is_on) {
         #ifdef KEYBOARD_IS_BRIDGE
         wls_transport_enable(true);
@@ -267,12 +283,19 @@ void reset_last_activity_timer(void) {
         rgb_set_sleep_mode(false);
         bt_is_on = true;
         housekeeping_restore_lock_anim = true;
+        #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+        housekeeping_retry_anim_restore = true;
+        #endif
     }
     // if not in suspend yet, but rgb is off, turn rgb back on
     else if (rgb_reached_timeout) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-        housekeeping_restore_lock_anim = true;
+        housekeeping_restore_lock_anim = true; // this checks if current layer is lock_layr and sets appropriately
+        #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+        // some keyboards need a 2nd retry before the color sets correctly
+        housekeeping_retry_anim_restore = true;
+        #endif
         #else
         rgb_matrix_enable_noeeprom();
         #endif
@@ -293,17 +316,40 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
         reset_last_activity_timer();
     }
+
+    // this is only needed if a lock animation timeout is configured, but no custom sleep configured
+    #ifndef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+    // lock animation should come back if key pressed and then timeout again after set time
+    if (get_highest_layer(layer_state) == LOCK_LAYR && record->event.pressed) {
+        if (!rgb_matrix_is_enabled()) { // if currently off
+            rgb_matrix_enable_noeeprom();
+        }
+        else if (!lock_anim_active) {
+            rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+            housekeeping_restore_lock_anim = true;
+            #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+            // some keyboards need a 2nd retry before the color sets correctly
+            housekeeping_retry_anim_restore = true;
+            #endif
+        }
+        lock_anim_active = true;
+        rgb_indicators_enabled = !deferred_indicator_enable;
+    }
+    #endif
+    #endif
+
     // record key index pressed for rgb reactive changes
     if (enable_keytracker && !is_macro_playing && keycode != QK_LEAD && keycode != KC_NO && keycode != NOKEY) {
         uint8_t key_idx = g_led_config.matrix_co[record->event.key.row][record->event.key.col];
-#ifdef CONFIG_KEY_INDEX_MAX
+        #ifdef CONFIG_KEY_INDEX_MAX
         if (key_idx <= CONFIG_KEY_INDEX_MAX) {
-#endif
-#ifdef KEYBOARD_IS_YUNZII
+        #endif
+        #ifdef KEYBOARD_IS_YUNZII
         if (keycode != ENC_VOLU && keycode != ENC_VOLD && keycode != DUAL_ZOOMO && keycode != DUAL_ZOOMI &&
             keycode != ENC_SCROLLAPPL && keycode != ENC_SCROLLAPPR && keycode != ENC_RGBL && keycode != ENC_RGBR &&
             keycode != ENC_TSIZEL && keycode != ENC_TSIZER && keycode != ENC_MENUL && keycode != ENC_MENUR) {
-#endif
+        #endif
             if (record->event.pressed) {
                 dprintf("key index: %u \n", key_idx);
                 for (int i = tk_length - 1; i > 0; i--) {
@@ -321,11 +367,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 for (int i = 0; i < tk_length; i++) {
                     if (tracked_keys[i].index == key_idx) {
                         tracked_keys[i].press = false;
-#ifdef CONFIG_KEYFADE_START_VAL
+                        #ifdef CONFIG_KEYFADE_START_VAL
                         tracked_keys[i].fade = CONFIG_KEYFADE_START_VAL;
-#else
+                        #else
                         tracked_keys[i].fade = 119;
-#endif
+                        #endif
                     }
                 }
                 // setup the key fade
@@ -342,49 +388,29 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                         }
                     }
                     if (fade_changed) {
-#ifdef CONFIG_KEYFADE_CALLBACK_INTERVAL
+                        #ifdef CONFIG_KEYFADE_CALLBACK_INTERVAL
                         return CONFIG_KEYFADE_CALLBACK_INTERVAL;
-#else
+                        #else
                         return 12;  // Call the callback every 12ms
-#endif
+                        #endif
                     }
                     else {
                         return 0;
                     }
                 }
-#ifdef CONFIG_KEYFADE_START_DELAY
+                #ifdef CONFIG_KEYFADE_START_DELAY
                 key_token = defer_exec(CONFIG_KEYFADE_START_DELAY, keytracker_callback, NULL);
-#else
+                #else
                 key_token = defer_exec(10, keytracker_callback, NULL);  // Schedule callback.
-#endif
+                #endif
             }
-#ifdef KEYBOARD_IS_YUNZII
+        #ifdef KEYBOARD_IS_YUNZII
         }
-#endif
-#ifdef CONFIG_KEY_INDEX_MAX
-        }
-#endif
-    }
-
-#ifndef CONFIG_CUSTOM_SLEEP_TIMEOUT
-    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
-    // lock animation should come back if key pressed and then timeout again after set time
-    if (get_highest_layer(layer_state) == LOCK_LAYR && record->event.pressed) {
-        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        wakeup_if_not_connected();
         #endif
-        if (!rgb_matrix_is_enabled()) { // if currently off
-            rgb_matrix_enable_noeeprom();
+        #ifdef CONFIG_KEY_INDEX_MAX
         }
-        else if (!lock_anim_active) {
-            rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-            housekeeping_restore_lock_anim = true;
-        }
-        lock_anim_active = true;
-        rgb_indicators_enabled = true;
+        #endif
     }
-    #endif
-#endif
 
     // stop color test if active and a key is pressed
     if (color_test && record->event.pressed) {
@@ -3184,13 +3210,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
-    #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-    case KC_NO:
-        if (record->event.pressed) {
-            wakeup_if_not_connected();
-        }
-        break;
-    #endif
     // this is needed for the Yunzii to wake from suspend bc KC_NO doesn't work
     case NOKEY:
 	if (record->event.pressed) {
@@ -3649,7 +3668,7 @@ bool process_leader_userspace(void) {
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     uint8_t layer = get_highest_layer(layer_state);
-#ifdef CONFIG_RGB_LAYER_INDICATORS
+    #ifdef CONFIG_RGB_LAYER_INDICATORS
     // color an indicator
     for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
         switch (layer) {
@@ -3719,7 +3738,12 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 break;
         }
     }
-#endif
+    #endif
+
+    if (deferred_indicator_enable && timer_expired32(timer_read32(), deferred_indicator_timer)) {
+        rgb_indicators_enabled = true;
+        deferred_indicator_enable = false;
+    }
 
     if (rgb_indicators_enabled
 #ifdef CONFIG_HAS_KCLK_BATTERY
@@ -4647,6 +4671,80 @@ void matrix_scan_user(void) {
         #endif
     }
 #endif
+#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+    if (wake_seq_active) { 
+        switch (wake_step) {
+            case 0:
+                // wait until transport reports connected, with extra Lemokey settle delay
+                uint32_t settle_delay = 80;
+                #ifdef KEYBOARD_IS_LEMOKEY
+                settle_delay = 250; // extra delay for Lemokey BLE stack
+                #endif
+                // wait until transport reports connected
+                if (timer_elapsed32(wake_t) > settle_delay && wireless_get_state() == WT_CONNECTED) {
+                    wake_t = timer_read32();
+                    wake_step = 1;
+                    dprintf("wireless connected, starting settle delay\n");
+                } else if (timer_elapsed32(wake_t) > 3000) {
+                    dprintf("timeout waiting for wireless, abort\n");
+                    wake_seq_active = false;
+                }
+                break;
+
+            case 1:
+                // primer poke: extra delay for Lemokey
+                uint32_t primer_delay = 400;
+                #ifdef KEYBOARD_IS_LEMOKEY
+                primer_delay = 600; // slightly longer before first KC_NO
+                #endif
+                if (timer_elapsed32(wake_t) >= primer_delay) {
+                    tap_code16(KC_NO);   // primer poke
+                    #ifdef KEYBOARD_IS_LEMOKEY
+                    defer_exec(50, extra_primer_poke, NULL); // delayed extra poke for lemokey
+                    #endif
+                    wake_t = timer_read32();
+                    wake_step = 2;
+                }
+                break;
+
+            case 2:
+                if (timer_elapsed32(wake_t) >= 400) {
+                    tap_code(KC_MUTE);
+                    wake_t = timer_read32();
+                    wake_step = 3;
+                }
+                break;
+
+            case 3:
+                if (timer_elapsed32(wake_t) >= 150) {
+                    tap_code(KC_MUTE);
+                    dprintf("wake taps sent, sequence complete\n");
+                    wake_seq_active = false;
+                    // schedule retry check
+                    wake_t = timer_read32();
+                    wake_step = 99;
+                }
+                break;
+
+            case 99:
+                // wait ~1s and see if we’re still asleep
+                if (timer_elapsed32(wake_t) > 1000) {
+                    if (wireless_get_state() != WT_CONNECTED && wake_retry < 2) {
+                        dprintf("first wake failed, retrying...\n");
+                        wake_seq_active = true;
+                        wake_step = 0;
+                        wake_t = timer_read32();
+                        wake_retry++;
+                        wireless_transport_enable(true);
+                    } else {
+                        dprintf("wake sequence finished (retries=%u)\n", wake_retry);
+                        wake_seq_active = false;
+                    }
+                }
+                break;
+        }
+    }
+#endif
 }
 
 // the custom sleep and lock animation timeout routines set most of these values alreday
@@ -4670,22 +4768,45 @@ void suspend_power_down_user(void) {
     rgb_reached_timeout = true;
     #endif
     power_down_ran = true;
+
+// mark that next cycle is “in suspend”
+    was_suspended = true;
+    wakeup_ran = false;  // cleared ONLY here (entering suspend)
 }
 
 // --- wakeup hook ----
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
     rgb_indicators_enabled = false;
+    deferred_indicator_enable = true;
+    deferred_indicator_timer = timer_read32() + 1000;
     last_activity_timer = timer_read32();
-    #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-    wakeup_if_not_connected();
-    #else
-    wait_ms(50);
-    #endif
+    wait_ms(20);
     rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
     wait_ms(10);
-    rgb_indicators_enabled = true;
+    #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+    // ---- arm wake sequence immediately ----
+    if (get_highest_layer(layer_state) == LOCK_LAYR) {
+        wake_seq_active = true;
+        wake_step = 0;
+        wake_retry = 0;
+        wireless_transport_enable(true);
+        tap_code16(KC_NO);
+        dprintf("LOCK_LAYR active, arming wake taps\n");
+    }
+    #endif
+    // need this in the wakeup routine to survive a keycrhon deep sleep
     wakeup_ran = true;
+    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    rgb_reached_timeout = false;
+    bt_is_on = true;
+    #endif
+
+    // schedule delayed lock animation restore
+    housekeeping_restore_lock_anim   = true;
+    housekeeping_retry_anim_restore  = true; // allow a few retries after deep sleep
+    lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms;
+
     dprintf("suspend_wakeup_init_user complete, wakeup_ran: %u\n", wakeup_ran);
 }
 
@@ -4705,11 +4826,12 @@ void housekeeping_task_user(void) {
         if (!power_down_ran) {
             suspend_power_down_user();
         }
-        was_suspended = true;
-        // yunzii does weird things if both of these are not reset
-        wakeup_ran = false; // reset
-        power_down_ran = false; // reset
-        dprintf("housekeeping suspend complete\n");
+        else {
+            // ensure flags are in the right state if platform skipped hooks
+            was_suspended = true;
+            wakeup_ran    = false;
+        }
+        dprintf("housekeeping: entered suspend\n");
     }
 
     // --- handle wake ---
@@ -4724,12 +4846,7 @@ void housekeeping_task_user(void) {
         }
         was_suspended = false;
         power_down_ran = false; // reset
-        wakeup_ran = false; // reset
-        housekeeping_restore_lock_anim = true;
-        housekeeping_retry_anim_restore = true;
-        dprintf("set housekeeping_retry_anim_restore: %u\n", housekeeping_retry_anim_restore);
-        lock_anim_restore_timer = timer_read32() + lock_restore_animation_from_suspend_ms;
-        dprintf("housekeeping wakeup complete\n");
+        dprintf("housekeeping: wake path complete\n");
     }
 
     // --- delayed lock animation ---
@@ -4741,29 +4858,29 @@ void housekeeping_task_user(void) {
             dprintf("running housekeeping rgb_matrix_enable_noeeprom() from deep sleep\n");
             rgb_matrix_enable_noeeprom();
         }
-        else if (!rgb_matrix_is_enabled()) {
-            dprintf("running standard housekeeping rgb_matrix_enable_noeeprom()\n");
+        #endif
+        if (!rgb_matrix_is_enabled()) {
+            dprintf("housekeeping: enabling rgb_matrix\n");
             rgb_matrix_enable_noeeprom();
         }
-        #endif
-        dprintf("housekeeping set_animation_if_lock_layr()\n");
         if (rgb_matrix_is_enabled()) {
+            dprintf("housekeeping: set_animation_if_lock_layr()\n");
             set_animation_if_lock_layr();
         }
         // if retries are needed, loop through this some more times
         // some keyboards (keychron) need the retries to take the setting after a deep sleep
+        static uint8_t retries = 6; // this will cause the set_animation to run at start, 1, 2, 3, 4, 5, 6 seconds out
         if (housekeeping_retry_anim_restore) {
             // schedule another retry ~1s later
             lock_anim_restore_timer = timer_read32() + 1000;
             dprintf("retrying lock animation restore\n");
             // stop only after a some retries have been made
-            static uint8_t retries = 6; // this will cause the set_animation to run at start, 1, 2, 3, 4, 5, 6 seconds out
             if (--retries == 0) {
                 housekeeping_retry_anim_restore = false;
-                retries = 6;
             }
         }
         else {
+            retries = 6;
             housekeeping_restore_lock_anim = false;
         }
     }
@@ -4775,20 +4892,15 @@ void set_animation_if_lock_layr(void) {
         if (rgb_matrix_get_mode() != lock_animation) {
             dprintf("set_animation_if_lock_layr(): set animation\n");
             rgb_matrix_mode_noeeprom(lock_animation);
-            wait_ms(50);
         }
         #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
-        dprintf("set_animation_if_lock_layr(): set color\n");
-        rgb_matrix_sethsv_noeeprom(CONFIG_LOCK_ANIMATION_COLOR_HSV);
+        uint32_t set_anim_color_callback(uint32_t trigger_time, void* cb_arg) {
+            dprintf("set_animation_if_lock_layr(): set color\n");
+            rgb_matrix_sethsv_noeeprom(CONFIG_LOCK_ANIMATION_COLOR_HSV);
+            return 0;
+        }
+        anim_color_token = defer_exec(250, set_anim_color_callback, NULL);
         #endif
-    }
-}
-
-void send_key_to_host_after_wait(uint8_t ms) {
-    if (get_highest_layer(layer_state) == LOCK_LAYR) {
-        wait_ms(ms);
-        tap_code(KC_CAPS);
-        tap_code(KC_CAPS);
     }
 }
 
@@ -5198,9 +5310,36 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
             #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
             lock_anim_active = false;
             #endif
+            housekeeping_restore_lock_anim = false;
+            housekeeping_retry_anim_restore = false;
+            #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
+            // cancel lock anim color change if token is active 
+            if (anim_color_token) {
+                cancel_deferred_exec(anim_color_token);
+                anim_color_token = INVALID_DEFERRED_TOKEN;
+            }
+            #endif
+
             // in case dip switch was changed while in lock mode
-            layer_move(get_highest_layer(default_layer_state));
-            rgb_matrix_mode_noeeprom(user_config.rgb_mode);
+            uint16_t delay_time;
+            delay_time = 0;
+            #if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
+            if (os_changed_while_locked) {
+                delay_time = 50;
+                uint32_t layer_move_callback(uint32_t trigger_time, void* cb_arg) {
+                    layer_move(get_highest_layer(default_layer_state));
+                    return 0;
+                }
+                defer_exec(delay_time, layer_move_callback, NULL);
+                os_changed_while_locked = false;
+            }
+            #endif
+            delay_time = delay_time + 50;
+            uint32_t matrix_mode_callback(uint32_t trigger_time, void* cb_arg) {
+                rgb_matrix_mode_noeeprom(user_config.rgb_mode);
+                return 0;
+            }
+            defer_exec(delay_time, matrix_mode_callback, NULL);
             break;
         default:
             tap_code(KC_NO);
@@ -6191,6 +6330,13 @@ bool caps_word_press_user(uint16_t keycode) {
     }
 }
 
+#ifdef KEYBOARD_IS_LEMOKEY
+uint32_t extra_primer_poke(uint32_t trigger_time, void* cb_arg) {
+    tap_code16(KC_NO);   // second harmless poke just for Lemokey
+    return 0;
+}
+#endif
+
 // callback for when a mcaro on osl is run (to turn off the layer)
 uint32_t osl_macro_callback(uint32_t trigger_time, void *cb_arg) {
     layer_off(FN_LAYR);
@@ -6366,6 +6512,9 @@ bool dip_switch_update_userspace(uint8_t index, bool active) {
                 layer_move(WIN_BASE);
             }
             #endif
+            else {
+                os_changed_while_locked = true;
+            }
         }
         else {
             #ifdef CONFIG_DEFAULT_MAC_LAYR
@@ -6383,6 +6532,9 @@ bool dip_switch_update_userspace(uint8_t index, bool active) {
                 layer_move(MAC_BASE);
             }
             #endif
+            else {
+                os_changed_while_locked = true;
+            }
         }
         os_changed = true;
     }
@@ -6430,22 +6582,6 @@ void wireless_transport_enable(bool enable) {
 }
 #endif
 
-#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-void wakeup_if_not_connected(void) {
-    transport_t t = get_transport();
-    wt_state_t state = wireless_get_state();
-    // Check if any wireless transport is active and connected
-    if ((t & TRANSPORT_WIRELESS) && state != WT_CONNECTED) {
-        wireless_transport_enable(true);
-        uint32_t start = timer_read32();
-        while (wireless_get_state() != WT_CONNECTED && timer_elapsed32(start) < 500) {
-            wait_ms(5);
-        }
-        send_key_to_host_after_wait(50);
-    }
-}
-#endif
-
 void matrix_init_user(void) {
     last_activity_timer = timer_read32();
 }
@@ -6453,6 +6589,9 @@ void matrix_init_user(void) {
 void keyboard_post_init_user(void) {
     // read the user config from EEPROM
     user_config.raw = eeconfig_read_user();
+    rgb_indicators_enabled = false;
+    deferred_indicator_enable = true;
+    deferred_indicator_timer = timer_read32() + 2000;
     // and set this so layers switch correctly on user's first os change
     layer_state_set(default_layer_state);
     rgb_matrix_mode(user_config.rgb_mode);
