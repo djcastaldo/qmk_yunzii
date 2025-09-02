@@ -1,6 +1,6 @@
 // process_record_userspace.c
 // @davex 07/30/2025
-// this is the start of moving some stuff to separate files to make it easier to move between keyboards 
+// this file is the majority of the shared user code for qmk keyboards
 
 #include "process_record_userspace.h"
 #include "process_key_sequence.h"
@@ -4760,7 +4760,7 @@ void suspend_power_down_user(void) {
     #endif
     power_down_ran = true;
 
-// mark that next cycle is “in suspend”
+    // mark that next cycle is “in suspend”
     was_suspended = true;
     wakeup_ran = false;  // cleared ONLY here (entering suspend)
 }
@@ -6217,9 +6217,9 @@ void type_numpad_keys_from_string(const char *stringnum) {
 bool key_should_fade(keytracker key, uint8_t layer) {
     bool should_fade = true;
     if ((key.fade < 1) ||
-#ifdef CONFIG_CUSTOM_DO_NOT_FADE
+        #ifdef CONFIG_CUSTOM_DO_NOT_FADE
         CONFIG_CUSTOM_DO_NOT_FADE ||
-#endif
+        #endif
         ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_LAYR ||
         layer == CIRC_LAYR || is_caps_word_on()) &&
         (key.index == I_LSFT || key.index == I_RSFT)) ||                                              // l/r shift
@@ -6234,9 +6234,9 @@ bool key_should_fade(keytracker key, uint8_t layer) {
                                 #endif
                                 )) ||                                                                 // l/r alt cmd
         (macro_recording && (key.index == I_MREC1 || key.index == I_MREC2)) ||                        // macro recording keys
-#ifdef CONFIG_HAS_LLOCK_KEY
+        #ifdef CONFIG_HAS_LLOCK_KEY
         (is_layer_locked(layer) && key.index == I_LLOCK) ||                                           // layer lock key
-#endif
+        #endif
         (is_in_leader_sequence && key.index == I_LEAD) ||                                             // leader key
         (layer == SFT_LAYR && (key.index == I_NUMLOCK || key.index == I_MHLD)) ||                     // num lock, mouse hold
         (layer == FN_LAYR && key.index == I_SLOCK) ||                                                 // scroll lock
@@ -6244,15 +6244,15 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         key.index == I_UNDERLN || key.index == I_BBRTEXT)) ||                                         // wide-text toggles
         (layer == KCTL_LAYR && (key.index == I_FJLIGHT || key.index == I_HROWLIGHT || 
                                 key.index == I_KTRACK
-#ifdef CONFIG_HAS_SECOND_KTRACK_KEY 
+        #ifdef CONFIG_HAS_SECOND_KTRACK_KEY
                                 || key.index == I_KTRACK2
-#endif
-#ifdef CONFIG_HAS_SECOND_FJLIGHT_KEY
+        #endif
+        #ifdef CONFIG_HAS_SECOND_FJLIGHT_KEY
                                 || key.index == I_FJLIGHT2
-#endif
-#ifdef CONFIG_HAS_SECOND_HROWLIGHT_KEY
+        #endif
+        #ifdef CONFIG_HAS_SECOND_HROWLIGHT_KEY
                                 || key.index == I_HROWLIGHT2
-#endif
+        #endif
                                 )) ||                                                                 // ktrack/hrow/fj indicators
         (layer == KCTL_LAYR && (key.index >= I_N1 && key.index <= I_N4)) ||                           // wireless mode keys
         (os_changed) ||                                                                               // mac/win/lin change
@@ -6262,19 +6262,19 @@ bool key_should_fade(keytracker key, uint8_t layer) {
                                 key.index == I_RALT ||
                             #endif
                                 key.index == I_LGUI)) ||                                              // sym_layr ralt, lgui
-#ifdef CONFIG_HAS_ROPT_KEY
+        #ifdef CONFIG_HAS_ROPT_KEY
         (layer == MSYM_LAYR && (key.index == I_LOPT || key.index == I_ROPT)) ||                       // sym_layr lopt, ropt
         (layer == EMO_LAYR && (
-                            #ifndef CONFIG_NO_RCMD_KEY
+            #ifndef CONFIG_NO_RCMD_KEY
                                 key.index == I_RCMD ||
-                            #endif
+            #endif
                                  key.index == I_ROPT)) ||                                             // emo_layr rcmd, rpot
-#else
-        (layer == MSYM_LAYR && key.index == I_LOPT) ||                                                // sym_layr lopt, ropt
-    #ifndef CONFIG_NO_RCMD_KEY
-        (layer == EMO_LAYR && key.index == I_RCMD) ||                                                 // emo_layr rcmd, rpot
-    #endif
-#endif
+        #else
+        (layer == MSYM_LAYR && key.index == I_LOPT) ||                                                // sym_layr lopt
+            #ifndef CONFIG_NO_RCMD_KEY
+        (layer == EMO_LAYR && key.index == I_RCMD) ||                                                 // emo_layr rcmd
+            #endif
+        #endif
         (key.index == I_CAPS || key.index == I_FN || key.index == I_TAB || key.index == I_BSLS)) {    // caps lock, fn, tab, bsls
             should_fade = false;
         }
@@ -6283,20 +6283,20 @@ bool key_should_fade(keytracker key, uint8_t layer) {
 
 // led indexes for keys that get capitalized when caps lock is on
 bool is_capslock_shifted(uint8_t i) {
-#ifdef CONFIG_CAPSLOCK_SHIFTED
+    #ifdef CONFIG_CAPSLOCK_SHIFTED
     if (CONFIG_CAPSLOCK_SHIFTED) {
         return true;
     }
-#endif
+    #endif
     return false;
 }
 // led indexes for keys that get shifted when caps word is on
 bool is_capsword_shifted(uint8_t i) {
-#ifdef CONFIG_CAPSWORD_EXTRA
+    #ifdef CONFIG_CAPSWORD_EXTRA
     if (CONFIG_CAPSWORD_EXTRA || is_capslock_shifted(i)) {
-#else
+    #else
     if (is_capslock_shifted(i)) {
-#endif
+    #endif
         return true;
     }
     return false;
@@ -6383,9 +6383,9 @@ void dynamic_macro_record_start_user(int8_t direction) {
     macro_direction = direction;
     macro_recording = true;
     macro_timer = timer_read();
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
     return true;
-#endif
+    #endif
 }
 #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
 bool dynamic_macro_record_end_user(int8_t direction) {
@@ -6402,9 +6402,9 @@ void dynamic_macro_record_end_user(int8_t direction) {
             tracked_keys[i].fade = 0;
         }
     }
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
     return true;
-#endif
+    #endif
 }
 // this is so the macro key lights don't get stuck when i play the macro
 #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
@@ -6418,9 +6418,9 @@ void dynamic_macro_play_user(int8_t direction) {
             tracked_keys[i].fade = 0;
         }
     }
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
     return true;
-#endif
+    #endif
 }
 
 void oneshot_layer_changed_user(uint8_t layer) {
@@ -6593,35 +6593,35 @@ void keyboard_post_init_user(void) {
 
 void eeconfig_init_user(void) {  // EEPROM is getting reset!
     user_config.raw = 0;
-#ifdef CONFIG_EEPROM_RESET_DEFAULT_IS_LINUX
+    #ifdef CONFIG_EEPROM_RESET_DEFAULT_IS_LINUX
     user_config.is_linux_base = true; // set default here
-#else
+    #else
     user_config.is_linux_base = false; // set default here
-#endif
+    #endif
     user_config.rgb_mode = RGB_MATRIX_DEFAULT_MODE;
     eeconfig_update_user(user_config.raw); // write default value to EEPROM now
-#if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
-    #ifdef CONFIG_SWITCH_PIN
+    #if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
+        #ifdef CONFIG_SWITCH_PIN
     if (!readPin(CONFIG_SWITCH_PIN)) {
-    #else
+        #else
     if (!readPin(B12)) {
-    #endif
-    #ifdef CONFIG_DEFAULT_WIN_LAYR
+        #endif
+        #ifdef CONFIG_DEFAULT_WIN_LAYR
         set_single_persistent_default_layer(CONFIG_DEFAULT_WIN_LAYR);
-    #else
+        #else
         set_single_persistent_default_layer(1);
-    #endif
+        #endif
     }
     else {
-    #ifdef CONFIG_DEFAULT_MAC_LAYR
+        #ifdef CONFIG_DEFAULT_MAC_LAYR
         set_single_persistent_default_layer(CONFIG_DEFAULT_MAC_LAYR);
-    #else
+        #else
         set_single_persistent_default_layer(0);
-    #endif
+        #endif
     }
-#elif defined(CONFIG_EEPROM_RESET_DEFAULT_LAYER)
+    #elif defined(CONFIG_EEPROM_RESET_DEFAULT_LAYER)
     set_single_persistent_default_layer(CONFIG_EEPROM_RESET_DEFAULT_LAYER);
-#else
+    #else
     set_single_persistent_default_layer(0);
-#endif
+    #endif
 }
