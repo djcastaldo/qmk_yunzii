@@ -3,6 +3,7 @@
 // this is the start of moving some stuff to separate files to make it easier to move between keyboards 
 
 #include "process_record_userspace.h"
+#include "process_key_sequence.h"
 #include "config.h"
 #include "layers.h"
 #include "keyindex.h"
@@ -2996,27 +2997,25 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // move line up
     case VSMVLNU:
         if (record->event.pressed) {
-            register_code(KC_LALT);
-            wait_ms(vs_delay);
-            register_code(KC_UP);
-            wait_ms(vs_delay);
-            unregister_code(KC_UP);
-            wait_ms(vs_delay);
-            unregister_code(KC_LALT);
-            wait_ms(vs_delay);
+            key_action_t mvlineup_seq[] = {
+                { KC_LALT, true, 0 },
+                { KC_UP,   true, vs_delay },
+                { KC_UP,   false, vs_delay },
+                { KC_LALT, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(mvlineup_seq);
         }
         return false;
     // move line down
     case VSMVLND:
         if (record->event.pressed) {
-            register_code(KC_LALT);
-            wait_ms(vs_delay);
-            register_code(KC_DOWN);
-            wait_ms(vs_delay);
-            unregister_code(KC_DOWN);
-            wait_ms(vs_delay);
-            unregister_code(KC_LALT);
-            wait_ms(vs_delay);
+            key_action_t mvlinedown_seq[] = {
+                { KC_LALT,  true, 0 },
+                { KC_DOWN,  true, vs_delay },
+                { KC_DOWN, false, vs_delay },
+                { KC_LALT, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(mvlinedown_seq);
         }
         return false;
     // duplicate line
@@ -3036,25 +3035,23 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) {
                 // below
-                register_code(KC_LSFT);
-                wait_ms(vs_delay);
-                register_code(KC_ENT);
-                wait_ms(vs_delay);
-                unregister_code(KC_ENT);
-                wait_ms(vs_delay);
-                unregister_code(KC_LSFT);
-                wait_ms(vs_delay);
+                key_action_t inslnbelow_seq[] = {
+                    { KC_LSFT,  true, 0 },
+                    { KC_ENT,   true, vs_delay },
+                    { KC_ENT,  false, vs_delay },
+                    { KC_LSFT, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(inslnbelow_seq);
             }
             else {
                 // above
-                register_code(KC_LCTL);
-                wait_ms(vs_delay);
-                register_code(KC_ENT);
-                wait_ms(vs_delay);
-                unregister_code(KC_ENT);
-                wait_ms(vs_delay);
-                unregister_code(KC_LCTL);
-                wait_ms(vs_delay);
+                key_action_t inslnabove_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_ENT,   true, vs_delay },
+                    { KC_ENT,  false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(inslnabove_seq);
             }
         }
         return false;
@@ -3117,14 +3114,13 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // goto matching brace
     case VSMATCH:
         if (record->event.pressed) {
-            register_code(KC_LCTL);
-            wait_ms(vs_delay);
-            register_code(KC_RBRC);
-            wait_ms(vs_delay);
-            unregister_code(KC_RBRC);
-            wait_ms(vs_delay);
-            unregister_code(KC_LCTL);
-            wait_ms(vs_delay);
+            key_action_t matchbrace_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_RBRC,  true, vs_delay },
+                { KC_RBRC, false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(matchbrace_seq);
         }
         return false;
     // show info / show immediate window
@@ -4631,6 +4627,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 }
 
 void matrix_scan_user(void) {
+    // check for and run active sequences
+    process_key_sequence();
+
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     #ifdef CONFIG_CUSTOM_SLEEP_WARNING
     if (!rgb_reached_timeout && !warning_active &&
@@ -4695,12 +4694,14 @@ void matrix_scan_user(void) {
                 // primer poke: extra delay for Lemokey
                 uint32_t primer_delay = 400;
                 #ifdef KEYBOARD_IS_LEMOKEY
-                primer_delay = 600; // slightly longer before first KC_NO
+                primer_delay = 750; // longer delay
                 #endif
                 if (timer_elapsed32(wake_t) >= primer_delay) {
-                    tap_code16(KC_NO);   // primer poke
                     #ifdef KEYBOARD_IS_LEMOKEY
+                    tap_code16(KC_F24);
                     defer_exec(50, extra_primer_poke, NULL); // delayed extra poke for lemokey
+                    #else
+                    tap_code16(KC_NO);   // primer poke
                     #endif
                     wake_t = timer_read32();
                     wake_step = 2;
@@ -4709,17 +4710,8 @@ void matrix_scan_user(void) {
 
             case 2:
                 if (timer_elapsed32(wake_t) >= 400) {
-                    tap_code(KC_MUTE);
-                    wake_t = timer_read32();
-                    wake_step = 3;
-                }
-                break;
-
-            case 3:
-                if (timer_elapsed32(wake_t) >= 150) {
-                    tap_code(KC_MUTE);
-                    dprintf("wake taps sent, sequence complete\n");
-                    wake_seq_active = false;
+                    tap_code16(KC_F24);
+                    dprintf("wake taps sent\n");
                     // schedule retry check
                     wake_t = timer_read32();
                     wake_step = 99;
@@ -4727,11 +4719,10 @@ void matrix_scan_user(void) {
                 break;
 
             case 99:
-                // wait ~1s and see if we’re still asleep
+                // wait ~1s and see if still asleep
                 if (timer_elapsed32(wake_t) > 1000) {
-                    if (wireless_get_state() != WT_CONNECTED && wake_retry < 2) {
+                    if (wireless_get_state() != WT_CONNECTED && wake_retry < 1) {
                         dprintf("first wake failed, retrying...\n");
-                        wake_seq_active = true;
                         wake_step = 0;
                         wake_t = timer_read32();
                         wake_retry++;
@@ -4793,6 +4784,9 @@ void suspend_wakeup_init_user(void) {
         wireless_transport_enable(true);
         tap_code16(KC_NO);
         dprintf("LOCK_LAYR active, arming wake taps\n");
+        #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+        lock_anim_active = true;
+        #endif
     }
     #endif
     // need this in the wakeup routine to survive a keycrhon deep sleep
