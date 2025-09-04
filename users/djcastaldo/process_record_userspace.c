@@ -2998,8 +2998,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSMVLNU:
         if (record->event.pressed) {
             key_action_t mvlineup_seq[] = {
-                { KC_LALT, true, 0 },
-                { KC_UP,   true, vs_delay },
+                { KC_LALT,  true, 0 },
+                { KC_UP,    true, vs_delay },
                 { KC_UP,   false, vs_delay },
                 { KC_LALT, false, vs_delay }
             };
@@ -3021,13 +3021,27 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // duplicate line
     case VSDUPLN:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL("d"), vs_delay);
+            key_action_t dupeline_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_D,     true, vs_delay },
+                { KC_D,    false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(dupeline_seq);
         }
         return false;
     // delete line
     case VSDELLN:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL(SS_LSFT("l")), vs_delay);
+            key_action_t delline_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_LSFT,  true, 10 },
+                { KC_L,     true, vs_delay },
+                { KC_L,    false, vs_delay },
+                { KC_LSFT, false, vs_delay },
+                { KC_LCTL, false, 10 }
+            };
+            START_KEY_SEQUENCE(delline_seq);
         }
         return false;
     // insert line above / below
@@ -3059,10 +3073,24 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSLBCMT:
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) {
-                send_string_with_delay(SS_LSFT("/"), vs_delay);
+                key_action_t blockcomment_seq[] = {
+                    { KC_LSFT,  true, 0 },
+                    { KC_SLSH,  true, vs_delay },
+                    { KC_SLSH, false, vs_delay },
+                    { KC_LSFT, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(blockcomment_seq);
             }
             else {
-                send_string_with_delay(SS_LCTL("k/"), vs_delay);
+                key_action_t linecomment_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_K,     true, vs_delay },
+                    { KC_K,    false, vs_delay },
+                    { KC_SLSH,  true, vs_delay },
+                    { KC_SLSH, false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(linecomment_seq);
             }
         }
         return false;
@@ -3070,10 +3098,24 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSLNCMC:
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // uncomment
-                send_string_with_delay("ku", vs_delay);
+                key_action_t uncommentline_seq[] = {
+                    { KC_K,  true, 0 },
+                    { KC_K, false, vs_delay },
+                    { KC_U,  true, vs_delay },
+                    { KC_U, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(uncommentline_seq);
             }
             else {  // comment
-                send_string_with_delay(SS_LCTL("kc"), vs_delay);
+                key_action_t commentline_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_K,     true, vs_delay },
+                    { KC_K,    false, vs_delay },
+                    { KC_C,     true, vs_delay },
+                    { KC_C,    false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(commentline_seq);
             }
         }
         return false;
@@ -3081,10 +3123,24 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSLNCMU:
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // comment
-                send_string_with_delay("kc", vs_delay);
+                key_action_t uncommentline_seq[] = {
+                    { KC_K,  true, 0 },
+                    { KC_K, false, vs_delay },
+                    { KC_C,  true, vs_delay },
+                    { KC_C, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(uncommentline_seq);
             }
             else {  // uncomment
-                send_string_with_delay(SS_LCTL("ku"), vs_delay);
+                key_action_t uncommentline_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_K,     true, vs_delay },
+                    { KC_K,    false, vs_delay },
+                    { KC_U,     true, vs_delay },
+                    { KC_U,    false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(uncommentline_seq);
             }
         }
         return false;
@@ -3092,23 +3148,57 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSWRDWP:
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // view whitespace
-                send_string_with_delay("rw", vs_delay);
+                key_action_t whitespace_seq[] = {
+                    { KC_R,  true, 0 },
+                    { KC_R, false, vs_delay },
+                    { KC_W,  true, vs_delay },
+                    { KC_W, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(whitespace_seq);
             }
             else { // toggle word warp
-                send_string_with_delay(SS_LCTL("ew"), vs_delay);
+                key_action_t wordwrap_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_E,     true, vs_delay },
+                    { KC_E,    false, vs_delay },
+                    { KC_W,     true, vs_delay },
+                    { KC_W,    false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(wordwrap_seq);
             }
         }
         return false;
     // sort lines
     case VSLNSRT:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LSFT(SS_LALT("ls")), vs_delay);
+            key_action_t sortlines_seq[] = {
+                { KC_LSFT,  true, 0 },
+                { KC_LALT,  true, 10 },
+                { KC_L,     true, vs_delay },
+                { KC_L,    false, vs_delay },
+                { KC_S,     true, vs_delay },
+                { KC_S,    false, vs_delay },
+                { KC_LALT, false, vs_delay },
+                { KC_LSFT, false, 10 }
+            };
+            START_KEY_SEQUENCE(sortlines_seq);
         }
         return false;
     // join lines
     case VSLJOIN:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LSFT(SS_LALT("lj")), vs_delay);
+            key_action_t joinlines_seq[] = {
+                { KC_LSFT,  true, 0 },
+                { KC_LALT,  true, 10 },
+                { KC_L,     true, vs_delay },
+                { KC_L,    false, vs_delay },
+                { KC_J,     true, vs_delay },
+                { KC_J,    false, vs_delay },
+                { KC_LALT, false, vs_delay },
+                { KC_LSFT, false, 10 }
+            };
+            START_KEY_SEQUENCE(joinlines_seq);
         }
         return false;
     // goto matching brace
@@ -3127,82 +3217,189 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSINFO:
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // show immediate
-                send_string_with_delay(SS_LALT("i"), vs_delay);
+                key_action_t immediate_seq[] = {
+                    { KC_LALT,  true, 0 },
+                    { KC_I,     true, vs_delay },
+                    { KC_I,    false, vs_delay },
+                    { KC_LALT, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(immediate_seq);
             }
             else { // show info
-                send_string_with_delay(SS_LCTL("ki"), vs_delay);
+                key_action_t info_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_K,     true, vs_delay },
+                    { KC_K,    false, vs_delay },
+                    { KC_I,     true, vs_delay },
+                    { KC_I,    false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(info_seq);
             }
         }
         return false;
     // show notifications
     case VSNOTIF:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL("\\n"), vs_delay);
+            key_action_t notify_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_BSLS,  true, vs_delay },
+                { KC_BSLS, false, vs_delay },
+                { KC_N,     true, vs_delay },
+                { KC_N,    false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(notify_seq);
         }
         return false;
     // find
     case VSFIND:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL("f"), vs_delay);
+            key_action_t find_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_F,     true, vs_delay },
+                { KC_F,    false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(find_seq);
         }
         return false;
     // replace
     case VSREPL:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL("h"), vs_delay);
+            key_action_t replace_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_H,     true, vs_delay },
+                { KC_H,    false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(replace_seq);
         }
         return false;
     // rename
     case VSRNAME:
         if (record->event.pressed) {
             send_string_with_delay(SS_LCTL("rr"), vs_delay);
+            key_action_t rename_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_R,     true, vs_delay },
+                { KC_R,    false, vs_delay },
+                { KC_R,     true, vs_delay },
+                { KC_R,    false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(rename_seq);
         }
         return false;
     // goto line
     case VSGOTO:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL("g"), vs_delay);
+            key_action_t goto_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_G,     true, vs_delay },
+                { KC_G,    false, vs_delay },
+                { KC_LCTL, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(goto_seq);
         }
         return false;
     // view solution explorer
     case VSSOLU:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL(SS_LALT("l")), vs_delay);
+            key_action_t solution_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_LALT,  true, 10 },
+                { KC_L,     true, vs_delay },
+                { KC_L,    false, vs_delay },
+                { KC_LALT, false, vs_delay },
+                { KC_LCTL, false, 10 }
+            };
+            START_KEY_SEQUENCE(solution_seq);
         }
         return false;
     // activate error list / exception settings
     case VSERR:
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // exception settings
-                send_string_with_delay(SS_LALT("e"), vs_delay);
+                key_action_t exception_seq[] = {
+                    { KC_LALT,  true, 0 },
+                    { KC_E,     true, vs_delay },
+                    { KC_E,    false, vs_delay },
+                    { KC_LALT, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(exception_seq);
             }
             else { // show error window
-                send_string_with_delay(SS_LCTL("\\e"), vs_delay);
+                key_action_t error_seq[] = {
+                    { KC_LCTL,  true, 0 },
+                    { KC_BSLS,  true, vs_delay },
+                    { KC_BSLS, false, vs_delay },
+                    { KC_E,     true, vs_delay },
+                    { KC_E,    false, vs_delay },
+                    { KC_LCTL, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(error_seq);
             }
         }
         return false;
     // activate output window
     case VSOUTPT:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL(SS_LALT("o")), vs_delay);
+            key_action_t output_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_LALT,  true, 10 },
+                { KC_O,     true, vs_delay },
+                { KC_O,    false, vs_delay },
+                { KC_LALT, false, vs_delay },
+                { KC_LCTL, false, 10 }
+            };
+            START_KEY_SEQUENCE(output_seq);
         }
         return false;
     // publish solution
     case VSPUB:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL(SS_LALT("l")) SS_DELAY(150) SS_LALT("b") SS_DELAY(50) "h", vs_delay);
+            key_action_t publish_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_LALT,  true, 10 },
+                { KC_L,     true, vs_delay },
+                { KC_L,    false, vs_delay },
+                { KC_LALT, false, vs_delay },
+                { KC_LCTL, false, 10 },
+                { KC_LALT,  true, 150 },
+                { KC_B,     true, vs_delay },
+                { KC_B,    false, vs_delay },
+                { KC_LALT, false, vs_delay },
+                { KC_H,     true, 50 },
+                { KC_H,    false, vs_delay }
+            };
+            START_KEY_SEQUENCE(publish_seq);
         }
         return false;
     // goto base class
     case VSBASE:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LALT(SS_TAP(X_HOME)), vs_delay);
+            key_action_t baseclass_seq[] = {
+                { KC_LALT,  true, 0 },
+                { KC_HOME,  true, vs_delay },
+                { KC_HOME, false, vs_delay },
+                { KC_LALT, false, vs_delay }
+            };
+            START_KEY_SEQUENCE(baseclass_seq);
         }
         return false;
     // clipboard history
     case VSCLIPB:
         if (record->event.pressed) {
-            send_string_with_delay(SS_LCTL(SS_LSFT("v")), vs_delay);
+            key_action_t clipboard_seq[] = {
+                { KC_LCTL,  true, 0 },
+                { KC_LSFT,  true, 10 },
+                { KC_V,     true, vs_delay },
+                { KC_V,    false, vs_delay },
+                { KC_LSFT, false, vs_delay },
+                { KC_LCTL, false, 10 }
+            };
+            START_KEY_SEQUENCE(clipboard_seq);
         }
         return false;
     // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
