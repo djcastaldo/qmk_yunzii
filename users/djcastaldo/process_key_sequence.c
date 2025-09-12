@@ -7,10 +7,10 @@
 #include "process_key_sequence.h"
 
 #ifndef CONFIG_MAX_SEQ_LEN
-    #define CONFIG_MAX_SEQ_LEN   16
+    #define CONFIG_MAX_SEQ_LEN   32
 #endif
 #ifndef CONFIG_MAX_SEQ_QUEUE
-    #define CONFIG_MAX_SEQ_QUEUE 4
+    #define CONFIG_MAX_SEQ_QUEUE 10
 #endif
 #ifndef CONFIG_MAX_KEYS_HELD
     #define CONFIG_MAX_KEYS_HELD 8
