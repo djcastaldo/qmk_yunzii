@@ -3712,8 +3712,8 @@ bool process_leader_userspace(void) {
         //send_string_with_delay("Firstname" SS_TAP(X_TAB) "Lastname" SS_TAP(X_TAB) "123-456-7890" SS_TAP(X_TAB) "first.last@mail.mil" SS_TAP(X_TAB),20);
         rdp_send_string("Firstname");
         key_action_t tab_seq[] = {
-            { KC_TAB,   true, 25 },
-            { KC_TAB,  false, 25 }
+            { KC_TAB,   true, CONFIG_RDP_DELAY_KEY },
+            { KC_TAB,  false, CONFIG_RDP_DELAY_KEY }
         };
         START_KEY_SEQUENCE(tab_seq);
         rdp_send_string("Lastname");
@@ -3854,40 +3854,40 @@ bool process_leader_userspace(void) {
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_C)) {  // asp.net decrypt connectionStrings path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf connectionStrings ");
         key_action_t paste_seq[] = {
-            { KC_LCTL,  true, 20 },
-            { KC_V,     true, 20 }, { KC_V,   false, 20 },
-            { KC_LCTL, false, 20 },
-            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
+            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
+            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
+            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
         };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_E, KC_C)) {  // asp.net encrypt connectionStrings path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef connectionStrings ");
         key_action_t paste_seq[] = {
-            { KC_LCTL,  true, 20 },
-            { KC_V,     true, 20 }, { KC_V,   false, 20 },
-            { KC_LCTL, false, 20 },
-            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
+            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
+            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
+            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
         };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_S)) {  // asp.net decrypt sessionState path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf system.web/sessionState ");
         key_action_t paste_seq[] = {
-            { KC_LCTL,  true, 20 },
-            { KC_V,     true, 20 }, { KC_V,   false, 20 },
-            { KC_LCTL, false, 20 },
-            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
+            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
+            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
+            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
         };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_E, KC_S)) {  // asp.net encrypt sessionState path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef system.web/sessionState ");
         key_action_t paste_seq[] = {
-            { KC_LCTL,  true, 20 },
-            { KC_V,     true, 20 }, { KC_V,   false, 20 },
-            { KC_LCTL, false, 20 },
-            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
+            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
+            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
+            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
         };
         START_KEY_SEQUENCE(paste_seq);
     }

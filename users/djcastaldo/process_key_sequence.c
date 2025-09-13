@@ -36,6 +36,7 @@ typedef struct {
 
 static key_sequence_t sequences[CONFIG_MAX_SEQ_QUEUE];
 static int active_seq = -1;  // which sequence currently owns the keyboard
+static bool is_shift_pressed_for_seq = false;
 
 // --- helpers ---
 static void release_all_held(key_sequence_t *s) {
@@ -43,6 +44,7 @@ static void release_all_held(key_sequence_t *s) {
         unregister_code(s->held_keys[i]);
     }
     s->held_count = 0;
+    is_shift_pressed_for_seq = false;
 }
 
 // start a new sequence
@@ -176,7 +178,14 @@ static uint8_t char_to_actions(char c, key_action_t *actions) {
 
     // Press Shift first if needed
     if (shift_needed) {
-        actions[count++] = (key_action_t){.keycode = KC_LSFT, .press = true, .delay_ms = CONFIG_RDP_DELAY_MOD};
+        if (!is_shift_pressed_for_seq) {
+            actions[count++] = (key_action_t){.keycode = KC_LSFT, .press = true, .delay_ms = CONFIG_RDP_DELAY_MOD};
+            is_shift_pressed_for_seq = true;
+        }
+    } // release shift if it isn't needed and was pressed in a previous action
+    else if (is_shift_pressed_for_seq) {
+        actions[count++] = (key_action_t){.keycode = KC_LSFT, .press = false, .delay_ms = CONFIG_RDP_DELAY_MOD};
+        is_shift_pressed_for_seq = false;
     }
 
     // Press the key
@@ -184,11 +193,6 @@ static uint8_t char_to_actions(char c, key_action_t *actions) {
 
     // Release the key
     actions[count++] = (key_action_t){.keycode = keycode, .press = false, .delay_ms = CONFIG_RDP_DELAY_KEY};
-
-    // Release Shift if it was pressed
-    if (shift_needed) {
-        actions[count++] = (key_action_t){.keycode = KC_LSFT, .press = false, .delay_ms = CONFIG_RDP_DELAY_MOD};
-    }
 
     // Add tiny "post-key" pause to ensure OS registers properly
     actions[count++] = (key_action_t){.keycode = KC_NO, .press = false, .delay_ms = 10};
