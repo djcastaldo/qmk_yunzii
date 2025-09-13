@@ -7,13 +7,20 @@
 #include "process_key_sequence.h"
 
 #ifndef CONFIG_MAX_SEQ_LEN
-    #define CONFIG_MAX_SEQ_LEN   32
+    #define CONFIG_MAX_SEQ_LEN   128
 #endif
 #ifndef CONFIG_MAX_SEQ_QUEUE
     #define CONFIG_MAX_SEQ_QUEUE 10
 #endif
 #ifndef CONFIG_MAX_KEYS_HELD
     #define CONFIG_MAX_KEYS_HELD 8
+#endif
+// --- configuration for RDP delays ---
+#ifndef CONFIG_RDP_DELAY_KEY
+    #define CONFIG_RDP_DELAY_KEY 15    // ms between key press/release
+#endif
+#ifndef CONFIG_RDP_DELAY_MOD
+    #define CONFIG_RDP_DELAY_MOD 20    // ms for modifiers
 #endif
 
 typedef struct {
@@ -106,5 +113,112 @@ void process_key_sequence(void) {
                 }
             }
         }
+    }
+}
+
+// --- convert a char to key actions safely ---
+static uint8_t char_to_actions(char c, key_action_t *actions) {
+    uint8_t count = 0;
+    bool shift_needed = false;
+    uint16_t keycode = KC_NO;
+
+    // Determine base keycode
+    if (c >= 'a' && c <= 'z') {
+        keycode = KC_A + (c - 'a');
+    } else if (c >= 'A' && c <= 'Z') {
+        keycode = KC_A + (c - 'A');
+        shift_needed = true;
+    } else if (c >= '1' && c <= '9') {
+        keycode = KC_1 + (c - '1');
+    } else {
+        switch (c) {
+            case '0': keycode = KC_0; break;
+            case ' ': keycode = KC_SPC; break;
+            case '\n': keycode = KC_ENT; break;
+            case '\t': keycode = KC_TAB; break;
+            case '!': keycode = KC_1; shift_needed = true; break;
+            case '@': keycode = KC_2; shift_needed = true; break;
+            case '#': keycode = KC_3; shift_needed = true; break;
+            case '$': keycode = KC_4; shift_needed = true; break;
+            case '%': keycode = KC_5; shift_needed = true; break;
+            case '^': keycode = KC_6; shift_needed = true; break;
+            case '&': keycode = KC_7; shift_needed = true; break;
+            case '*': keycode = KC_8; shift_needed = true; break;
+            case '(': keycode = KC_9; shift_needed = true; break;
+            case ')': keycode = KC_0; shift_needed = true; break;
+            case '-': keycode = KC_MINS; break;
+            case '_': keycode = KC_MINS; shift_needed = true; break;
+            case '=': keycode = KC_EQL; break;
+            case '+': keycode = KC_EQL; shift_needed = true; break;
+            case '[': keycode = KC_LBRC; break;
+            case '{': keycode = KC_LBRC; shift_needed = true; break;
+            case ']': keycode = KC_RBRC; break;
+            case '}': keycode = KC_RBRC; shift_needed = true; break;
+            case '\\': keycode = KC_BSLS; break;
+            case '|': keycode = KC_BSLS; shift_needed = true; break;
+            case ';': keycode = KC_SCLN; break;
+            case ':': keycode = KC_SCLN; shift_needed = true; break;
+            case '\'': keycode = KC_QUOT; break;
+            case '"': keycode = KC_QUOT; shift_needed = true; break;
+            case ',': keycode = KC_COMM; break;
+            case '<': keycode = KC_COMM; shift_needed = true; break;
+            case '.': keycode = KC_DOT; break;
+            case '>': keycode = KC_DOT; shift_needed = true; break;
+            case '/': keycode = KC_SLSH; break;
+            case '?': keycode = KC_SLSH; shift_needed = true; break;
+            case '`': keycode = KC_GRV; break;
+            case '~': keycode = KC_GRV; shift_needed = true; break;
+            default: keycode = KC_NO; break;
+        }
+    }
+
+    if (keycode == KC_NO) return 0;
+
+    // Press Shift first if needed
+    if (shift_needed) {
+        actions[count++] = (key_action_t){.keycode = KC_LSFT, .press = true, .delay_ms = CONFIG_RDP_DELAY_MOD};
+    }
+
+    // Press the key
+    actions[count++] = (key_action_t){.keycode = keycode, .press = true, .delay_ms = CONFIG_RDP_DELAY_KEY};
+
+    // Release the key
+    actions[count++] = (key_action_t){.keycode = keycode, .press = false, .delay_ms = CONFIG_RDP_DELAY_KEY};
+
+    // Release Shift if it was pressed
+    if (shift_needed) {
+        actions[count++] = (key_action_t){.keycode = KC_LSFT, .press = false, .delay_ms = CONFIG_RDP_DELAY_MOD};
+    }
+
+    // Add tiny "post-key" pause to ensure OS registers properly
+    actions[count++] = (key_action_t){.keycode = KC_NO, .press = false, .delay_ms = 10};
+
+    return count;
+}
+
+void rdp_send_string(const char *str) {
+    for (int i = 0; i < CONFIG_MAX_SEQ_QUEUE; i++) release_all_held(&sequences[i]);
+
+    while (*str) {
+        key_action_t seq[CONFIG_MAX_SEQ_LEN];
+        uint8_t seq_len = 0;
+
+        // fill sequence by characters, never splitting one character's actions
+        while (*str) {
+            key_action_t temp[7]; // max actions per char
+            uint8_t count = char_to_actions(*str, temp);
+
+            // if current sequence cannot fit this character, break and start a new sequence
+            if (seq_len + count > CONFIG_MAX_SEQ_LEN) break;
+
+            for (uint8_t i = 0; i < count; i++) seq[seq_len++] = temp[i];
+            str++;
+        }
+
+        if (seq_len > 0) start_key_sequence(seq, seq_len);
+
+        // **add a tiny pause between sequences**
+        key_action_t pause_seq[] = { { KC_NO, false, 50 } }; // 50 ms pause
+        START_KEY_SEQUENCE(pause_seq);
     }
 }

@@ -3709,7 +3709,20 @@ bool process_leader_userspace(void) {
         SEND_STRING("sudo mount -a" SS_TAP(X_ENT));
     }
     else if (leader_sequence_three_keys(KC_P, KC_O, KC_C)) {  // insert test POC data for template
-        send_string_with_delay("Firstname" SS_TAP(X_TAB) "Lastname" SS_TAP(X_TAB) "123-456-7890" SS_TAP(X_TAB) "first.last@mail.mil" SS_TAP(X_TAB),10);
+        //send_string_with_delay("Firstname" SS_TAP(X_TAB) "Lastname" SS_TAP(X_TAB) "123-456-7890" SS_TAP(X_TAB) "first.last@mail.mil" SS_TAP(X_TAB),20);
+        rdp_send_string("Firstname");
+        key_action_t tab_seq[] = {
+            { KC_TAB,   true, 25 },
+            { KC_TAB,  false, 25 }
+        };
+        START_KEY_SEQUENCE(tab_seq);
+        rdp_send_string("Lastname");
+        START_KEY_SEQUENCE(tab_seq);
+        rdp_send_string("123-456-7890");
+        START_KEY_SEQUENCE(tab_seq);
+        rdp_send_string("first.last@mail.mil");
+        START_KEY_SEQUENCE(tab_seq);
+        
     }
     else if (leader_sequence_two_keys(KC_N, KC_1)) {          // mac mini start nut upsdrvctl
         SEND_STRING("sudo /usr/local/opt/nut/sbin/upsdrvctl start" SS_TAP(X_ENT));
@@ -3839,16 +3852,44 @@ bool process_leader_userspace(void) {
         SEND_STRING("qmk flash -j 0 -kb keychron/q6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_C)) {  // asp.net decrypt connectionStrings path from clipboard
-        send_string_with_delay("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf connectionStrings " SS_LCTL(SS_TAP(X_V)) SS_TAP(X_ENT),9);
+        rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf connectionStrings ");
+        key_action_t paste_seq[] = {
+            { KC_LCTL,  true, 20 },
+            { KC_V,     true, 20 }, { KC_V,   false, 20 },
+            { KC_LCTL, false, 20 },
+            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+        };
+        START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_E, KC_C)) {  // asp.net encrypt connectionStrings path from clipboard
-        send_string_with_delay("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef connectionStrings " SS_LCTL(SS_TAP(X_V)) SS_TAP(X_ENT),9);
+        rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef connectionStrings ");
+        key_action_t paste_seq[] = {
+            { KC_LCTL,  true, 20 },
+            { KC_V,     true, 20 }, { KC_V,   false, 20 },
+            { KC_LCTL, false, 20 },
+            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+        };
+        START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_S)) {  // asp.net decrypt sessionState path from clipboard
-        send_string_with_delay("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf system.web/sessionState " SS_LCTL(SS_TAP(X_V)) SS_TAP(X_ENT),9);
+        rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf system.web/sessionState ");
+        key_action_t paste_seq[] = {
+            { KC_LCTL,  true, 20 },
+            { KC_V,     true, 20 }, { KC_V,   false, 20 },
+            { KC_LCTL, false, 20 },
+            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+        };
+        START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_E, KC_S)) {  // asp.net encrypt sessionState path from clipboard
-        send_string_with_delay("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef system.web/sessionState " SS_LCTL(SS_TAP(X_V)) SS_TAP(X_ENT),9);
+        rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef system.web/sessionState ");
+        key_action_t paste_seq[] = {
+            { KC_LCTL,  true, 20 },
+            { KC_V,     true, 20 }, { KC_V,   false, 20 },
+            { KC_LCTL, false, 20 },
+            { KC_ENT,   true, 20 }, { KC_ENT, false, 20 }
+        };
+        START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_four_keys(KC_B, KC_O, KC_O, KC_T)) {  // reset to bootloader
         reset_keyboard();
