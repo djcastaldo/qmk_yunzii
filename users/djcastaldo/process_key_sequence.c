@@ -6,22 +6,6 @@
 
 #include "process_key_sequence.h"
 
-#ifndef CONFIG_MAX_SEQ_LEN
-    #define CONFIG_MAX_SEQ_LEN   128
-#endif
-#ifndef CONFIG_MAX_SEQ_QUEUE
-    #define CONFIG_MAX_SEQ_QUEUE 10
-#endif
-#ifndef CONFIG_MAX_KEYS_HELD
-    #define CONFIG_MAX_KEYS_HELD 8
-#endif
-// --- configuration for RDP delays ---
-#ifndef CONFIG_RDP_DELAY_KEY
-    #define CONFIG_RDP_DELAY_KEY 15    // ms between key press/release
-#endif
-#ifndef CONFIG_RDP_DELAY_MOD
-    #define CONFIG_RDP_DELAY_MOD 20    // ms for modifiers
-#endif
 
 typedef struct {
     key_action_t actions[CONFIG_MAX_SEQ_LEN];

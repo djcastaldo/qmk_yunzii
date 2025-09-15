@@ -119,7 +119,6 @@ const uint8_t vs_delay = CONFIG_VS_LAYR_SEND_STRING_DELAY;
 const uint8_t vs_delay = 0;
 #endif
 
-
 __attribute__ ((weak))
 bool rgb_matrix_indicators_keymap(uint8_t led_min, uint8_t led_max) {
   return false;
@@ -3779,11 +3778,30 @@ bool process_leader_userspace(void) {
             SEND_STRING(SS_LOPT(SS_TAP(X_LEFT) SS_LSFT(SS_TAP(X_RIGHT))));
         }
         else {
-            SEND_STRING(SS_LCTL(SS_TAP(X_LEFT) SS_LSFT(SS_TAP(X_RIGHT))));
+            //SEND_STRING(SS_LCTL(SS_TAP(X_LEFT) SS_LSFT(SS_TAP(X_RIGHT))));
+            key_action_t sw_seq[] = {
+                { KC_RCTL,   true, 0 },
+                { KC_LEFT,   true, CONFIG_RDP_DELAY_KEY },
+                { KC_LEFT,  false, CONFIG_RDP_DELAY_KEY },
+                { KC_LSFT,   true, CONFIG_RDP_DELAY_KEY },
+                { KC_RIGHT,  true, CONFIG_RDP_DELAY_KEY },
+                { KC_RIGHT, false, CONFIG_RDP_DELAY_KEY },
+                { KC_LSFT,  false, CONFIG_RDP_DELAY_MOD },
+                { KC_RCTL,  false, CONFIG_RDP_DELAY_MOD }
+            };
+            START_KEY_SEQUENCE(sw_seq);
         }
     }
     else if (leader_sequence_two_keys(KC_S, KC_L)) {          // select line
-        SEND_STRING(SS_TAP(X_HOME) SS_LSFT(SS_TAP(X_END)));
+        //SEND_STRING(SS_TAP(X_HOME) SS_LSFT(SS_TAP(X_END)));
+        key_action_t sl_seq[] = {
+            { KC_HOME,  true, 0 },
+            { KC_LSFT,  true, CONFIG_RDP_DELAY_KEY },
+            { KC_END,   true, CONFIG_RDP_DELAY_KEY },
+            { KC_END,  false, CONFIG_RDP_DELAY_KEY },
+            { KC_LSFT, false, CONFIG_RDP_DELAY_KEY }
+        };
+        START_KEY_SEQUENCE(sl_seq);
     }
     else if (leader_sequence_two_keys(KC_T, KC_Y)) {          // thank you
         SEND_STRING("thank you");
@@ -6542,10 +6560,17 @@ bool is_capsword_shifted(uint8_t i) {
 
 // this is needed to prevent CAPS_WORD from breaking when some custom key commands are used
 bool caps_word_press_user(uint16_t keycode) {
+    static bool shift_pressed_for_caps_word = false;
     switch (keycode) {
         // Keycodes that continue Caps Word, with shift applied.
         case KC_A ... KC_Z:
         case KC_MINS:
+            if (!shift_pressed_for_caps_word) {
+                shift_pressed_for_caps_word = true;
+                register_code(KC_RSFT);
+                send_keyboard_report();
+                wait_ms(10);
+            }
             add_weak_mods(MOD_BIT(KC_LSFT));  // Apply shift to next key.
             return true;
 
@@ -6555,9 +6580,21 @@ bool caps_word_press_user(uint16_t keycode) {
         case KC_DEL:
         case KC_UNDS:
         case BSPCFAST:
+            if (shift_pressed_for_caps_word) {
+                shift_pressed_for_caps_word = false;
+                unregister_code(KC_RSFT);
+                send_keyboard_report();
+                wait_ms(10);
+            }
             return true;
 
         default:
+            if (shift_pressed_for_caps_word) {
+                shift_pressed_for_caps_word = false;
+                unregister_code(KC_RSFT);
+                send_keyboard_report();
+                wait_ms(10);
+            }
             return false;  // Deactivate Caps Word.
     }
 }
