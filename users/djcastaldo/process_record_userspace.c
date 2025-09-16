@@ -4932,7 +4932,7 @@ void matrix_scan_user(void) {
             case 0:
                 // wait until transport reports connected, with extra Lemokey settle delay
                 uint32_t settle_delay = 80;
-                #ifdef KEYBOARD_IS_LEMOKEY
+                #if defined(KEYBOARD_IS_LEMOKEY) && !defined(NO_LEMOKEY_DEEP_SLEEP)
                 settle_delay = 250; // extra delay for Lemokey BLE stack
                 #endif
                 // wait until transport reports connected
@@ -4949,11 +4949,11 @@ void matrix_scan_user(void) {
             case 1:
                 // primer poke: extra delay for Lemokey
                 uint32_t primer_delay = 400;
-                #ifdef KEYBOARD_IS_LEMOKEY
+                #if defined(KEYBOARD_IS_LEMOKEY) && !defined(NO_LEMOKEY_DEEP_SLEEP)
                 primer_delay = 750; // longer delay
                 #endif
                 if (timer_elapsed32(wake_t) >= primer_delay) {
-                    #ifdef KEYBOARD_IS_LEMOKEY
+                    #if defined(KEYBOARD_IS_LEMOKEY) && !defined(NO_LEMOKEY_DEEP_SLEEP)
                     tap_code16(KC_F24);
                     defer_exec(50, extra_primer_poke, NULL); // delayed extra poke for lemokey
                     #else
@@ -6599,7 +6599,7 @@ bool caps_word_press_user(uint16_t keycode) {
     }
 }
 
-#ifdef KEYBOARD_IS_LEMOKEY
+#if defined(KEYBOARD_IS_LEMOKEY) && !defined(NO_LEMOKEY_DEEP_SLEEP)
 uint32_t extra_primer_poke(uint32_t trigger_time, void* cb_arg) {
     tap_code16(KC_NO);   // second harmless poke just for Lemokey
     return 0;
