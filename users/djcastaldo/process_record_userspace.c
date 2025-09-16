@@ -5027,10 +5027,6 @@ void suspend_wakeup_init_user(void) {
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
     deferred_indicator_timer = timer_read32() + 1000;
-    last_activity_timer = timer_read32();
-    wait_ms(20);
-    rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
-    wait_ms(10);
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
     // ---- arm wake sequence immediately ----
     if (get_highest_layer(layer_state) == LOCK_LAYR) {
@@ -5094,13 +5090,14 @@ void housekeeping_task_user(void) {
             suspend_wakeup_init_user();
             #endif
         }
+        rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
         was_suspended = false;
         power_down_ran = false; // reset
         dprintf("housekeeping: wake path complete\n");
     }
 
     // --- delayed lock animation ---
-    if (housekeeping_restore_lock_anim && timer_expired32(timer_read32(), lock_anim_restore_timer)) {
+    if (housekeeping_restore_lock_anim && !is_suspended_now && timer_expired32(timer_read32(), lock_anim_restore_timer)) {
         #ifdef KEYBOARD_IS_YUNZII
         dprintf("check to run housekeeping_retry_anim_restore: %u\n", housekeeping_retry_anim_restore);
         dprintf("check rgb_matrix_is_enabled(): %u\n", rgb_matrix_is_enabled());
