@@ -211,7 +211,13 @@ uint8_t super_scut_keys[] = {I_INDICATOR, I_N1, I_N2, I_N3, I_N4, I_N5, I_N6, I_
 uint8_t super_scut_altcolor[] = {I_GRV, I_UP, I_DOWN, I_LEFT, I_RIGHT};
 uint8_t super_scut_keys_size = sizeof(super_scut_keys) / sizeof(super_scut_keys[0]);
 uint8_t super_scut_altcolor_size = sizeof(super_scut_altcolor) / sizeof(super_scut_altcolor[0]);
-
+// key sequence for paste from clipboard + enter that is used in multiple leader sequences
+key_action_t paste_seq[] = {
+    { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
+    { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
+    { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
+    { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
+};
 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
 #ifdef LK_WIRELESS_ENABLE
 // setup this token to be used to create a delay from when wireless mode is changed until when key fade turns back on
@@ -3871,42 +3877,18 @@ bool process_leader_userspace(void) {
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_C)) {  // asp.net decrypt connectionStrings path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf connectionStrings ");
-        key_action_t paste_seq[] = {
-            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
-            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
-            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
-            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
-        };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_E, KC_C)) {  // asp.net encrypt connectionStrings path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef connectionStrings ");
-        key_action_t paste_seq[] = {
-            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
-            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
-            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
-            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
-        };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_S)) {  // asp.net decrypt sessionState path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf system.web/sessionState ");
-        key_action_t paste_seq[] = {
-            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
-            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
-            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
-            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
-        };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_E, KC_S)) {  // asp.net encrypt sessionState path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef system.web/sessionState ");
-        key_action_t paste_seq[] = {
-            { KC_LCTL,  true, CONFIG_RDP_DELAY_MOD },
-            { KC_V,     true, CONFIG_RDP_DELAY_KEY }, { KC_V,   false, CONFIG_RDP_DELAY_KEY },
-            { KC_LCTL, false, CONFIG_RDP_DELAY_MOD },
-            { KC_ENT,   true, CONFIG_RDP_DELAY_KEY }, { KC_ENT, false, CONFIG_RDP_DELAY_KEY }
-        };
         START_KEY_SEQUENCE(paste_seq);
     }
     else if (leader_sequence_four_keys(KC_B, KC_O, KC_O, KC_T)) {  // reset to bootloader

@@ -79,6 +79,7 @@ enum userspace_keycodes {
     SECRET33,
     SECRET34,
     SECRET35,
+    SECRET36,
     LLOCK,
     BASE_CHG,
     WM_SYM,
