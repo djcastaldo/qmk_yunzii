@@ -10,7 +10,7 @@
 #ifdef CONFIG_HAS_BASE_LAYER_TOGGLE
 #include "quantum.h"
 #endif
-#ifdef KEYBOARD_IS_BRIDGE
+#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
 #include "wireless.h"
 #endif
 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
@@ -224,7 +224,7 @@ key_action_t paste_seq[] = {
 // to see the wireless status indicator
 deferred_token wireless_mode_token = INVALID_DEFERRED_TOKEN;
 #endif
-#elif defined(KEYBOARD_IS_BRIDGE)
+#elif defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
 #ifdef WIRELESS_ENABLE
 // for tracking if a wireless indicator should show on any layer
 // this gets set and elapsed time is tracked after a wireless or battery keycode is used
@@ -283,7 +283,7 @@ void reset_last_activity_timer(void) {
     // turn bt back on if it was off
     // there are some cases where bt is turned off but no full suspend power down happened
     if (!bt_is_on) {
-        #ifdef KEYBOARD_IS_BRIDGE
+        #if defined(KEYBOARD_IS_BRIDGE)
         wls_transport_enable(true);
         #endif
         rgb_set_sleep_mode(false);
@@ -3453,7 +3453,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         break;
     #endif
-#elif defined(KEYBOARD_IS_BRIDGE)
+#elif defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
     #ifdef WIRELESS_ENABLE
     // these keycodes should start a timer to allow showing of indicators setup in bridge75.c
     case KC_USB:
@@ -4346,21 +4346,19 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 if (is_layer_lock_led_on) {
                 #ifdef CONFIG_HAS_LLOCK_KEY
                     rgb_matrix_set_color(I_LLOCK, RGB_WHITE); // just make it white
-                #else
+                #endif
                     for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                         rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                     }
-                #endif
                 }
                 else if ((timer_elapsed(layer_lock_timer) > 200 && timer_elapsed(layer_lock_timer) < 400) || 
                          (timer_elapsed(layer_lock_timer) > 600)) {
                 #ifdef CONFIG_HAS_LLOCK_KEY
                     rgb_matrix_set_color(I_LLOCK, RGB_WHITE); // white alternate with layer color
-                #else
+                #endif
                     for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                         rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                     }
-                #endif
                 }
             }
         }
@@ -4797,8 +4795,10 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
             #else
                 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+                dprintf("rgm_matrix_sethsv\n");
                 rgb_matrix_sethsv_noeeprom(0, 0, 1);
                 #else
+                dprintf("rgm_matrix_disable\n");
                 rgb_matrix_disable_noeeprom();
                 #endif
             rgb_indicators_enabled = false;
@@ -4824,41 +4824,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             }
         }
         #endif
-    #elif defined(KEYBOARD_IS_BRIDGE)
+    #elif defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
         #ifdef WIRELESS_ENABLE
         // CTL_LAYR will alwys show connection indicator; other layers for 4 seconds after wireless/battery keycode is used
         if (layer == KCTL_LAYR || (wls_action_timer && timer_elapsed32(wls_action_timer) < 4000)) {
             return true;
         }
         #endif
-    #endif
-    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
-        if (warning_active &&
-        #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
-            timer_elapsed32(last_blink) > CONFIG_CUSTOM_BLINK_INTERVAL
-        #else
-            timer_elapsed32(last_blink) > 250
-        #endif
-        ) {
-            last_blink        = timer_read32();
-            warning_led_state = !warning_led_state;
-        }
-
-        if (warning_active) {
-            if (I_ESC >= led_min && I_ESC < led_max) {
-                if (warning_led_state) {
-                    rgb_matrix_set_color(I_ESC, RGB_RED);
-                    for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
-                        rgb_matrix_set_color(I_ESC, RGB_RED);
-                    }
-                } else {
-                    rgb_matrix_set_color(I_ESC, RGB_BLACK);
-                    for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
-                        rgb_matrix_set_color(I_ESC, RGB_BLACK);
-                    }
-                }
-            }
-        }
     #endif
     }
     return rgb_matrix_indicators_keymap(led_min, led_max);
@@ -4898,7 +4870,7 @@ void matrix_scan_user(void) {
     #else
     if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + 5000) {
     #endif
-        #ifdef KEYBOARD_IS_BRIDGE
+        #if defined(KEYBOARD_IS_BRIDGE)
         wls_transport_enable(false);
         wait_ms(50);
         #endif
@@ -4983,8 +4955,10 @@ void suspend_power_down_user(void) {
     dprintf("suspend_power_down_user. . .\n");
     if (rgb_matrix_is_enabled()) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+        dprintf("rgb_matrix_sethsv 1 val\n");
         rgb_matrix_sethsv_noeeprom(0, 0, 1);
         #else
+        dprintf("rgb_matrix_disable\n");
         rgb_matrix_disable_noeeprom();
         #endif
     }
@@ -5066,9 +5040,11 @@ void housekeeping_task_user(void) {
     if (!is_suspended_now && was_suspended) {
         // if keychron skipped suspend_wakeup_init_user, run it here
         if (!wakeup_ran) {
-            #ifdef KEYBOARD_IS_BRIDGE
+            #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
+            dprintf("housekeeping suspend_wakup_init_kb\n");
             suspend_wakeup_init_kb();
             #else
+            dprintf("housekeeping suspend_wakup_user\n");
             suspend_wakeup_init_user();
             #endif
         }
@@ -5113,6 +5089,34 @@ void housekeeping_task_user(void) {
             housekeeping_restore_lock_anim = false;
         }
     }
+    // warning led flashes before sleep
+    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+        if (warning_active &&
+        #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
+            timer_elapsed32(last_blink) > CONFIG_CUSTOM_BLINK_INTERVAL
+        #else
+            timer_elapsed32(last_blink) > 250
+        #endif
+        ) {
+            last_blink        = timer_read32();
+            warning_led_state = !warning_led_state;
+        }
+
+        if (warning_active) {
+            if (warning_led_state) {
+                rgb_matrix_set_color(I_ESC, RGB_RED);
+                dprintf("rgb_layer_indicators_count: %u\n", rgb_layer_indicators_count);
+                for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                    rgb_matrix_set_color(rgb_layer_indicators[i], RGB_RED);
+                }
+            } else {
+                rgb_matrix_set_color(I_ESC, RGB_BLACK);
+                for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
+                    rgb_matrix_set_color(rgb_layer_indicators[i], RGB_BLACK);
+                }
+            }
+        }
+    #endif
 }
 
 void set_animation_if_lock_layr(void) {
@@ -6489,7 +6493,11 @@ bool key_should_fade(keytracker key, uint8_t layer) {
                                 || key.index == I_HROWLIGHT2
         #endif
                                 )) ||                                                                 // ktrack/hrow/fj indicators
+        #ifdef KEYBOARD_IS_WOMIER
+        (layer == KCTL_LAYR && (key.index <= I_N1 && key.index >= I_N4)) ||                           // wireless mode keys
+        #else
         (layer == KCTL_LAYR && (key.index >= I_N1 && key.index <= I_N4)) ||                           // wireless mode keys
+        #endif
         (os_changed) ||                                                                               // mac/win/lin change
         (layer == WSYM_LAYR && (key.index == I_GRV || key.index == I_N1 || key.index == I_E ||
                                 key.index == I_I || key.index == I_U || key.index == I_N ||           // accent keys
@@ -6629,7 +6637,7 @@ uint32_t wireless_mode_callback(uint32_t trigger_time, void *cb_arg) {
 #endif
 
 // setup to store vars when macro recording starts or ends. then can flash some rgb
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
 bool dynamic_macro_record_start_user(int8_t direction) {
 #else
 void dynamic_macro_record_start_user(int8_t direction) {
@@ -6637,11 +6645,11 @@ void dynamic_macro_record_start_user(int8_t direction) {
     macro_direction = direction;
     macro_recording = true;
     macro_timer = timer_read();
-    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
     return true;
     #endif
 }
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
 bool dynamic_macro_record_end_user(int8_t direction) {
 #else
 void dynamic_macro_record_end_user(int8_t direction) {
@@ -6656,12 +6664,12 @@ void dynamic_macro_record_end_user(int8_t direction) {
             tracked_keys[i].fade = 0;
         }
     }
-    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
     return true;
     #endif
 }
 // this is so the macro key lights don't get stuck when i play the macro
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
 bool dynamic_macro_play_user(int8_t direction) {
 #else
 void dynamic_macro_play_user(int8_t direction) {
@@ -6672,7 +6680,7 @@ void dynamic_macro_play_user(int8_t direction) {
             tracked_keys[i].fade = 0;
         }
     }
-    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII)
+    #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
     return true;
     #endif
 }

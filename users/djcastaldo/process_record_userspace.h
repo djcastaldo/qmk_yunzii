@@ -41,6 +41,8 @@
 #define V_TAB_NXT LCTL(KC_TAB)                  // vivaldi tab next
 #define V_TAB_PRV LCTL(LSFT(KC_TAB))            // vivaldi tab prev
 #define MOD_SIRI HYPR(KC_S)                     // customized siri launch
+#define US_SIRI LCMD(KC_SPC)                    // standard siri launch
+#define US_CATANA LGUI(KC_C)                    // standard catana launch
 
 enum userspace_keycodes {
     SECRET0 = NEW_SAFE_RANGE,
