@@ -4071,6 +4071,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                             rgb_matrix_set_color(index, RGB_YELLOW);
                         #endif
                             break;
+                        #ifdef KEYBOARD_IS_WOMIER
+                        case CLCK_LAYR:
+                            rgb_matrix_set_color(index, RGB_RED);
+                            break;
+                        #endif
                         case LOCK_LAYR:
                             break;
                         default:
@@ -4786,6 +4791,11 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 }
             }
         }
+        #ifdef KEYBOARD_IS_WOMIER
+        if (layer == CLCK_LAYR) {
+            rgb_matrix_set_color(I_CAPS, RGB_WHITE);  // caps
+        } 
+        #endif
         // track num_lock
         if (layer == SFT_LAYR && host_keyboard_led_state().num_lock) {
             rgb_matrix_set_color(I_NUMLOCK, RGB_WHITE);
@@ -5252,7 +5262,20 @@ void caps_finished (tap_dance_state_t *state, void *user_data) {
     caps_tap_state.state = cur_dance(state);
     switch (caps_tap_state.state) {
         case SINGLE_TAP:
+            #ifdef KEYBOARD_IS_WOMIER
+            if (is_mac_base()) {
+                if (layer_state_is(CLCK_LAYR)) {
+                    layer_off(CLCK_LAYR); 
+                } else {
+                    layer_on(CLCK_LAYR);
+                }
+            }
+            else {
+                tap_code(KC_CAPS);
+            }
+            #else
             tap_code(KC_CAPS);
+            #endif
             break;
         case SINGLE_HOLD:
             layer_on(FN_LAYR);
@@ -6709,6 +6732,12 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     if (is_base_layer(get_highest_layer(state))) {
         rgb_matrix_reload_from_eeprom();
     }
+    #ifdef KEYBOARD_IS_WOMIER
+    // womier has custom caps lock that i don't want to dim the layer leds
+    else if (get_highest_layer(state) == CLCK_LAYR) {
+        return state;
+    }
+    #endif
     else if (get_highest_layer(state) != LOCK_LAYR) {
         HSV hsv = rgb_matrix_get_hsv();
         if (hsv.v >= 180) {
