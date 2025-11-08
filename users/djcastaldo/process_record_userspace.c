@@ -3845,6 +3845,12 @@ bool process_leader_userspace(void) {
     else if (leader_sequence_five_keys(KC_G, KC_I, KC_T, KC_C, KC_O)) {  // git checkout .
         SEND_STRING("git checkout .\n");
     }
+    else if (leader_sequence_three_keys(KC_Q, KC_C, KC_W)) {  // qmk compile womier sk87 firmware
+        SEND_STRING("qmk compile -j 0 -kb womier/sk87 -km djcastaldo" SS_TAP(X_ENT));
+    }
+    else if (leader_sequence_three_keys(KC_Q, KC_F, KC_W)) {  // qmk flash womier sk87 firmware
+        SEND_STRING("qmk flash -j 0 -kb womier/sk87 -km djcastaldo" SS_TAP(X_ENT));
+    }
     else if (leader_sequence_three_keys(KC_Q, KC_C, KC_B)) {  // qmk compile shortcutstudio bridge75 firmware
         SEND_STRING("qmk compile -j 0 -kb shortcut/bridge75 -km djcastaldo" SS_TAP(X_ENT));
     }
