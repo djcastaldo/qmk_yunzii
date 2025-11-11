@@ -3969,6 +3969,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(rgb_layer_indicators[i], RGB_CORAL);
             #endif
                 break;
+            case EMO_LAYR:
+            #ifdef CONFIG_EMO_LAYR_COLOR
+                rgb_matrix_set_color(rgb_layer_indicators[i], CONFIG_EMO_LAYR_COLOR);
+            #else
+                rgb_matrix_set_color(rgb_layer_indicators[i], RGB_YELLOW);
+            #endif
+                break;
             case LOCK_LAYR:
                 break;
             default:
