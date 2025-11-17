@@ -6603,7 +6603,7 @@ bool caps_word_press_user(uint16_t keycode) {
         // Keycodes that continue Caps Word, with shift applied.
         case KC_A ... KC_Z:
         case KC_MINS:
-            if (!shift_pressed_for_caps_word) {
+            if (!user_config.is_linux_base && !shift_pressed_for_caps_word) {
                 shift_pressed_for_caps_word = true;
                 register_code(KC_RSFT);
                 send_keyboard_report();
