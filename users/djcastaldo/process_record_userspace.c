@@ -4465,11 +4465,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 key_lock_timer = timer_read();
             }
             if (is_key_lock_led_on) {
+                rgb_matrix_set_color(I_KLOCK, RGB_YELLOW);
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_YELLOW);
                 }
             }
             else {
+                rgb_matrix_set_color(I_KLOCK, RGB_ORANGE);
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_ORANGE);
                 }
@@ -4482,11 +4484,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 key_lock_timer = timer_read();
             }
             if (is_key_lock_led_on) {
+                rgb_matrix_set_color(I_KLOCK, RGB_WHITE);
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                 }
             }
             else {
+                rgb_matrix_set_color(I_KLOCK, RGB_RED);
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_RED);
                 }
