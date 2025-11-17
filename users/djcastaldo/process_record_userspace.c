@@ -4465,13 +4465,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 key_lock_timer = timer_read();
             }
             if (is_key_lock_led_on) {
+                #ifdef CONFIG_HAS_KLOCK_KEY
                 rgb_matrix_set_color(I_KLOCK, RGB_YELLOW);
+                #endif
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_YELLOW);
                 }
             }
             else {
+                #ifdef CONFIG_HAS_KLOCK_KEY
                 rgb_matrix_set_color(I_KLOCK, RGB_ORANGE);
+                #endif
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_ORANGE);
                 }
@@ -4484,13 +4488,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 key_lock_timer = timer_read();
             }
             if (is_key_lock_led_on) {
+                #ifdef CONFIG_HAS_KLOCK_KEY
                 rgb_matrix_set_color(I_KLOCK, RGB_WHITE);
+                #endif
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                 }
             }
             else {
+                #ifdef CONFIG_HAS_KLOCK_KEY
                 rgb_matrix_set_color(I_KLOCK, RGB_RED);
+                #endif
                 for (uint8_t i = 0; i < rgb_layer_indicators_count; i++) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_RED);
                 }
@@ -5007,6 +5015,9 @@ void suspend_power_down_user(void) {
 // --- wakeup hook ----
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
+    #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
+    wait_ms(20);
+    #endif
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
     deferred_indicator_timer = timer_read32() + 1000;
