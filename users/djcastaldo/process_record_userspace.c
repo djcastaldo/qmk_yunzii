@@ -6596,9 +6596,18 @@ bool is_capsword_shifted(uint8_t i) {
     return false;
 }
 
+static bool shift_pressed_for_caps_word = false;
+// helper to release shift safely
+static void release_shift_if_active(void) {
+    if (shift_pressed_for_caps_word) {
+        shift_pressed_for_caps_word = false;
+        unregister_code(KC_RSFT);
+        clear_keyboard();  // safety net to avoid stuck modifiers
+    }
+}
+
 // this is needed to prevent CAPS_WORD from breaking when some custom key commands are used
 bool caps_word_press_user(uint16_t keycode) {
-    static bool shift_pressed_for_caps_word = false;
     switch (keycode) {
         // Keycodes that continue Caps Word, with shift applied.
         case KC_A ... KC_Z:
@@ -6606,8 +6615,6 @@ bool caps_word_press_user(uint16_t keycode) {
             if (!user_config.is_linux_base && !shift_pressed_for_caps_word) {
                 shift_pressed_for_caps_word = true;
                 register_code(KC_RSFT);
-                send_keyboard_report();
-                wait_ms(10);
             }
             add_weak_mods(MOD_BIT(KC_LSFT));  // Apply shift to next key.
             return true;
@@ -6618,21 +6625,11 @@ bool caps_word_press_user(uint16_t keycode) {
         case KC_DEL:
         case KC_UNDS:
         case BSPCFAST:
-            if (shift_pressed_for_caps_word) {
-                shift_pressed_for_caps_word = false;
-                unregister_code(KC_RSFT);
-                send_keyboard_report();
-                wait_ms(10);
-            }
+            release_shift_if_active();
             return true;
 
         default:
-            if (shift_pressed_for_caps_word) {
-                shift_pressed_for_caps_word = false;
-                unregister_code(KC_RSFT);
-                send_keyboard_report();
-                wait_ms(10);
-            }
+            release_shift_if_active();
             return false;  // Deactivate Caps Word.
     }
 }
