@@ -5016,7 +5016,7 @@ void suspend_power_down_user(void) {
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
     #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
-    wait_ms(20);
+    wait_ms(60);
     #endif
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
@@ -6601,7 +6601,8 @@ static bool shift_pressed_for_caps_word = false;
 static void release_shift_if_active(void) {
     if (shift_pressed_for_caps_word) {
         shift_pressed_for_caps_word = false;
-        unregister_code(KC_RSFT);
+        unregister_code(KC_LSFT);
+        send_keyboard_report();
         clear_keyboard();  // safety net to avoid stuck modifiers
     }
 }
@@ -6612,9 +6613,13 @@ bool caps_word_press_user(uint16_t keycode) {
         // Keycodes that continue Caps Word, with shift applied.
         case KC_A ... KC_Z:
         case KC_MINS:
-            if (!shift_pressed_for_caps_word) {
+            if (user_config.is_linux_base) {
+                add_weak_mods(MOD_BIT(KC_LSFT));  // apply shift to next key
+            }
+            else if (!shift_pressed_for_caps_word) {
                 shift_pressed_for_caps_word = true;
-                register_code(KC_RSFT);
+                register_code(KC_LSFT); // this works over RDP connections
+                send_keyboard_report();
             }
             return true;
 
