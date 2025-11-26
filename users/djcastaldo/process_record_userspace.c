@@ -264,6 +264,7 @@ static uint8_t wake_step = 0;
 static uint32_t wake_t = 0;
 static uint8_t wake_retry = 0;
 #endif
+static bool shift_pressed_for_caps_word = false;
 
 void reset_last_activity_timer(void) {
     last_activity_timer = timer_read32();
@@ -6596,13 +6597,12 @@ bool is_capsword_shifted(uint8_t i) {
     return false;
 }
 
-static bool shift_pressed_for_caps_word = false;
 // helper to release shift safely
 static void release_shift_if_active(void) {
     if (shift_pressed_for_caps_word) {
         shift_pressed_for_caps_word = false;
         unregister_code(KC_LSFT);
-        wait_ms(vs_delay);
+        wait_ms(35);
         send_keyboard_report();
         clear_keyboard();  // safety net to avoid stuck modifiers
     }
@@ -6614,7 +6614,7 @@ bool caps_word_press_user(uint16_t keycode) {
         // Keycodes that continue Caps Word, with shift applied.
         case KC_A ... KC_Z:
         case KC_MINS:
-            if (user_config.is_linux_base) {
+            if (user_config.is_linux_base || is_mac_base()) {
                 add_weak_mods(MOD_BIT(KC_LSFT));  // apply shift to next key
             }
             else if (!shift_pressed_for_caps_word) {
@@ -6623,8 +6623,7 @@ bool caps_word_press_user(uint16_t keycode) {
                 wait_ms(3);
                 register_code(KC_LSFT);
                 send_keyboard_report();   // shift on
-                wait_ms(vs_delay);
-                send_keyboard_report();
+                wait_ms(120);
                 shift_pressed_for_caps_word = true;
             }
             return true;
