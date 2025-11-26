@@ -6602,6 +6602,7 @@ static void release_shift_if_active(void) {
     if (shift_pressed_for_caps_word) {
         shift_pressed_for_caps_word = false;
         unregister_code(KC_LSFT);
+        wait_ms(vs_delay);
         send_keyboard_report();
         clear_keyboard();  // safety net to avoid stuck modifiers
     }
@@ -6617,9 +6618,14 @@ bool caps_word_press_user(uint16_t keycode) {
                 add_weak_mods(MOD_BIT(KC_LSFT));  // apply shift to next key
             }
             else if (!shift_pressed_for_caps_word) {
-                shift_pressed_for_caps_word = true;
-                register_code(KC_LSFT); // this works over RDP connections
+                unregister_code(KC_LSFT);
+                send_keyboard_report();   // shift off
+                wait_ms(3);
+                register_code(KC_LSFT);
+                send_keyboard_report();   // shift on
+                wait_ms(vs_delay);
                 send_keyboard_report();
+                shift_pressed_for_caps_word = true;
             }
             return true;
 
