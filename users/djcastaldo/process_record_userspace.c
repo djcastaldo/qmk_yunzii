@@ -851,15 +851,30 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_CTRL) {
                 unregister_mods(MOD_MASK_CTRL);             // remove control
-                // turn on window actiivty monitor
-                send_string_with_delay(SS_LCTL("b") ":",TMUX_DELAY);
-                send_string("setw monitor-activity on\n");
+                if (mods & MOD_MASK_ALT) {
+                    unregister_mods(MOD_MASK_ALT);             // remove alt
+                    send_string_with_delay(SS_LCTL("b") ":",TMUX_DELAY);
+                    send_string("setw -g visual-activity on\n");
+                }
+                else {
+                    // turn on window actiivty monitor
+                    send_string_with_delay(SS_LCTL("b") ":",TMUX_DELAY);
+                    send_string("setw monitor-activity on\n");
+                }
                 register_mods(mods);                        // add back mods
             }
             else {
-                // turn off window actiivty monitor
-                send_string_with_delay(SS_LCTL("b") ":",TMUX_DELAY);
-                send_string("setw monitor-activity off\n");
+                if (mods & MOD_MASK_ALT) {
+                    unregister_mods(MOD_MASK_ALT);             // remove alt
+                    send_string_with_delay(SS_LCTL("b") ":",TMUX_DELAY);
+                    send_string("setw -g visual-activity off\n");
+                    register_mods(mods);                        // add back mods
+                }
+                else {
+                    // turn off window actiivty monitor
+                    send_string_with_delay(SS_LCTL("b") ":",TMUX_DELAY);
+                    send_string("setw monitor-activity off\n");
+                }
             }
         }
         return false;
@@ -5017,7 +5032,8 @@ void suspend_power_down_user(void) {
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
     #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
-    wait_ms(60);
+    wait_ms(150);
+    matrix_scan();
     #endif
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
