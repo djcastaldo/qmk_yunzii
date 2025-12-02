@@ -231,6 +231,13 @@ deferred_token wireless_mode_token = INVALID_DEFERRED_TOKEN;
 uint32_t wls_action_timer;
 #endif
 #endif
+#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
+static bool waking = false;
+static uint32_t wake_timer = 0;
+// Track modifiers held during wake
+static uint8_t held_modifiers = 0;
+static uint16_t held_keys[6] = {0};  // up to 6 keys for standard
+#endif
 static bool rgb_indicators_enabled = true;
 static bool was_suspended = false;
 static bool power_down_ran = false;
@@ -344,6 +351,66 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         rgb_indicators_enabled = !deferred_indicator_enable;
     }
     #endif
+    #endif
+
+    #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
+    if (waking && record->event.pressed) {
+        // track modifier keys
+        if ((keycode) == KC_LCTL || (keycode) == KC_RCTL || \
+            (keycode) == KC_LSFT || (keycode) == KC_RSFT || \
+            (keycode) == KC_LALT || (keycode) == KC_RALT || \
+            (keycode) == KC_LGUI || (keycode) == KC_RGUI) {
+            held_modifiers |= get_mods(); // store current modifier state
+        }
+        else {
+            //track normal keys
+            for (int i=0; i<6; i++) {
+                if (held_keys[i] == 0) {
+                    held_keys[i] = keycode;
+                    break;
+                }
+            }    
+        }
+        // suppress all key events until matgrix stabilizes
+        return false;  
+    }
+    // After wake window, replay any held keys/modifiers
+    if (waking && timer_elapsed32(wake_timer) >= 250) {
+        waking = false;
+        
+        // capture physically held mods before adding any
+        uint8_t mods_phys = get_mods();
+
+        // Replay modifiers
+        if (held_modifiers) {
+            add_mods(held_modifiers);
+        }
+
+        // Replay normal keys
+        for (int i=0; i<6; i++) {
+            if (held_keys[i] != 0) {
+                register_code(held_keys[i]);
+            }
+        }
+
+        // Push to host
+        send_keyboard_report();
+
+        // Release keys (keep modifiers down if still held physically)
+        for (int i=0; i<6; i++) {
+            if (held_keys[i] != 0) {
+                unregister_code(held_keys[i]);
+                held_keys[i] = 0;
+            }
+        }
+        
+        // Release modifiers that are no longer physically held
+        uint8_t mods_to_remove = held_modifiers & ~mods_phys;
+        if (mods_to_remove) del_mods(mods_to_remove);
+
+        // Reset modifiers tracker
+        held_modifiers = 0;
+    }
     #endif
 
     // record key index pressed for rgb reactive changes
@@ -5032,8 +5099,10 @@ void suspend_power_down_user(void) {
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
     #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
-    wait_ms(150);
-    matrix_scan();
+    waking = true;
+    wake_timer = timer_read32();
+    held_modifiers = 0;
+    for (int i=0; i<6; i++) held_keys[i] = 0;
     #endif
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
