@@ -231,7 +231,7 @@ deferred_token wireless_mode_token = INVALID_DEFERRED_TOKEN;
 uint32_t wls_action_timer;
 #endif
 #endif
-#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
+#if defined(KEYBOARD_IS_WOMIER)
 static bool waking = false;
 static uint32_t wake_timer = 0;
 // Track modifiers held during wake
@@ -353,8 +353,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     #endif
     #endif
 
-    #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
-    if (waking && record->event.pressed) {
+    #if defined(KEYBOARD_IS_WOMIER)
+    if (waking && record->event.pressed && get_highest_layer(layer_state) != LOCK_LAYR) {
         // track modifier keys
         if ((keycode) == KC_LCTL || (keycode) == KC_RCTL || \
             (keycode) == KC_LSFT || (keycode) == KC_RSFT || \
@@ -378,35 +378,38 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     if (waking && timer_elapsed32(wake_timer) >= 250) {
         waking = false;
         
-        // capture physically held mods before adding any
-        uint8_t mods_phys = get_mods();
+        // only need to do this replay logic if not on LOCK_LAYR
+        if (get_highest_layer(layer_state) != LOCK_LAYR) {
+            // capture physically held mods before adding any
+            uint8_t mods_phys = get_mods();
 
-        // Replay modifiers
-        if (held_modifiers) {
-            add_mods(held_modifiers);
-        }
-
-        // Replay normal keys
-        for (int i=0; i<6; i++) {
-            if (held_keys[i] != 0) {
-                register_code(held_keys[i]);
+            // Replay modifiers
+            if (held_modifiers) {
+                add_mods(held_modifiers);
             }
-        }
 
-        // Push to host
-        send_keyboard_report();
-
-        // Release keys (keep modifiers down if still held physically)
-        for (int i=0; i<6; i++) {
-            if (held_keys[i] != 0) {
-                unregister_code(held_keys[i]);
-                held_keys[i] = 0;
+            // Replay normal keys
+            for (int i=0; i<6; i++) {
+                if (held_keys[i] != 0) {
+                    register_code(held_keys[i]);
+                }
             }
+
+            // Push to host
+            send_keyboard_report();
+
+            // Release keys (keep modifiers down if still held physically)
+            for (int i=0; i<6; i++) {
+                if (held_keys[i] != 0) {
+                    unregister_code(held_keys[i]);
+                    held_keys[i] = 0;
+                }
+            }
+            
+            // Release modifiers that are no longer physically held
+            uint8_t mods_to_remove = held_modifiers & ~mods_phys;
+            if (mods_to_remove) del_mods(mods_to_remove);
         }
-        
-        // Release modifiers that are no longer physically held
-        uint8_t mods_to_remove = held_modifiers & ~mods_phys;
-        if (mods_to_remove) del_mods(mods_to_remove);
 
         // Reset modifiers tracker
         held_modifiers = 0;
@@ -5098,11 +5101,13 @@ void suspend_power_down_user(void) {
 // --- wakeup hook ----
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
-    #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
+    #if defined(KEYBOARD_IS_WOMIER)
     waking = true;
     wake_timer = timer_read32();
     held_modifiers = 0;
     for (int i=0; i<6; i++) held_keys[i] = 0;
+    #elif defined(KEYBOARD_IS_BRIDGE)
+    wait_ms(60);
     #endif
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
