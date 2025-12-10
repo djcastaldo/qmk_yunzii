@@ -232,11 +232,33 @@ uint32_t wls_action_timer;
 #endif
 #endif
 #if defined(KEYBOARD_IS_WOMIER)
-static bool waking = false;
+// wake tracking
+#define WAKE_STABILIZE_MS 50      // time for matrix to settle
+#define WAKE_REPLAY_MS    150     // delay before replay begins
+#define REPLAY_CHECK_MS   25      // how often to retry replay if host not ready
+static bool waking = false; // we are in wake-suppression window
+static bool matrix_stable = false;
+static bool need_to_wake_dongle = false;
+static bool replay_poked = false;
+static uint32_t dongle_wake_stage_time = 0;
+static uint8_t dongle_wake_stage = 0;
 static uint32_t wake_timer = 0;
+static uint32_t stable_timer = 0;
+static uint32_t last_replay_check = 0;
 // Track modifiers held during wake
 static uint8_t held_modifiers = 0;
 static uint16_t held_keys[6] = {0};  // up to 6 keys for standard
+// ----------------------------------------
+// HOST READY CHECK
+// ----------------------------------------
+static bool host_ready(void) {
+#if defined(WIRELESS_ENABLE)
+    // Womier's wireless state enum
+    return (*md_getp_state() == MD_STATE_CONNECTED || get_transport() == TRANSPORT_USB);
+#else
+    return true;   // wired boards always ready
+#endif
+}
 #endif
 static bool rgb_indicators_enabled = true;
 static bool was_suspended = false;
@@ -272,6 +294,7 @@ static uint32_t wake_t = 0;
 static uint8_t wake_retry = 0;
 #endif
 static bool shift_pressed_for_caps_word = false;
+
 
 void reset_last_activity_timer(void) {
     last_activity_timer = timer_read32();
@@ -353,69 +376,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     #endif
     #endif
 
-    #if defined(KEYBOARD_IS_WOMIER)
-    if (waking && record->event.pressed && get_highest_layer(layer_state) != LOCK_LAYR) {
-        // track modifier keys
-        if ((keycode) == KC_LCTL || (keycode) == KC_RCTL || \
-            (keycode) == KC_LSFT || (keycode) == KC_RSFT || \
-            (keycode) == KC_LALT || (keycode) == KC_RALT || \
-            (keycode) == KC_LGUI || (keycode) == KC_RGUI) {
-            held_modifiers |= get_mods(); // store current modifier state
-        }
-        else {
-            //track normal keys
-            for (int i=0; i<6; i++) {
-                if (held_keys[i] == 0) {
-                    held_keys[i] = keycode;
-                    break;
-                }
-            }    
-        }
-        // suppress all key events until matgrix stabilizes
-        return false;  
-    }
-    // After wake window, replay any held keys/modifiers
-    if (waking && timer_elapsed32(wake_timer) >= 250) {
-        waking = false;
-        
-        // only need to do this replay logic if not on LOCK_LAYR
-        if (get_highest_layer(layer_state) != LOCK_LAYR) {
-            // capture physically held mods before adding any
-            uint8_t mods_phys = get_mods();
-
-            // Replay modifiers
-            if (held_modifiers) {
-                add_mods(held_modifiers);
-            }
-
-            // Replay normal keys
-            for (int i=0; i<6; i++) {
-                if (held_keys[i] != 0) {
-                    register_code(held_keys[i]);
-                }
-            }
-
-            // Push to host
-            send_keyboard_report();
-
-            // Release keys (keep modifiers down if still held physically)
-            for (int i=0; i<6; i++) {
-                if (held_keys[i] != 0) {
-                    unregister_code(held_keys[i]);
-                    held_keys[i] = 0;
-                }
-            }
-            
-            // Release modifiers that are no longer physically held
-            uint8_t mods_to_remove = held_modifiers & ~mods_phys;
-            if (mods_to_remove) del_mods(mods_to_remove);
-        }
-
-        // Reset modifiers tracker
-        held_modifiers = 0;
-    }
-    #endif
-
     // record key index pressed for rgb reactive changes
     if (enable_keytracker && !is_macro_playing && keycode != QK_LEAD && keycode != KC_NO && keycode != NOKEY) {
         uint8_t key_idx = g_led_config.matrix_co[record->event.key.row][record->event.key.col];
@@ -488,6 +448,43 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         #endif
     }
+
+    #if defined(KEYBOARD_IS_WOMIER)
+    // if LOCK_LAYR, bypass the wake system entirely
+    if (get_highest_layer(layer_state) == LOCK_LAYR) {
+        return true;
+    }
+
+    if ((waking || was_suspended) && keycode != KC_F24) {
+
+        matrix_stable = false;
+        stable_timer  = timer_read32();
+
+        if (record->event.pressed) {
+            // Track modifiers
+            if (keycode == KC_LCTL || keycode == KC_RCTL ||
+                keycode == KC_LSFT || keycode == KC_RSFT ||
+                keycode == KC_LALT || keycode == KC_RALT ||
+                keycode == KC_LGUI || keycode == KC_RGUI) {
+
+                dprintf("adding tracked modifier\n");
+                held_modifiers |= MOD_BIT(keycode); // store mod key
+            }
+            // Track normal keys
+            else {
+                for (int i = 0; i < 6; i++) {
+                    if (held_keys[i] == 0) {
+                        dprintf("adding tracked key\n");
+                        held_keys[i] = keycode;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return false; // suppress
+    }
+    #endif
 
     // stop color test if active and a key is pressed
     if (color_test && record->event.pressed) {
@@ -3967,6 +3964,12 @@ bool process_leader_userspace(void) {
     else if (leader_sequence_four_keys(KC_Q, KC_F, KC_K, KC_Q)) {  // qmk flash keychron Q6 firmware
         SEND_STRING("qmk flash -j 0 -kb keychron/q6_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
     }
+    else if (leader_sequence_five_keys(KC_Q, KC_C, KC_K, KC_Q, KC_Q)) {  // qmk compile keychron Q65 firmware
+        SEND_STRING("qmk compile -j 0 -kb keychron/q65_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+    }
+    else if (leader_sequence_five_keys(KC_Q, KC_F, KC_K, KC_Q, KC_Q)) {  // qmk flash keychron Q65 firmware
+        SEND_STRING("qmk flash -j 0 -kb keychron/q65_max/ansi_encoder -km djcastaldo" SS_TAP(X_ENT));
+    }
     else if (leader_sequence_five_keys(KC_A, KC_S, KC_P, KC_D, KC_C)) {  // asp.net decrypt connectionStrings path from clipboard
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pdf connectionStrings ");
         START_KEY_SEQUENCE(paste_seq);
@@ -5001,6 +5004,127 @@ void matrix_scan_user(void) {
         #endif
     }
 #endif
+#if defined(KEYBOARD_IS_WOMIER)
+
+    if (!waking) return;
+
+
+    // 1. MATRIX STABILIZATION
+    if (!matrix_stable && timer_elapsed32(stable_timer) >= WAKE_STABILIZE_MS) {
+        matrix_stable = true;
+        if (get_highest_layer(layer_state) != LOCK_LAYR) {
+            dprintf("matrix_stable, sending keycode=%u\n", KC_F24);
+            tap_code(KC_F24);  // First wake signal
+        }
+        dongle_wake_stage_time = timer_read32();
+    }
+
+    // 1.5 dongle
+    if (matrix_stable && need_to_wake_dongle && get_highest_layer(layer_state) != LOCK_LAYR) {
+
+        switch (dongle_wake_stage) {
+
+            case 1:
+                // Wait 20–30ms after resume for USB/BLE to become ready
+                if (timer_elapsed32(dongle_wake_stage_time) > 25) {
+                    dprintf("dongle_wake_stage=%u\n", dongle_wake_stage);
+                    tap_code(KC_F24);  // First wake signal
+                    dongle_wake_stage = 2;
+                    dongle_wake_stage_time = timer_read32();
+                }
+                break;
+
+            case 2:
+                // Second wake signal for deep-sleep dongles
+                if (timer_elapsed32(dongle_wake_stage_time) > 15) {
+                    dprintf("dongle_wake_stage=%u\n", dongle_wake_stage);
+                    tap_code(KC_F24);  // Second wake signal
+                    dongle_wake_stage = 3;
+                    dongle_wake_stage_time = timer_read32();
+                }
+                break;
+
+            case 3:
+                // Final delay before the keyboard is allowed to send real keys
+                if (timer_elapsed32(dongle_wake_stage_time) > 10) {
+                    dprintf("dongle_wake_stage=%u\n", dongle_wake_stage);
+                    need_to_wake_dongle = false;
+                    dongle_wake_stage = 0;
+                }
+                break;
+        }
+    }
+
+    // 2. REPLAY WINDOW
+    if (matrix_stable && !need_to_wake_dongle && timer_elapsed32(wake_timer) >= WAKE_REPLAY_MS) {
+        // only try replay every REPLAY_CHECK_MS
+        if (timer_elapsed32(last_replay_check) < REPLAY_CHECK_MS) return;
+        last_replay_check = timer_read32();
+
+        if (!host_ready()) {
+            dprintf("host not ready yet\n");
+            if (get_transport() != TRANSPORT_USB)
+                wls_transport_enable(true);
+            if (get_highest_layer(layer_state) != LOCK_LAYR) {
+                tap_code16(KC_F24); // wakeup the dongle
+            }
+            return; // Host not ready; try again on next scan
+        }
+        // host_ready() is true — but some dongles still drop the *first* packet
+        // extra safety: if we haven't poked immediately prior to replay, do a small double poke now
+        if (!replay_poked) {
+            if (get_highest_layer(layer_state) != LOCK_LAYR) {
+                dprintf("replay_poke: sending keycode=%u\n", KC_F24);
+                tap_code16(KC_F24); // safety poke 1
+                tap_code16(KC_F24); // safety poke 2
+            }
+            replay_poked = true;
+            // return so the dongle has one scan to process the poke before we replay
+            return;
+        }
+
+        // connected -> perform replay
+        waking = false;
+        dprintf("waking false: begin replay\n");
+
+        if (get_highest_layer(layer_state) != LOCK_LAYR) {
+            uint8_t mods_phys = get_mods();
+
+            // ---- replay modifiers ----
+            if (held_modifiers) {
+                dprintf("sending modifiers\n");
+                add_mods(held_modifiers);
+            }
+
+            dprintf("sending keys\n");
+            // ---- replay normal keys ----
+            for (int i = 0; i < 6; i++) {
+                if (held_keys[i] != 0) {
+                    register_code(held_keys[i]);
+                }
+            }
+
+            send_keyboard_report();
+
+            // ---- release normal keys ----
+            for (int i = 0; i < 6; i++) {
+                if (held_keys[i] != 0) {
+                    unregister_code(held_keys[i]);
+                    held_keys[i] = 0;
+                }
+            }
+
+            // ---- remove modifiers not physically held ----
+            uint8_t mods_to_remove = held_modifiers & ~mods_phys;
+            if (mods_to_remove)
+                del_mods(mods_to_remove);
+        }
+
+        dprintf("replay complete\n");
+        held_modifiers = 0;
+    }
+
+#endif // KEYBOARD_IS_WOMIER
 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
     if (wake_seq_active) { 
         switch (wake_step) {
@@ -5101,14 +5225,26 @@ void suspend_power_down_user(void) {
 // --- wakeup hook ----
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
-    #if defined(KEYBOARD_IS_WOMIER)
-    waking = true;
-    wake_timer = timer_read32();
-    held_modifiers = 0;
-    for (int i=0; i<6; i++) held_keys[i] = 0;
-    #elif defined(KEYBOARD_IS_BRIDGE)
-    wait_ms(60);
+   #if defined(KEYBOARD_IS_WOMIER)
+    #if defined(WIRELESS_ENABLE)
+    // Start reconnecting immediately
+    if (get_transport() != TRANSPORT_USB)
+        wls_transport_enable(true);
+    // schedule dongle wake for later
+    need_to_wake_dongle = true;
+    dongle_wake_stage = 1;
+    dongle_wake_stage_time = timer_read32();
     #endif
+    waking = true;
+    matrix_stable = false;
+    wake_timer = timer_read32();
+    stable_timer = timer_read32();
+    last_replay_check = timer_read32();
+    // reset replay poke guard
+    replay_poked = false;
+   #elif defined(KEYBOARD_IS_BRIDGE)
+    wait_ms(60);
+   #endif
     rgb_indicators_enabled = false;
     deferred_indicator_enable = true;
     deferred_indicator_timer = timer_read32() + 1000;
