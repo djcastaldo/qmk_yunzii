@@ -4176,7 +4176,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                             break;
                         default:
                         #ifdef CONFIG_DEFUALT_LAYR_COLOR
-                            rgb_matrix_set_color(index, 0x77, 0x77, 0x77);
+                            rgb_matrix_set_color(index, CONFIG_DEFUALT_LAYR_COLOR);
                         #else
                             rgb_matrix_set_color(index, 0x77, 0x77, 0x77);
                         #endif
@@ -4440,6 +4440,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #endif
                     }
                     break;
+                #ifdef CONFIG_HAS_FKEY_LAYR
+                case FKEY_LAYR:
+                    #ifdef CONFIG_FKEY_LAYR_COLOR
+                    rgb_matrix_set_color(I_FKEY, CONFIG_FKEY_LAYR_COLOR);
+                    #else
+                    rgb_matrix_set_color(I_FKEY, RGB_WHITE);
+                    #endif
+                    break;
+                #endif
                 default:
                     break;
                 }
