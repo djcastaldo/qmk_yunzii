@@ -175,8 +175,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [VS_LAYR] = LAYOUT_65_ansi_blocker(
         _______, _______,_______,_______,_______,_______,_______,_______,_______, _______, _______, _______, _______,  _______, VSINSLN,
-        _______,_______,VSWRDWP, VSERR, VSREPL, _______, _______, VSLNCMU, VSINFO, VSOUTPT, VSPUB, _______, VSMATCH,  _______,  VSDELLN,
-        _______, _______, VSLNSRT, VSDUPLN, VSFIND, VSGOTO, _______, VSLJOIN, _______, VSSOLU, _______, _______,    _______,    VSMVLNU,
+        _______,_______,VSWRDWP, VSERR, VSRNAME, _______, _______, VSLNCMU, VSINFO, VSOUTPT, VSPUB, _______, VSMATCH, _______,  VSDELLN,
+        _______, _______, VSLNSRT, VSDUPLN, VSFIND, VSGOTO, VSREPL, VSLJOIN, _______, VSSOLU, _______, _______,    _______,     VSMVLNU,
         _______,      _______, _______, VSLNCMC, VSCLIPB,  _______, VSNOTIF,_______,_______,_______,VSLBCMT,  _______, _______, VSMVLND,
         _______, _______, _______,                       _______,                      _______, _______,      _______, _______, _______
     ),

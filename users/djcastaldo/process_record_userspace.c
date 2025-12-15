@@ -4224,15 +4224,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // left win / left opt 
                 #ifdef CONFIG_HAS_ROPT_KEY
                 rgb_matrix_set_color(I_ROPT, CONFIG_SYM_LAYR_COLOR);   // right win / right opt 
-                #else
-                rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // if no ropt, light fn
+                //#else
+                //rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // if no ropt, light fn
                 #endif
             #else
                 rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // left win / left opt 
                 #ifdef CONFIG_HAS_ROPT_KEY
                 rgb_matrix_set_color(I_ROPT, RGB_BLUE);   // right win / right opt 
-                #else
-                rgb_matrix_set_color(I_FN, RGB_BLUE);     // if no ropt, light fn
+                //#else
+                //rgb_matrix_set_color(I_FN, RGB_BLUE);     // if no ropt, light fn
                 #endif
             #endif
             }
