@@ -3490,6 +3490,18 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             START_KEY_SEQUENCE(clipboard_seq);
         }
         return false;
+    case KC_MINS:
+        if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
+            if (record->event.pressed) {
+                register_mods(MOD_LSFT);
+                wait_ms(35);
+                tap_code(KC_MINS);
+                wait_ms(35);
+                unregister_mods(MOD_LSFT);
+            }
+            return false;
+        }
+        break;
     // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
     // this is needed for the Yunzii to wake from suspend bc KC_NO doesn't work
     case NOKEY:
@@ -6836,8 +6848,8 @@ bool is_capsword_shifted(uint8_t i) {
 static void release_shift_if_active(void) {
     if (shift_pressed_for_caps_word) {
         shift_pressed_for_caps_word = false;
-        unregister_code(KC_LSFT);
-        wait_ms(35);
+        tap_code(KC_CAPS);
+        wait_ms(15);
         send_keyboard_report();
         clear_keyboard();  // safety net to avoid stuck modifiers
     }
@@ -6853,12 +6865,9 @@ bool caps_word_press_user(uint16_t keycode) {
                 add_weak_mods(MOD_BIT(KC_LSFT));  // apply shift to next key
             }
             else if (!shift_pressed_for_caps_word) {
-                unregister_code(KC_LSFT);
-                send_keyboard_report();   // shift off
-                wait_ms(3);
-                register_code(KC_LSFT);
+                tap_code(KC_CAPS);
                 send_keyboard_report();   // shift on
-                wait_ms(120);
+                wait_ms(15);
                 shift_pressed_for_caps_word = true;
             }
             return true;
