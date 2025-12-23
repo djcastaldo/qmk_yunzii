@@ -660,6 +660,136 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    case WM_SOC1:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC1);
+            }
+            else {
+                tap_code16(LGUI(KC_1));
+            }
+        }
+        return false;
+    case WM_SOC2:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC2);
+            }
+            else {
+                tap_code16(LGUI(KC_2));
+            }
+        }
+        return false;
+    case WM_SOC3:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC3);
+            }
+            else {
+                tap_code16(LGUI(KC_3));
+            }
+        }
+        return false;
+    case WM_SOC4:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC4);
+            }
+            else {
+                tap_code16(LGUI(KC_4));
+            }
+        }
+        return false;
+    case WM_SOC5:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC5);
+            }
+            else {
+                tap_code16(LGUI(KC_5));
+            }
+        }
+        return false;
+    case WM_SOC6:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC6);
+            }
+            else {
+                tap_code16(LGUI(KC_6));
+            }
+        }
+        return false;
+    case WM_SOC7:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC7);
+            }
+            else {
+                tap_code16(LGUI(KC_7));
+            }
+        }
+        return false;
+    case WM_SOC8:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC8);
+            }
+            else {
+                tap_code16(LGUI(KC_8));
+            }
+        }
+        return false;
+    case WM_SOC9:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC9);
+            }
+            else {
+                tap_code16(LGUI(KC_9));
+            }
+        }
+        return false;
+    case WM_SOC0:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(SOC0);
+            }
+            else {
+                tap_code16(LGUI(KC_0));
+            }
+        }
+        return false;
+    case WM_QUIT:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FORCEQUIT);
+            }
+            else {
+                tap_code16(TASKMGR);
+            }
+        }
+        return false;
+    case WM_DOCS:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FDOCS);
+            }
+            else {
+                tap_code16(FEXPLORE);
+            }
+        }
+        return false;
+    case WM_DLS:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FDOWNL);
+            }
+            else {
+                tap_code16(FEXPLORE);
+            }
+        }
+        return false;
     case VSEMOLR:
         if (record->event.pressed) {
             if (is_mac_base()) {

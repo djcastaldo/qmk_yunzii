@@ -24,6 +24,8 @@
 #define FSTATBAR LCMD(KC_SLSH)                  // show Finder status bar
 #define TOVERVIEW LSFT(LCMD(KC_BSLS))           // show Terminal tab overview
 #define FORCEQUIT LOPT(LCMD(KC_ESC))            // force quit an app
+#define TASKMGR LCTL(LSFT(KC_ESC))              // open windows task manager
+#define FEXPLORE LGUI(KC_E)                     // open windows file explorer
 #define TIMESTAMP LCTL(LOPT(LCMD(KC_T)))        // command to gen timestamp
 #define SOC1 LSFT(LOPT(LCMD(KC_1)))             // snap dock app switching
 #define SOC2 LSFT(LOPT(LCMD(KC_2)))             // snap dock app switching
@@ -88,6 +90,19 @@ enum userspace_keycodes {
     LLOCK,
     BASE_CHG,
     WM_SYM,
+    WM_SOC1,
+    WM_SOC2,
+    WM_SOC3,
+    WM_SOC4,
+    WM_SOC5,
+    WM_SOC6,
+    WM_SOC7,
+    WM_SOC8,
+    WM_SOC9,
+    WM_SOC0,
+    WM_QUIT,
+    WM_DOCS,
+    WM_DLS,
     VSEMOLR,
     DYN_LT,
     JIGGLE,
