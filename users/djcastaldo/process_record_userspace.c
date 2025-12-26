@@ -4646,6 +4646,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     break;
                 }
             }
+            #ifdef CONFIG_BLINK_LAYR_EVEN_WITH_KEYCODE_ASSIGNED
+            // may need to add other switch cases in the future, but right now its only needed on SFT_LAYR
+            else {
+                switch (layer) {
+                    case SFT_LAYR:
+                        rgb_matrix_set_color(I_LSFT, RGB_BLACK); // lshift
+                        rgb_matrix_set_color(I_RSFT, RGB_BLACK); // rshift
+                        break;
+                }
+            }
+            #endif
             // blink the indicator to show layer lock in on
             if (is_layer_locked(layer)) {
                 if (!layer_lock_timer || timer_elapsed(layer_lock_timer) > 1000) {
