@@ -6963,6 +6963,9 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         (layer == EMO_LAYR && key.index == I_RCMD) ||                                                 // emo_layr rcmd
             #endif
         #endif
+        #ifdef CONFIG_HAS_FKEY_LAYR
+        (layer == FKEY_LAYR && key.index == I_FKEY) ||                                                // fkey_layr key
+        #endif
         (key.index == I_CAPS || key.index == I_FN || key.index == I_TAB || key.index == I_BSLS)) {    // caps lock, fn, tab, bsls
             should_fade = false;
         }
