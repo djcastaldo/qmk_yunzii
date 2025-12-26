@@ -1246,14 +1246,24 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 // If token is already waiting to exec, cancel it.
                 if (cmd_tab_token && app_switch_active()) {
                     cancel_deferred_exec(cmd_tab_token);
-                    bool ctrl_removed = false;
+                    // this app switching doesn't work right using the MOD_MASK_CTRL
+                    // alternative logic is used
+                    bool lctrl_removed = false;
+                    bool rctrl_removed = false;
                     if (mods & MOD_BIT(KC_LCTL)) {
                         del_mods(MOD_BIT(KC_LCTL));
-                        ctrl_removed = true;
+                        lctrl_removed = true;
+                    }
+                    if (mods & MOD_BIT(KC_RCTL)) {
+                        del_mods(MOD_BIT(KC_RCTL));
+                        rctrl_removed = true;
                     }
                     tap_code(is_mac_base() ? KC_H : KC_ENT);
-                    if (ctrl_removed) {
+                    if (lctrl_removed) {
                         register_mods(MOD_BIT(KC_LCTL));
+                    }
+                    if (rctrl_removed) {
+                        register_mods(MOD_BIT(KC_RCTL));
                     }
                     cmd_tab_token = defer_exec(1000, cmd_tab_callback, NULL);  // Schedule callback.
                 }
@@ -1267,11 +1277,16 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             // with command: app switch, standard: mouse wheel down
             const uint8_t mods = get_mods();
-            if (mods & (MOD_MASK_GUI | MOD_BIT(KC_LCTL))) {
-                bool ctrl_removed = false;
+            if (mods & (MOD_MASK_GUI | MOD_MASK_CTRL)) {
+                bool lctrl_removed = false;
+                bool rctrl_removed = false;
                 if (mods & MOD_BIT(KC_LCTL)) {
                     del_mods(MOD_BIT(KC_LCTL));
-                    ctrl_removed = true;
+                    lctrl_removed = true;
+                }
+                if (mods & MOD_BIT(KC_RCTL)) {
+                    del_mods(MOD_BIT(KC_RCTL));
+                    rctrl_removed = true;
                 }
                 // If token is already waiting to exec, cancel it.
                 if (cmd_tab_token) {
@@ -1285,8 +1300,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 }
                 tap_code(KC_TAB);
                 cmd_tab_token = defer_exec(1000, cmd_tab_callback, NULL);  // Schedule callback.
-                if (ctrl_removed) {
+                if (lctrl_removed) {
                     register_mods(MOD_BIT(KC_LCTL));
+                }
+                if (rctrl_removed) {
+                    register_mods(MOD_BIT(KC_RCTL));
                 }
             }
             else {
@@ -1298,11 +1316,16 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             // with command: app switch, standard: mouse up
             const uint8_t mods = get_mods();
-            if (mods & (MOD_MASK_GUI | MOD_BIT(KC_LCTL))) {
-                bool ctrl_removed = false;
-                if (mods  & MOD_BIT(KC_LCTL)) {
+            if (mods & (MOD_MASK_GUI | MOD_MASK_CTRL)) {
+                bool lctrl_removed = false;
+                bool rctrl_removed = false;
+                if (mods & MOD_BIT(KC_LCTL)) {
                     del_mods(MOD_BIT(KC_LCTL));
-                    ctrl_removed = true;
+                    lctrl_removed = true;
+                }
+                if (mods & MOD_BIT(KC_RCTL)) {
+                    del_mods(MOD_BIT(KC_RCTL));
+                    rctrl_removed = true;
                 }
                 // If token is already waiting to exec, cancel it.
                 if (cmd_tab_token) {
@@ -1316,8 +1339,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 }
                 tap_code(KC_TAB);
                 cmd_tab_token = defer_exec(1000, cmd_tab_callback, NULL);  // Schedule callback.
-                if (ctrl_removed) {
+                if (lctrl_removed) {
                     register_mods(MOD_BIT(KC_LCTL));
+                }
+                if (rctrl_removed) {
+                    register_mods(MOD_BIT(KC_RCTL));
                 }
             }
             else {
@@ -4582,10 +4608,8 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #endif
                     #ifdef CONFIG_HAS_ROPT_KEY
                     rgb_matrix_set_color(I_ROPT, CONFIG_EMO_LAYR_COLOR);      // ropt
-                    #else
-                    #ifndef CONFIG_NO_RCTL_KEY
+                    #elif defined(CONFIG_NO_RCMD_KEY) && !defined(CONFIG_NO_RCTL_KEY)
                     rgb_matrix_set_color(I_RCTL, CONFIG_EMO_LAYR_COLOR);      // rctl
-                    #endif
                     #endif
                     rgb_matrix_set_color(I_BSLS, CONFIG_EMO_LAYR_COLOR);      // backslash
                 #else
@@ -4594,10 +4618,8 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #endif
                     #ifdef CONFIG_HAS_ROPT_KEY
                     rgb_matrix_set_color(I_ROPT, RGB_YELLOW);     // ropt
-                    #else
-                    #ifndef CONFIG_NO_RCTL_KEY
+                    #elif defined(CONFIG_NO_RCMD_KEY) && !defined(CONFIG_NO_RCTL_KEY)
                     rgb_matrix_set_color(I_RCTL, RGB_YELLOW);     // rctl
-                    #endif
                     #endif
                     rgb_matrix_set_color(I_BSLS, RGB_YELLOW);     // backslash
                 #endif
