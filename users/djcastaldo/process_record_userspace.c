@@ -7,7 +7,7 @@
 #include "config.h"
 #include "layers.h"
 #include "keyindex.h"
-#if defined(CONFIG_HAS_BASE_LAYER_TOGGLE) || defined(RGB_BRIGHTNESS_LIMIT)
+#if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
 #include "quantum.h"
 #endif
 #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
@@ -787,6 +787,16 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {
                 tap_code16(FEXPLORE);
+            }
+        }
+        return false;
+    case WM_SIRCAT:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(MOD_SIRI);
+            }
+            else {
+                tap_code16(US_CATANA);
             }
         }
         return false;
@@ -1709,8 +1719,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         break;
     case SSMENU:
         if (record->event.pressed) {
-           // send shift + command + 5 (for screenshot with options menus)
-           send_string(SS_LSFT(SS_LCMD("5")));
+            if (is_mac_base()) {
+                // send shift + command + 5 (for screenshot with options menus)
+                send_string(SS_LSFT(SS_LCMD("5")));
+            }
+            else {
+                // open windows snipping tool
+                tap_code16(LGUI(LSFT(KC_S)));
+            }
         }
         return false;
     case GNEWS:
@@ -4136,22 +4152,6 @@ bool process_leader_userspace(void) {
     }
     return continue_leader_process;
 }
-
-#ifdef RGB_BRIGHTNESS_LIMIT
- #if defined(RGB_BRIGHTNESS_SCALE) && (RGB_BRIGHTNESS_SCALE > 255)
- #   error RGB_BRIGHTNESS_SCALE must be 0–255
- #endif
- #ifndef RGB_BRIGHTNESS_SCALE
- #   define RGB_BRIGHTNESS_SCALE 180
- #endif
-void rgb_matrix_set_color(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
-    r = (uint16_t)r * RGB_BRIGHTNESS_SCALE / 255;
-    g = (uint16_t)g * RGB_BRIGHTNESS_SCALE / 255;
-    b = (uint16_t)b * RGB_BRIGHTNESS_SCALE / 255;
-
-    rgb_matrix_driver.set_color(index, r, g, b);
-}
-#endif
 
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     uint8_t layer = get_highest_layer(layer_state);

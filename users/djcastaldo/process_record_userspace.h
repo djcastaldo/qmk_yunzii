@@ -103,6 +103,7 @@ enum userspace_keycodes {
     WM_QUIT,
     WM_DOCS,
     WM_DLS,
+    WM_SIRCAT,
     VSEMOLR,
     DYN_LT,
     JIGGLE,

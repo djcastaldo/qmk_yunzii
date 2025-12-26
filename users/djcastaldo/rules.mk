@@ -12,9 +12,3 @@ endif
 ifeq ($(strip $(NO_SECRETS)), yes)
     OPT_DEFS += -DNO_SECRETS
 endif
-ifeq ($(strip $(RGB_BRIGHTNESS_LIMIT)), yes)
-    OPT_DEFS += -DRGB_BRIGHTNESS_LIMIT
-endif
-ifneq ($(strip $(RGB_BRIGHTNESS_SCALE)),)
-    OPT_DEFS += -DRGB_BRIGHTNESS_SCALE=$(RGB_BRIGHTNESS_SCALE)
-endif
