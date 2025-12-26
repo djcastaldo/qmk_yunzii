@@ -294,6 +294,8 @@ static uint32_t wake_t = 0;
 static uint8_t wake_retry = 0;
 #endif
 static bool shift_pressed_for_caps_word = false;
+// for making globe key work with window tiling
+static bool globe_pressed = false;
 
 
 void reset_last_activity_timer(void) {
@@ -1739,7 +1741,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_UP:
     case KC_LEFT:
     case KC_RIGHT:
-        if (record->event.pressed) {
+        if (record->event.pressed && !globe_pressed) {
            // check which control is being held and mouse mouse to monitor with CatchMouse
            if (get_mods() == MOD_BIT(KC_LCTL)) {
                send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P1)))));
@@ -1747,6 +1749,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
            else if (get_mods() == MOD_BIT(KC_RCTL)) {
                send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P2)))));
            }
+        }
+    case KC_DOWN:
+        if (globe_pressed) {
+            tap_code16(S(A(G(keycode)))); // custom keys for positioning windows in macos
+            return false;
         }
         break;
     // custom keycode to move cursor to left mon with CatchMouse
@@ -1785,6 +1792,12 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case AP_GLOB:
         // setup for apple globe key to work
         host_consumer_send(record->event.pressed ? AC_NEXT_KEYBOARD_LAYOUT_SELECT : 0);
+        if (record->event.pressed) {
+            globe_pressed = true;
+        }
+        else {
+            globe_pressed = false;
+        }
         return false;
     case COLORTEST:
         if (record->event.pressed) {
