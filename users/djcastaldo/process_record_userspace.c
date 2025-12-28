@@ -1731,7 +1731,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_ROPT:
         if (is_mac_base()) {
             if (record->event.pressed) {
-                if (get_highest_layer(layer_state) < 3) {
+                uint8_t layer = get_highest_layer(layer_state);
+                if (is_base_layer(layer)) {
                     layer_on(MSYM_LAYR);
                 }
             }
