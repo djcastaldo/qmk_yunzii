@@ -1796,7 +1796,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                         tap_code16(S(A(G(KC_B)))); // custom keys for positioning windows in macos
                         break;
                 }
-                register_mods(mods);
+                set_mods(mods);
             }
             else {
                 tap_code16(S(A(G(keycode)))); // custom keys for positioning windows in macos
