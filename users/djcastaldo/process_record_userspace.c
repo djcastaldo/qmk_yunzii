@@ -1779,7 +1779,28 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
     case KC_DOWN:
         if (globe_pressed) {
-            tap_code16(S(A(G(keycode)))); // custom keys for positioning windows in macos
+            const uint8_t mods = get_mods();
+            if (mods & MOD_MASK_ALT) {
+                clear_keyboard();
+                switch (keycode) {
+                    case KC_UP:
+                        tap_code16(S(A(G(KC_T)))); // custom keys for positioning windows in macos
+                        break;
+                    case KC_LEFT:
+                        tap_code16(S(A(G(KC_L)))); // custom keys for positioning windows in macos
+                        break;
+                    case KC_RIGHT:
+                        tap_code16(S(A(G(KC_R)))); // custom keys for positioning windows in macos
+                        break;
+                    case KC_DOWN:
+                        tap_code16(S(A(G(KC_B)))); // custom keys for positioning windows in macos
+                        break;
+                }
+                register_mods(mods);
+            }
+            else {
+                tap_code16(S(A(G(keycode)))); // custom keys for positioning windows in macos
+            }
             return false;
         }
         break;
@@ -1819,12 +1840,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case AP_GLOB:
         // setup for apple globe key to work
         host_consumer_send(record->event.pressed ? AC_NEXT_KEYBOARD_LAYOUT_SELECT : 0);
-        if (record->event.pressed) {
-            globe_pressed = true;
-        }
-        else {
-            globe_pressed = false;
-        }
+        globe_pressed = record->event.pressed;
         return false;
     case COLORTEST:
         if (record->event.pressed) {
