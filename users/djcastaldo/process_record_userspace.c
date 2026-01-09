@@ -4308,6 +4308,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     if (index >= led_min && index < led_max && index != NO_LED &&
                     keymap_key_to_keycode(layer, (keypos_t){col,row}) > KC_TRNS) {
                         switch (layer) {
+                        #ifdef CONFIG_HAS_FKEY_LAYR
+                        case FKEY_LAYR:
+                            #ifdef CONFIG_FKEY_LAYR_COLOR
+                            rgb_matrix_set_color(index, CONFIG_FKEY_LAYR_COLOR);
+                            #else
+                            rgb_matrix_set_color(index, RGB_WHITE);
+                            #endif
+                            break;
+                        #endif
                         case FN_LAYR:
                             if (index == I_MREC1 || index == I_MREC2) { // macro recording keys
                             #ifdef CONFIG_MREC_KEY_COLOR
@@ -6982,7 +6991,7 @@ bool key_should_fade(keytracker key, uint8_t layer) {
                                 )) ||                                                                 // l/r alt cmd
         (macro_recording && (key.index == I_MREC1 || key.index == I_MREC2)) ||                        // macro recording keys
         #ifdef CONFIG_HAS_LLOCK_KEY
-        (is_layer_locked(layer) && key.index == I_LLOCK) ||                                           // layer lock key
+        (!is_base_layer(layer) && key.index == I_LLOCK) ||                                            // layer lock key
         #endif
         (is_in_leader_sequence && key.index == I_LEAD) ||                                             // leader key
         (layer == SFT_LAYR && (key.index == I_NUMLOCK || key.index == I_MHLD)) ||                     // num lock, mouse hold
