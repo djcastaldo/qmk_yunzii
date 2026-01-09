@@ -4742,6 +4742,8 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                             rgb_matrix_set_color(lock_layr_extra_flash_keys[i], RGB_BLACK);
                         }
                         break;
+                    default:
+                        break;
                 }
             }
             #endif
