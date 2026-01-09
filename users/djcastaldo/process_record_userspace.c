@@ -4650,15 +4650,6 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_BSLS, RGB_YELLOW);     // backslash
                 #endif
                     break;
-                case LOCK_LAYR:
-                    for (uint8_t i = 0; i < lock_layr_extra_flash_keys_count; i++) {
-                    #ifdef CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR
-                        rgb_matrix_set_color(lock_layr_extra_flash_keys[i], CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR);
-                    #else
-                        rgb_matrix_set_color(lock_layr_extra_flash_keys[i], RGB_RED);
-                    #endif
-                    }
-                    break;
                 #ifdef CONFIG_HAS_FKEY_LAYR
                 case FKEY_LAYR:
                     #ifdef CONFIG_FKEY_LAYR_COLOR
@@ -4668,17 +4659,88 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #endif
                     break;
                 #endif
+                case LOCK_LAYR:
+                    for (uint8_t i = 0; i < lock_layr_extra_flash_keys_count; i++) {
+                    #ifdef CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR
+                        rgb_matrix_set_color(lock_layr_extra_flash_keys[i], CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR);
+                    #else
+                        rgb_matrix_set_color(lock_layr_extra_flash_keys[i], RGB_RED);
+                    #endif
+                    }
+                    break;
                 default:
                     break;
                 }
             }
             #ifdef CONFIG_BLINK_LAYR_EVEN_WITH_KEYCODE_ASSIGNED
-            // may need to add other switch cases in the future, but right now its only needed on SFT_LAYR
+            // this was originally only for if a keycode was assigned, but also works to not show any bg animation 
             else {
                 switch (layer) {
+                    case FN_LAYR:
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        rgb_matrix_set_color(I_FN, RGB_BLACK);             // fn
+                        break;
                     case SFT_LAYR:
-                        rgb_matrix_set_color(I_LSFT, RGB_BLACK); // lshift
-                        rgb_matrix_set_color(I_RSFT, RGB_BLACK); // rshift
+                        rgb_matrix_set_color(I_LSFT, RGB_BLACK);           // lshift
+                        rgb_matrix_set_color(I_RSFT, RGB_BLACK);           // rshift
+                        break;
+                    case KCTL_LAYR:
+                        rgb_matrix_set_color(I_LALT, RGB_BLACK);           // lalt
+                        #ifndef CONFIG_NO_RALT_KEY
+                        rgb_matrix_set_color(I_RALT, RGB_BLACK);           // ralt
+                        #elif !defined(CONFIG_NO_RCTL_KEY)
+                        rgb_matrix_set_color(I_RCTL, RGB_BLACK);           // right control
+                        #endif
+                        break;
+                    case TMUX_LAYR:
+                        rgb_matrix_set_color(I_TAB, RGB_BLACK);            // tab
+                        break;
+                    case VS_LAYR:
+                        rgb_matrix_set_color(I_BSLS, RGB_BLACK);           // backslash
+                        break;
+                    case WSYM_LAYR:
+                        #ifndef CONFIG_NO_RALT_KEY
+                        rgb_matrix_set_color(I_RALT, RGB_BLACK);           // ralt
+                        #endif
+                        rgb_matrix_set_color(I_LGUI, RGB_BLACK);           // lgui
+                        rgb_matrix_set_color(I_FN, RGB_BLACK);             // fn
+                        break;
+                    case MSYM_LAYR:
+                        rgb_matrix_set_color(I_LOPT, RGB_BLACK);           // lopt
+                        #ifdef CONFIG_HAS_ROPT_KEY
+                        rgb_matrix_set_color(I_ROPT, RGB_BLACK);           // ropt
+                        #endif
+                        rgb_matrix_set_color(I_FN, RGB_BLACK);             // fn
+                        break;
+                    case WIDE_LAYR:
+                        rgb_matrix_set_color(I_RSFT, RGB_BLACK);           // rshift
+                        break;
+                    case CIRC_LAYR:
+                        rgb_matrix_set_color(I_RSFT, RGB_BLACK);           // rshift
+                        if (!is_mac_base() && user_config.is_linux_base) {
+                            rgb_matrix_set_color(I_BSLS, RGB_BLACK);       // backslash
+                        }
+                        break;
+                    case EMO_LAYR:
+                        #ifndef CONFIG_NO_RCMD_KEY
+                        rgb_matrix_set_color(I_RCMD, RGB_BLACK);           // rcmd
+                        #endif
+                        #ifdef CONFIG_HAS_ROPT_KEY
+                        rgb_matrix_set_color(I_ROPT, RGB_BLACK);           // ropt
+                        #elif defined(CONFIG_NO_RCMD_KEY) && !defined(CONFIG_NO_RCTL_KEY)
+                        rgb_matrix_set_color(I_RCTL, RGB_BLACK);           // rctl
+                        #endif
+                        rgb_matrix_set_color(I_BSLS, RGB_BLACK);           // backslash
+                        break;
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    case FKEY_LAYR:
+                        rgb_matrix_set_color(I_FKEY, RGB_BLACK);           // fkey toggle
+                        break;
+                    #endif
+                    case LOCK_LAYR:
+                        for (uint8_t i = 0; i < lock_layr_extra_flash_keys_count; i++) {
+                            rgb_matrix_set_color(lock_layr_extra_flash_keys[i], RGB_BLACK);
+                        }
                         break;
                 }
             }
