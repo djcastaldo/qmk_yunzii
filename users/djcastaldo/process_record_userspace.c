@@ -4507,9 +4507,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 #ifdef CONFIG_SHIFT_LAYR_COLOR
                     rgb_matrix_set_color(I_LSFT, CONFIG_SHIFT_LAYR_COLOR); // lshift
                     rgb_matrix_set_color(I_RSFT, CONFIG_SHIFT_LAYR_COLOR); // rshift
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_SHIFT_LAYR_COLOR); // caps
+                    #endif
                 #else
                     rgb_matrix_set_color(I_LSFT, RGB_ORANGE); // lshift
                     rgb_matrix_set_color(I_RSFT, RGB_ORANGE); // rshift
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_ORANGE); // caps
+                    #endif
                 #endif
                     break;
                 case KCTL_LAYR:
@@ -4520,6 +4526,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #elif !defined(CONFIG_NO_RCTL_KEY)
                     rgb_matrix_set_color(I_RCTL, CONFIG_KCTL_LAYR_COLOR);  // right control
                     #endif
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_KCTL_LAYR_COLOR);  // caps
+                    #endif
                 #else
                     rgb_matrix_set_color(I_LALT, RGB_RED);    // lalt
                     #ifndef CONFIG_NO_RALT_KEY
@@ -4527,20 +4536,35 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #elif !defined(CONFIG_NO_RCTL_KEY)
                     rgb_matrix_set_color(I_RCTL, RGB_RED);    // right control
                     #endif
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_RED);    // caps
+                    #endif
                 #endif
                     break;
                 case TMUX_LAYR:
                 #ifdef CONFIG_TMUX_LAYR_COLOR
                     rgb_matrix_set_color(I_TAB, CONFIG_TMUX_LAYR_COLOR);   // tab
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_TMUX_LAYR_COLOR);  // caps
+                    #endif
                 #else
                     rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_CYAN);   // caps
+                    #endif
                 #endif
                     break;
                 case VS_LAYR:
                 #ifdef CONFIG_VS_LAYR_COLOR
                     rgb_matrix_set_color(I_BSLS, CONFIG_VS_LAYR_COLOR); // backslash
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_VS_LAYR_COLOR); // caps
+                    #endif
                 #else
                     rgb_matrix_set_color(I_BSLS, RGB_PURPLE); // backslash
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_PURPLE); // caps
+                    #endif
                 #endif
                     break;
                 case WSYM_LAYR:
@@ -4551,12 +4575,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         #endif
                         rgb_matrix_set_color(I_LGUI, CONFIG_ACCENT_KEY_COLOR); // lgui
                         rgb_matrix_set_color(I_FN, CONFIG_ACCENT_KEY_COLOR);   // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, CONFIG_ACCENT_KEY_COLOR); // caps
+                        #endif
                     #else
                         #ifndef CONFIG_NO_RALT_KEY
                         rgb_matrix_set_color(I_RALT, RGB_YELLOW); // ralt
                         #endif
                         rgb_matrix_set_color(I_LGUI, RGB_YELLOW); // lgui
                         rgb_matrix_set_color(I_FN, RGB_YELLOW);   // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_YELLOW); // caps
+                        #endif
                     #endif
                     }
                     else {
@@ -4566,12 +4596,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         #endif
                         rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // lgui
                         rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, CONFIG_SYM_LAYR_COLOR);   // caps
+                        #endif
                     #else
                         #ifndef CONFIG_NO_RALT_KEY
                         rgb_matrix_set_color(I_RALT, RGB_BLUE);   // ralt
                         #endif
                         rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // lgui
                         rgb_matrix_set_color(I_FN, RGB_BLUE);     // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLUE);   // caps
+                        #endif
                     #endif
                     }
                     break;
@@ -4583,12 +4619,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_ROPT, CONFIG_ACCENT_KEY_COLOR); // ropt
                         #endif
                         rgb_matrix_set_color(I_FN, CONFIG_ACCENT_KEY_COLOR);   // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, CONFIG_ACCENT_KEY_COLOR); // caps
+                        #endif
                     #else
                         rgb_matrix_set_color(I_LOPT, RGB_YELLOW); // lopt
                         #ifdef CONFIG_HAS_ROPT_KEY
                         rgb_matrix_set_color(I_ROPT, RGB_YELLOW); // ropt
                         #endif
                         rgb_matrix_set_color(I_FN, RGB_YELLOW);   // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_YELLOW); // caps
+                        #endif
                     #endif
                     }
                     else {
@@ -4598,20 +4640,32 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_ROPT, CONFIG_SYM_LAYR_COLOR);   // ropt
                         #endif
                         rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, CONFIG_SYM_LAYR_COLOR);   // caps
+                        #endif
                     #else
                         rgb_matrix_set_color(I_LOPT, RGB_BLUE);   // lopt
                         #ifdef CONFIG_HAS_ROPT_KEY
                         rgb_matrix_set_color(I_ROPT, RGB_BLUE);   // ropt
                         #endif
                         rgb_matrix_set_color(I_FN, RGB_BLUE);     // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLUE);   // caps
+                        #endif
                     #endif
                     }
                     break;
                 case WIDE_LAYR:
                 #ifdef CONFIG_WIDE_LAYR_COLOR
                     rgb_matrix_set_color(I_RSFT, CONFIG_WIDE_LAYR_COLOR);     // rshift
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_WIDE_LAYR_COLOR);     // caps
+                    #endif
                 #else
                     rgb_matrix_set_color(I_RSFT, RGB_PURPLE);     // rshift
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_PURPLE);     // caps
+                    #endif
                 #endif
                     break;
                 case CIRC_LAYR:
@@ -4620,11 +4674,17 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     if (!is_mac_base() && user_config.is_linux_base) {
                         rgb_matrix_set_color(I_BSLS, CONFIG_CIRC_LAYR_COLOR);  // backslash
                     }
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_CIRC_LAYR_COLOR);      // caps
+                    #endif
                 #else
                     rgb_matrix_set_color(I_RSFT, RGB_CORAL);                   // rshift
                     if (!is_mac_base() && user_config.is_linux_base) {
                         rgb_matrix_set_color(I_BSLS, RGB_CORAL);               // backslash
                     }
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_CORAL);                   // caps
+                    #endif
                 #endif
                     break;
                 case EMO_LAYR:
@@ -4638,6 +4698,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_RCTL, CONFIG_EMO_LAYR_COLOR);      // rctl
                     #endif
                     rgb_matrix_set_color(I_BSLS, CONFIG_EMO_LAYR_COLOR);      // backslash
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_EMO_LAYR_COLOR);      // caps
+                    #endif
                 #else
                     #ifndef CONFIG_NO_RCMD_KEY
                     rgb_matrix_set_color(I_RCMD, RGB_YELLOW);     // rcmd
@@ -4648,17 +4711,26 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     rgb_matrix_set_color(I_RCTL, RGB_YELLOW);     // rctl
                     #endif
                     rgb_matrix_set_color(I_BSLS, RGB_YELLOW);     // backslash
-                #endif
-                    break;
-                #ifdef CONFIG_HAS_FKEY_LAYR
-                case FKEY_LAYR:
-                    #ifdef CONFIG_FKEY_LAYR_COLOR
-                    rgb_matrix_set_color(I_FKEY, CONFIG_FKEY_LAYR_COLOR);
-                    #else
-                    rgb_matrix_set_color(I_FKEY, RGB_WHITE);
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_YELLOW);     // caps
                     #endif
-                    break;
                 #endif
+                    break;
+            #ifdef CONFIG_HAS_FKEY_LAYR
+                case FKEY_LAYR:
+                #ifdef CONFIG_FKEY_LAYR_COLOR
+                    rgb_matrix_set_color(I_FKEY, CONFIG_FKEY_LAYR_COLOR);
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, CONFIG_FKEY_LAYR_COLOR);     // caps
+                    #endif
+                #else
+                    rgb_matrix_set_color(I_FKEY, RGB_WHITE);
+                    #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                    rgb_matrix_set_color(I_CAPS, RGB_WHITE);                  // caps
+                    #endif
+                #endif
+                    break;
+            #endif
                 case LOCK_LAYR:
                     for (uint8_t i = 0; i < lock_layr_extra_flash_keys_count; i++) {
                     #ifdef CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR
@@ -4683,6 +4755,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     case SFT_LAYR:
                         rgb_matrix_set_color(I_LSFT, RGB_BLACK);           // lshift
                         rgb_matrix_set_color(I_RSFT, RGB_BLACK);           // rshift
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case KCTL_LAYR:
                         rgb_matrix_set_color(I_LALT, RGB_BLACK);           // lalt
@@ -4691,12 +4766,21 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         #elif !defined(CONFIG_NO_RCTL_KEY)
                         rgb_matrix_set_color(I_RCTL, RGB_BLACK);           // right control
                         #endif
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case TMUX_LAYR:
                         rgb_matrix_set_color(I_TAB, RGB_BLACK);            // tab
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case VS_LAYR:
                         rgb_matrix_set_color(I_BSLS, RGB_BLACK);           // backslash
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case WSYM_LAYR:
                         #ifndef CONFIG_NO_RALT_KEY
@@ -4704,6 +4788,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         #endif
                         rgb_matrix_set_color(I_LGUI, RGB_BLACK);           // lgui
                         rgb_matrix_set_color(I_FN, RGB_BLACK);             // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case MSYM_LAYR:
                         rgb_matrix_set_color(I_LOPT, RGB_BLACK);           // lopt
@@ -4711,6 +4798,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_ROPT, RGB_BLACK);           // ropt
                         #endif
                         rgb_matrix_set_color(I_FN, RGB_BLACK);             // fn
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case WIDE_LAYR:
                         rgb_matrix_set_color(I_RSFT, RGB_BLACK);           // rshift
@@ -4720,6 +4810,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         if (!is_mac_base() && user_config.is_linux_base) {
                             rgb_matrix_set_color(I_BSLS, RGB_BLACK);       // backslash
                         }
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     case EMO_LAYR:
                         #ifndef CONFIG_NO_RCMD_KEY
@@ -4731,10 +4824,16 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(I_RCTL, RGB_BLACK);           // rctl
                         #endif
                         rgb_matrix_set_color(I_BSLS, RGB_BLACK);           // backslash
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     #ifdef CONFIG_HAS_FKEY_LAYR
                     case FKEY_LAYR:
                         rgb_matrix_set_color(I_FKEY, RGB_BLACK);           // fkey toggle
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        rgb_matrix_set_color(I_CAPS, RGB_BLACK);           // caps
+                        #endif
                         break;
                     #endif
                     case LOCK_LAYR:
