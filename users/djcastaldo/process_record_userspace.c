@@ -5165,9 +5165,21 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     }
                     if (!is_alt_color_key) {
                     #ifdef CONFIG_KEYLIGHT_STD_COLOR
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        if (tracked_keys[i].index != I_CAPS) {
+                        #endif
                         rgb_matrix_set_color(tracked_keys[i].index, CONFIG_KEYLIGHT_STD_COLOR);
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        }
+                        #endif
                     #else
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        if (tracked_keys[i].index != I_CAPS) {
+                        #endif
                         rgb_matrix_set_color(tracked_keys[i].index, RGB_WHITE);
+                        #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
+                        }
+                        #endif
                     #endif
                     }
                 }
