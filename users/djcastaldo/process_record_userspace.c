@@ -4026,6 +4026,9 @@ bool process_leader_userspace(void) {
         START_KEY_SEQUENCE(tab_seq);
         
     }
+    else if (leader_sequence_five_keys(KC_K, KC_I, KC_L, KC_L, KC_B)) { // restart bt daemon
+        SEND_STRING("sudo pkill bluetoothd" SS_TAP(X_ENT));
+    }
     else if (leader_sequence_two_keys(KC_N, KC_1)) {          // mac mini start nut upsdrvctl
         SEND_STRING("sudo /usr/local/opt/nut/sbin/upsdrvctl start" SS_TAP(X_ENT));
     }
