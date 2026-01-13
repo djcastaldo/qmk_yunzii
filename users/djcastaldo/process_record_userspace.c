@@ -4866,11 +4866,20 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                       #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         if (is_layer_locked(layer)) {
-                        #ifdef CONFIG_SYM_LAYR_COLOR
-                            rgb_matrix_set_color(I_CAPS, CONFIG_SYM_LAYR_COLOR);
-                        #else
-                            rgb_matrix_set_color(I_CAPS, RGB_BLUE);
-                        #endif
+                            if (timer_elapsed(layer_timer) > 250) {
+                            #ifdef CONFIG_SYM_LAYR_COLOR
+                                rgb_matrix_set_color(I_CAPS, CONFIG_SYM_LAYR_COLOR);
+                            #else
+                                rgb_matrix_set_color(I_CAPS, RGB_BLUE);
+                            #endif
+                            }
+                            else {
+                            #ifdef CONFIG_ACCENT_KEY_COLOR
+                                rgb_matrix_set_color(I_CAPS, CONFIG_ACCENT_KEY_COLOR);
+                            #else
+                                rgb_matrix_set_color(I_CAPS, RGB_YELLOW);
+                            #endif
+                            }
                         }
                         else {
                         #endif
@@ -4889,11 +4898,20 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                       #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         if (is_layer_locked(layer)) {
-                        #ifdef CONFIG_SYM_LAYR_COLOR
-                            rgb_matrix_set_color(I_CAPS, CONFIG_SYM_LAYR_COLOR);
-                        #else
-                            rgb_matrix_set_color(I_CAPS, RGB_BLUE);
-                        #endif
+                            if (timer_elapsed(layer_timer) > 250) {
+                            #ifdef CONFIG_SYM_LAYR_COLOR
+                                rgb_matrix_set_color(I_CAPS, CONFIG_SYM_LAYR_COLOR);
+                            #else
+                                rgb_matrix_set_color(I_CAPS, RGB_BLUE);
+                            #endif
+                            }
+                            else {
+                            #ifdef CONFIG_ACCENT_KEY_COLOR
+                                rgb_matrix_set_color(I_CAPS, CONFIG_ACCENT_KEY_COLOR);
+                            #else
+                                rgb_matrix_set_color(I_CAPS, RGB_YELLOW);
+                            #endif
+                            }
                         }
                         else {
                         #endif
