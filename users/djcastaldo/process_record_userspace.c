@@ -3695,11 +3695,13 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
             if (record->event.pressed) {
-                register_mods(MOD_LSFT);
-                wait_ms(35);
-                tap_code(KC_MINS);
-                wait_ms(35);
-                unregister_mods(MOD_LSFT);
+                key_action_t underscore_seq[] = {
+                    { KC_LSFT,  true, 0 },
+                    { KC_MINS,     true, vs_delay },
+                    { KC_MINS,    false, vs_delay },
+                    { KC_LSFT, false, vs_delay }
+                };
+                START_KEY_SEQUENCE(underscore_seq);
             }
             return false;
         }
