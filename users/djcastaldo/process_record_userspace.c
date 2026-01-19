@@ -317,7 +317,8 @@ void reset_last_activity_timer(void) {
     // there are some cases where bt is turned off but no full suspend power down happened
     if (!bt_is_on) {
         #if defined(KEYBOARD_IS_BRIDGE)
-        wls_transport_enable(true);
+        if (get_transport() != TRANSPORT_USB)
+            wls_transport_enable(true);
         #endif
         rgb_set_sleep_mode(false);
         bt_is_on = true;
