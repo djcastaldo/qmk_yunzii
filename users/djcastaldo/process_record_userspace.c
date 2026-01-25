@@ -296,6 +296,8 @@ static uint8_t wake_retry = 0;
 static bool shift_pressed_for_caps_word = false;
 // for making globe key work with window tiling
 static bool globe_pressed = false;
+// the is for tracking a mode used to drain the battery for storage
+static bool battery_drain_mode = false;
 
 
 void reset_last_activity_timer(void) {
@@ -1517,6 +1519,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             else if (macro_recording) {
                 // if macro is recording, stop it
                 dynamic_macro_stop_recording();
+            }
+            else if (battery_drain_mode) {
+                battery_drain_mode = false;
             }
             else {
                 // send escape
@@ -4206,6 +4211,9 @@ bool process_leader_userspace(void) {
         rdp_send_string("C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\aspnet_regiis -pef system.web/sessionState ");
         START_KEY_SEQUENCE(paste_seq);
     }
+    else if (leader_sequence_five_keys(KC_D, KC_R, KC_A, KC_I, KC_N)) { // turn on battery drain mode
+        battery_drain_mode = true;
+    }
     else if (leader_sequence_four_keys(KC_B, KC_O, KC_O, KC_T)) {  // reset to bootloader
         reset_keyboard();
     }
@@ -5339,6 +5347,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             }
         }
 
+        // if in battery brain mode, set all the rgb to bright white
+        if (battery_drain_mode) {
+            for (uint8_t i = led_min; i < led_max; i++) {
+                rgb_matrix_set_color(i, RGB_WHITE);
+            }
+        }
+
         // calculate the reactive rgb for keypresses
         if (enable_keytracker) {
             for (int i = 0; i < tk_length; i++) {
@@ -5572,43 +5587,45 @@ void matrix_scan_user(void) {
     process_key_sequence();
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
-    #ifdef CONFIG_CUSTOM_SLEEP_WARNING
-    if (!rgb_reached_timeout && !warning_active &&
-        timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - CONFIG_CUSTOM_SLEEP_WARNING) {
-    #else
-    if (!rgb_reached_timeout && !warning_active &&
-        timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - 5000) {
-    #endif
-        warning_active = true;
-        #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
-        last_blink = timer_read32() - CONFIG_CUSTOM_BLINK_INTERVAL;
+    if (!battery_drain_mode) {
+        #ifdef CONFIG_CUSTOM_SLEEP_WARNING
+        if (!rgb_reached_timeout && !warning_active &&
+            timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - CONFIG_CUSTOM_SLEEP_WARNING) {
         #else
-        last_blink = timer_read32() - 250;
+        if (!rgb_reached_timeout && !warning_active &&
+            timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT - 5000) {
         #endif
-        warning_led_state = false;
-    }
-    if (!rgb_reached_timeout && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
-        #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-        rgb_matrix_sethsv_noeeprom(0, 0, 1);
+            warning_active = true;
+            #ifdef CONFIG_CUSTOM_BLINK_INTERVAL
+            last_blink = timer_read32() - CONFIG_CUSTOM_BLINK_INTERVAL;
+            #else
+            last_blink = timer_read32() - 250;
+            #endif
+            warning_led_state = false;
+        }
+        if (!rgb_reached_timeout && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
+            #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+            rgb_matrix_sethsv_noeeprom(0, 0, 1);
+            #else
+            rgb_matrix_disable_noeeprom();
+            #endif
+            warning_active = false;
+            rgb_set_sleep_mode(true);
+        }
+        #ifdef CONFIG_CUSTOM_BT_TURN_OFF_DELAY
+        if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
         #else
-        rgb_matrix_disable_noeeprom();
+        if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + 5000) {
         #endif
-        warning_active = false;
-        rgb_set_sleep_mode(true);
-    }
-    #ifdef CONFIG_CUSTOM_BT_TURN_OFF_DELAY
-    if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_BT_TURN_OFF_DELAY) {
-    #else
-    if (bt_is_on && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT + 5000) {
-    #endif
-        #if defined(KEYBOARD_IS_BRIDGE)
-        wls_transport_enable(false);
-        wait_ms(50);
-        #endif
-        bt_is_on = false;
-        #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY)
-        suspend_power_down();
-        #endif
+            #if defined(KEYBOARD_IS_BRIDGE)
+            wls_transport_enable(false);
+            wait_ms(50);
+            #endif
+            bt_is_on = false;
+            #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY)
+            suspend_power_down();
+            #endif
+        }
     }
 #endif
 #if defined(KEYBOARD_IS_WOMIER)
@@ -5829,6 +5846,11 @@ void suspend_power_down_user(void) {
     wakeup_ran = false;  // cleared ONLY here (entering suspend)
 }
 
+// qmk hook to stop entering suspend mode
+bool suspend_ignore(void) {
+    return battery_drain_mode; // do NOT supsend if battery drain mode is on
+}
+
 // --- wakeup hook ----
 void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user()\n");
@@ -5895,7 +5917,7 @@ void housekeeping_task_user(void) {
     bool is_suspended_now = (timer_elapsed32(last_activity_timer) > idle_ms_for_suspend);
 
     // --- handle suspend ---
-    if (is_suspended_now && !was_suspended) {
+    if (!battery_drain_mode && is_suspended_now && !was_suspended) {
         // if keychron skipped the power_down hook, run it now
         if (!power_down_ran) {
             suspend_power_down_user();
@@ -5961,6 +5983,7 @@ void housekeeping_task_user(void) {
             housekeeping_restore_lock_anim = false;
         }
     }
+
     // warning led flashes before sleep
     #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
         if (warning_active &&
