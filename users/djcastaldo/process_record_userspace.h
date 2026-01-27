@@ -512,6 +512,7 @@ extern uint8_t super_scut_altcolor[];
 extern uint8_t super_scut_keys_size;
 extern uint8_t super_scut_altcolor_size;
 extern deferred_token wireless_mode_token;
+extern bool battery_drain_mode;
 
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record);
 bool process_leader_userspace(void);

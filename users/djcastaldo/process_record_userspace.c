@@ -297,7 +297,7 @@ static bool shift_pressed_for_caps_word = false;
 // for making globe key work with window tiling
 static bool globe_pressed = false;
 // the is for tracking a mode used to drain the battery for storage
-static bool battery_drain_mode = false;
+bool battery_drain_mode = false;
 
 
 void reset_last_activity_timer(void) {
@@ -5822,6 +5822,10 @@ void matrix_scan_user(void) {
 // the values are what they need to be
 void suspend_power_down_user(void) {
     dprintf("suspend_power_down_user. . .\n");
+    dprintf("suspend blocked: %d\n", battery_drain_mode);
+    if (battery_drain_mode) {
+        return;  // block suspend behavior
+    }
     if (rgb_matrix_is_enabled()) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         dprintf("rgb_matrix_sethsv 1 val\n");
@@ -6010,6 +6014,14 @@ void housekeeping_task_user(void) {
                     rgb_matrix_set_color(rgb_layer_indicators[i], RGB_BLACK);
                 }
             }
+        }
+    #endif
+
+    // this keeps keychron from turning off rgb in battery drain mode
+    #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
+        if (battery_drain_mode) {
+            rgb_matrix_disable_timeout_set(RGB_MATRIX_TIMEOUT_INFINITE);
+            rgb_matrix_disable_time_reset();
         }
     #endif
 }
@@ -7754,6 +7766,21 @@ void wireless_transport_enable(bool enable) {
             p24g_transport_enable(false);
             break;
     }
+}
+#endif
+
+// keep keyboards awake for battery_drain_mode
+#if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
+bool lpwr_is_allow_timeout_hook(void) {
+    return !battery_drain_mode;
+}
+
+bool lpwr_is_allow_presleep_hook(void) {
+    return !battery_drain_mode;
+}
+
+bool lpwr_is_allow_stop_hook(void) {
+    return !battery_drain_mode;
 }
 #endif
 
