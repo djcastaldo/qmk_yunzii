@@ -22,6 +22,8 @@ __attribute__((weak)) void bt_transport_enable(bool enable);
 __attribute__((weak)) void p24g_transport_enable(bool enable);
 #endif
 
+#define BAT_DRAIN_CUTOFF_PERCENT 50
+
 user_config_t user_config;
 #ifdef CONFIG_MACOS_BASE_LAYERS
 const uint8_t macos_base_layers[] = CONFIG_MACOS_BASE_LAYERS;
@@ -503,6 +505,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         jiggler_token = INVALID_DEFERRED_TOKEN;
         jiggler_report = (report_mouse_t){};  // clear the mouse
         host_mouse_send(&jiggler_report);
+        battery_drain_mode = false; // this mode turns on with the jiggler to prevent suspend while mouse jiggler is running
     }
     // layer lock
     if (!process_layer_lock(keycode, record, LLOCK)) {
@@ -5348,7 +5351,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         }
 
         // if in battery brain mode, set all the rgb to bright white
-        if (battery_drain_mode) {
+        if (battery_drain_mode && !jiggler_token) {
             for (uint8_t i = led_min; i < led_max; i++) {
                 rgb_matrix_set_color(i, RGB_WHITE);
             }
@@ -5910,6 +5913,21 @@ void suspend_wakeup_init_user(void) {
     dprintf("suspend_wakeup_init_user complete, wakeup_ran: %u\n", wakeup_ran);
 }
 
+// this function is used to check the battery when housekeeping sees battery_drain_mode is turned on
+static inline bool battery_at_or_below_drain_cutoff(void) {
+
+#ifdef battery_get_voltage
+    // keychron/lemokey use tuned voltage
+    return battery_get_voltage() <= 3775;
+#elif defined(md_getp_bat)
+    // bridge/womier use pointer to get % value
+    return *md_getp_bat() <= BAT_DRAIN_CUTOFF_PERCENT;
+#else
+    // wired or unsupported boards just never auto-disable
+    return false;
+#endif
+}
+
 // --- housekeeping detect suspend ---
 void housekeeping_task_user(void) {
     uint32_t idle_ms_for_suspend = 600000;
@@ -5919,6 +5937,17 @@ void housekeeping_task_user(void) {
     }
     #endif
     bool is_suspended_now = (timer_elapsed32(last_activity_timer) > idle_ms_for_suspend);
+
+    // check battery periodically if battery_drain_mode is on and turn it off when battery gets around 50%
+    if (battery_drain_mode) {
+        static uint32_t last_battery_check = 0;
+        if (timer_elapsed32(last_battery_check) > 5000) {
+            last_battery_check = timer_read32();
+            if (battery_at_or_below_drain_cutoff()) {
+                battery_drain_mode = false;
+            }
+        }
+    }
 
     // --- handle suspend ---
     if (!battery_drain_mode && is_suspended_now && !was_suspended) {
@@ -7242,6 +7271,7 @@ void jiggle_mouse(void) {
         return 16;  // call the callback every 16 ms
     }
     jiggler_token = defer_exec(1, jiggler_callback, NULL);  // schedule callback
+    battery_drain_mode = true; // prevent keyboard suspend while jiggler is running
 }
 
 void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask) {
