@@ -1652,8 +1652,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         return false;
     case KC_MYCM:
         if (is_mac_base() && record->event.pressed) {
-            // open new Finder home dir
-            tap_code16(LCMD(LSFT(KC_H)));
+            const uint8_t mods = get_mods();
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
+                del_oneshot_mods(MOD_MASK_CTRL);
+                unregister_mods(MOD_MASK_CTRL);
+                // if control is held, then do the snap combination to switch to Finder app 
+                tap_code16(LCMD(LOPT(LSFT(KC_GRV))));
+                register_mods(mods);
+            }
+            else {
+                // switch Finder to home dir
+                tap_code16(LCMD(LSFT(KC_H)));
+            }
             return false;
         }
         break;
@@ -4120,7 +4131,7 @@ bool process_leader_userspace(void) {
         };
         START_KEY_SEQUENCE(sl_seq);
     }
-    else if (leader_sequence_three_keys(KC_J, KC_I, KC_G) {   // mouse jiggler
+    else if (leader_sequence_three_keys(KC_J, KC_I, KC_G)) {   // mouse jiggler
         jiggle_mouse();
     }
     else if (leader_sequence_two_keys(KC_T, KC_Y)) {          // thank you
