@@ -4120,6 +4120,9 @@ bool process_leader_userspace(void) {
         };
         START_KEY_SEQUENCE(sl_seq);
     }
+    else if (leader_sequence_three_keys(KC_J, KC_I, KC_G) {   // mouse jiggler
+        jiggle_mouse();
+    }
     else if (leader_sequence_two_keys(KC_T, KC_Y)) {          // thank you
         SEND_STRING("thank you");
     }
