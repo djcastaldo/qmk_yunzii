@@ -22,7 +22,8 @@ __attribute__((weak)) void bt_transport_enable(bool enable);
 __attribute__((weak)) void p24g_transport_enable(bool enable);
 #endif
 
-#define BAT_DRAIN_CUTOFF_PERCENT 50
+#define BAT_DRAIN_CUTOFF_PERCENT 40
+#define BAT_DRAIN_CUTOFF_VOLTAGE 3750
 
 user_config_t user_config;
 #ifdef CONFIG_MACOS_BASE_LAYERS
@@ -5930,10 +5931,10 @@ void suspend_wakeup_init_user(void) {
 // this function is used to check the battery when housekeeping sees battery_drain_mode is turned on
 static inline bool battery_at_or_below_drain_cutoff(void) {
 
-#ifdef battery_get_voltage
+#if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
     // keychron/lemokey use tuned voltage
-    return battery_get_voltage() <= 3775;
-#elif defined(md_getp_bat)
+    return battery_get_voltage() <= BAT_DRAIN_CUTOFF_VOLTAGE;
+#elif defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_WOMIER)
     // bridge/womier use pointer to get % value
     return *md_getp_bat() <= BAT_DRAIN_CUTOFF_PERCENT;
 #else
