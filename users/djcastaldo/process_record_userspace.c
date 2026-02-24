@@ -3713,6 +3713,22 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             START_KEY_SEQUENCE(clipboard_seq);
         }
         return false;
+    #ifdef CONFIG_HAS_FKEY_LAYR
+    // make this act like MO if held, but OSL if tapped
+    case OSL_FKEY:
+        if (record->event.pressed) {
+            key_timer = timer_read32();
+            layer_on(FKEY_LAYR);
+        } else if (timer_elapsed32(key_timer) >= 180) {
+            if (!is_layer_locked(FKEY_LAYR)) {
+                layer_off(FKEY_LAYR);
+            }
+        } else {
+            set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
+            clear_oneshot_layer_state(ONESHOT_PRESSED);
+        }
+        return false;
+    #endif
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
             if (record->event.pressed) {
@@ -5641,7 +5657,8 @@ void matrix_scan_user(void) {
             #endif
             bt_is_on = false;
             #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY)
-            suspend_power_down();
+            if (get_transport() != TRANSPORT_USB)
+                suspend_power_down();
             #endif
         }
     }
