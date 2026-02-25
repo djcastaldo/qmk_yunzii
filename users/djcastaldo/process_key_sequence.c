@@ -210,3 +210,30 @@ void rdp_send_string(const char *str) {
         START_KEY_SEQUENCE(pause_seq);
     }
 }
+
+void rdp_send_string_P(const char *str) {
+    for (int i = 0; i < CONFIG_MAX_SEQ_QUEUE; i++) release_all_held(&sequences[i]);
+
+    // Use pgm_read_byte to read from Flash
+    while (pgm_read_byte(str)) {
+        key_action_t seq[CONFIG_MAX_SEQ_LEN];
+        uint8_t seq_len = 0;
+
+        while (pgm_read_byte(str)) {
+            key_action_t temp[7]; // max actions per char
+            // Read character from Flash and convert to actions
+            uint8_t count = char_to_actions(pgm_read_byte(str), temp);
+
+            if (seq_len + count > CONFIG_MAX_SEQ_LEN) break;
+
+            for (uint8_t i = 0; i < count; i++) seq[seq_len++] = temp[i];
+            str++;
+        }
+
+        if (seq_len > 0) start_key_sequence(seq, seq_len);
+
+        // Add a tiny pause between sequences
+        key_action_t pause_seq[] = { { KC_NO, false, 50 } };
+        start_key_sequence(pause_seq, 1);
+    }
+}

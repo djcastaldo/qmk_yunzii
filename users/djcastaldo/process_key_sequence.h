@@ -43,6 +43,7 @@ void process_key_sequence(void);
 
 // for converting a string to sequeunce actions
 void rdp_send_string(const char *str);
+void rdp_send_string_P(const char *str);
 
 // convenience macro: automatically calculate length of a static array
 #define START_KEY_SEQUENCE(seq) start_key_sequence(seq, sizeof(seq) / sizeof((seq)[0]))
