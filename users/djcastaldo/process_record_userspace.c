@@ -645,6 +645,15 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    case WM_MYCM:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(NEWFINDER);
+            }
+            else {
+                tap_code16(KC_MYCM);
+            }
+        }
     case WM_SYM:
         if (record->event.pressed) {
             if (is_mac_base()) {

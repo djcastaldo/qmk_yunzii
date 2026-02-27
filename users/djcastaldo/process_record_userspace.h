@@ -93,6 +93,7 @@ enum userspace_keycodes {
     SECRET43,
     LLOCK,
     BASE_CHG,
+    WM_MYCM,
     WM_SYM,
     WM_SOC1,
     WM_SOC2,
