@@ -5665,7 +5665,7 @@ void matrix_scan_user(void) {
             wait_ms(50);
             #endif
             bt_is_on = false;
-            #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY)
+            #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY) && !defined(KEYBOARD_IS_NEO)
             if (get_transport() != TRANSPORT_USB)
                 suspend_power_down();
             #endif
