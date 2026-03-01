@@ -358,6 +358,7 @@ void rgb_set_sleep_mode(bool enable) {
 
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
+    static uint8_t tap_count;
     if (record->event.pressed) {
         reset_last_activity_timer();
     }
@@ -3726,15 +3727,43 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // make this act like MO if held, but OSL if tapped
     case OSL_FKEY:
         if (record->event.pressed) {
-            key_timer = timer_read32();
-            layer_on(FKEY_LAYR);
-        } else if (timer_elapsed32(key_timer) >= 180) {
-            if (!is_layer_locked(FKEY_LAYR)) {
+            // check if this is a double tap
+            if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
+                tap_count = 2;
                 layer_off(FKEY_LAYR);
+                layer_on(FN_LAYR);
+            } else {
+                tap_count = 1;
+                key_timer = timer_read32();
+                layer_on(FKEY_LAYR);
             }
-        } else {
-            set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
-            clear_oneshot_layer_state(ONESHOT_PRESSED);
+        } else { // on release
+            if (tap_count == 2) {
+                // was this double-hold or double-tap?
+                if (timer_elapsed(key_timer) < 180 + 200) {
+                    // double-tap: one shot FN_LAYR
+                    layer_off(FN_LAYR);
+                    set_oneshot_layer(FN_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                } else {
+                    if (!is_layer_locked(FN_LAYR))
+                        layer_off(FN_LAYR);
+                }
+                tap_count = 0;
+            } else {
+                // was this single-hold or single-tap?
+                if (timer_elapsed(key_timer) >= 180) {
+                    // it was a hold so turn it off
+                    if (!is_layer_locked(FKEY_LAYR))
+                        layer_off(FKEY_LAYR);
+                    tap_count = 0;
+                } else {
+                    // it was a tap so do oneshot
+                    layer_off(FKEY_LAYR);
+                    set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                }
+            }
         }
         return false;
     #endif
