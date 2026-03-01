@@ -4590,9 +4590,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 #ifdef CONFIG_FN_LAYR_COLOR
                     rgb_matrix_set_color(I_CAPS, CONFIG_FN_LAYR_COLOR);  // caps
                     rgb_matrix_set_color(I_FN, CONFIG_FN_LAYR_COLOR);    // fn
+                    #ifdef CONFIG_FKEY_FLASHES_WITH_FN_LAYR
+                    rgb_matrix_set_color(I_FKEY, CONFIG_FN_LAYR_COLOR);  // fkey
+                    #endif
                 #else
                     rgb_matrix_set_color(I_CAPS, RGB_GREEN);  // caps
                     rgb_matrix_set_color(I_FN, RGB_GREEN);    // fn
+                    #ifdef CONFIG_FKEY_FLASHES_WITH_FN_LAYR
+                    rgb_matrix_set_color(I_FKEY, RGB_GREEN);  // fkey
+                    #endif
                 #endif
                     break;
                 case SFT_LAYR:
@@ -4849,6 +4855,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 switch (layer) {
                     case FN_LAYR:
                         rgb_matrix_set_color(I_FN, RGB_BLACK);             // fn
+                        #ifdef CONFIG_FKEY_FLASHES_WITH_FN_LAYR
+                        rgb_matrix_set_color(I_FKEY, RGB_BLACK);           // fkey
+                        #endif
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         if (is_layer_locked(layer)) {
                         #ifdef CONFIG_FN_LAYR_COLOR
