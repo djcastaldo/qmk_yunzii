@@ -9,7 +9,7 @@
     #define CONFIG_MAX_SEQ_LEN   128
 #endif
 #ifndef CONFIG_MAX_SEQ_QUEUE
-    #define CONFIG_MAX_SEQ_QUEUE 10
+    #define CONFIG_MAX_SEQ_QUEUE 5
 #endif
 #ifndef CONFIG_MAX_KEYS_HELD
     #define CONFIG_MAX_KEYS_HELD 8
