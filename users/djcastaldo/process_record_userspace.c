@@ -1793,6 +1793,26 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             return false;
         }
         break;
+    case KC_MCTL:
+        if (!is_mac_base()) {
+            if (record->event.pressed) {
+                tap_code16(LGUI(KC_TAB));
+            }
+            return false;
+        }
+        break;
+    case KC_LPAD:
+        if (!is_mac_base()) {
+            if (record->event.pressed) {
+                if (user_config.is_linux_base) {
+                    tap_code16(LALT(KC_TAB));
+                } else {
+                    tap_code16(LCTL(LALT(KC_TAB)));
+                }
+            }
+            return false;
+        }
+        break;
     case LOCKSCR:
         if (record->event.pressed) {
             if (is_mac_base()) {
