@@ -358,7 +358,9 @@ void rgb_set_sleep_mode(bool enable) {
 
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
+    #ifdef CONFIG_HAS_FKEY_LAYR
     static uint8_t tap_count;
+    #endif
     if (record->event.pressed) {
         reset_last_activity_timer();
     }
@@ -655,6 +657,69 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 tap_code16(KC_MYCM);
             }
         }
+        return false;
+    case WM_QLOOK:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FQLOOK);
+            }
+            else if (!user_config.is_linux_base) {
+                key_action_t preview_seq[] = {
+                    { KC_LALT,  true, 0 },
+                    { KC_P,     true, CONFIG_RDP_DELAY_KEY },
+                    { KC_P,    false, CONFIG_RDP_DELAY_KEY },
+                    { KC_LALT, false, CONFIG_RDP_DELAY_MOD }
+                };
+                START_KEY_SEQUENCE(preview_seq);
+            }
+        }
+        return false;
+    case WM_INSPECT:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FINSPECT);
+            }
+            else if (!user_config.is_linux_base) {
+                key_action_t dpane_seq[] = {
+                    { KC_LALT,  true, 0 },
+                    { KC_LSFT,  true, CONFIG_RDP_DELAY_MOD },
+                    { KC_P,     true, CONFIG_RDP_DELAY_KEY },
+                    { KC_P,    false, CONFIG_RDP_DELAY_KEY },
+                    { KC_LSFT, false, CONFIG_RDP_DELAY_MOD },
+                    { KC_LALT, false, CONFIG_RDP_DELAY_MOD }
+                };
+                START_KEY_SEQUENCE(dpane_seq);
+            }
+        }
+        return false;
+    case WM_VHIDDEN:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FVHIDDEN);
+            }
+            else if (!user_config.is_linux_base) {
+                // windows 11 doesn't have an easy hidden toggle so just show item details
+                key_action_t details_seq[] = {
+                    { KC_LALT,  true, 0 },
+                    { KC_ENT,   true, CONFIG_RDP_DELAY_KEY },
+                    { KC_ENT,  false, CONFIG_RDP_DELAY_KEY },
+                    { KC_LALT, false, CONFIG_RDP_DELAY_MOD }
+                };
+                START_KEY_SEQUENCE(details_seq);
+            }
+        }
+        return false;
+    case WM_OVIEW:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(TOVERVIEW);
+            }
+            else if (!user_config.is_linux_base) {
+                // windows 11 doesn't have an equiv here so just show desktop switcher 
+                tap_code16(LGUI(KC_TAB));
+            }
+        }
+        return false;
     case WM_SYM:
         if (record->event.pressed) {
             if (is_mac_base()) {
@@ -789,12 +854,22 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    case WM_APPS:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FAPPS);
+            }
+            else if (!user_config.is_linux_base) {
+                send_string_with_delay(SS_LGUI(SS_TAP(X_R)) SS_DELAY(150) "shell:AppsFolder" SS_DELAY(50) SS_TAP(X_ENT),5);
+            }
+        }
+        return false;
     case WM_DOCS:
         if (record->event.pressed) {
             if (is_mac_base()) {
                 tap_code16(FDOCS);
             }
-            else {
+            else if (!user_config.is_linux_base) {
                 tap_code16(FEXPLORE);
             }
         }
@@ -804,8 +879,34 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             if (is_mac_base()) {
                 tap_code16(FDOWNL);
             }
-            else {
+            else if (!user_config.is_linux_base) {
                 tap_code16(FEXPLORE);
+            }
+        }
+        return false;
+    case WM_STATB:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                tap_code16(FSTATBAR);
+            }
+            else if (!user_config.is_linux_base) {
+                tap_code16(LCTL(LSFT(KC_6)));
+            }
+        }
+        return false;
+    case WM_TIME:
+        if (record->event.pressed) {
+            if (is_mac_base()) {
+                // mac is setup to actually print a timestamp
+                tap_code16(TIMESTAMP);
+            }
+            else if (user_config.is_linux_base) {
+                // linux can just open a terminal
+                tap_code16(LCTL(LALT(KC_T)));
+            }
+            else {
+                // windows can show the calendar in the notification pane
+                tap_code16(LGUI(KC_N));
             }
         }
         return false;
@@ -814,7 +915,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             if (is_mac_base()) {
                 tap_code16(MOD_SIRI);
             }
-            else {
+            else if (!user_config.is_linux_base) {
                 tap_code16(US_CATANA);
             }
         }
@@ -1792,7 +1893,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case GNEWS:
         if (record->event.pressed) {
            // open browser tab to google news
-           send_string_with_delay(SS_LCMD(SS_TAP(X_L)) SS_DELAY(150) "news.google.com" SS_DELAY(50) SS_LOPT(SS_TAP(X_ENT)),5);
+            if (is_mac_base()) {
+                send_string_with_delay(SS_LCMD(SS_TAP(X_L)) SS_DELAY(150) "news.google.com" SS_DELAY(50) SS_LOPT(SS_TAP(X_ENT)),5);
+            } else {
+                send_string_with_delay(SS_LCTL(SS_TAP(X_L)) SS_DELAY(150) "news.google.com" SS_DELAY(50) SS_LALT(SS_TAP(X_ENT)),5);
+            }
         }
         return false;
     // move mouse cursor for per-monitor mission control
@@ -1838,13 +1943,17 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // custom keycode to move cursor to left mon with CatchMouse
     case CURSORL:
         if (record->event.pressed) {
-           send_string(SS_LCTL(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P1))))));
+            if (is_mac_base()) {
+                send_string(SS_LCTL(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P1))))));
+            }
         }
         return false;
     // custom keycode to move cursor to right mon with CatchMouse
     case CURSORR:
         if (record->event.pressed) {
-           send_string(SS_LCTL(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P2))))));
+            if (is_mac_base()) {
+                send_string(SS_LCTL(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P2))))));
+            }
         }
         return false;
     case OPT_HOLD:
@@ -1864,8 +1973,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_GUI)
                 set_key_lock_watching();
-            else
-                send_string(SS_LSFT(SS_LCMD(SS_TAP(X_4)))); // KC_SNAP wasn't working here
+            else {
+                if (is_mac_base()) {
+                    send_string(SS_LSFT(SS_LCMD(SS_TAP(X_4)))); // KC_SNAP wasn't working here
+                }
+                else {
+                    tap_code16(KC_PSCR);
+                }
+            }
         }
         return false;
     case AP_GLOB:
