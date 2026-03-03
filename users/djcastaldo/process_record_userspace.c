@@ -1098,12 +1098,29 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             bspc_token = INVALID_DEFERRED_TOKEN;
         }
         else if (!bspc_token) {  // Backspace pressed: start repeating
-            tap_code(KC_BSPC);  // Initial tap of Backspace key
+            // if shift is held, do delete instead of bspc
+            const uint8_t mods = get_mods();
+            const uint8_t oneshot_mods = get_oneshot_mods();
+            if ((mods | oneshot_mods) & MOD_MASK_SHIFT) {
+                del_mods(MOD_MASK_SHIFT);
+                del_weak_mods(MOD_MASK_SHIFT);
+                tap_code(KC_DEL); // Initial tap of Delete key
+                register_mods(mods);
+            } else {
+                tap_code(KC_BSPC);  // Initial tap of Backspace key
+            }
             rep_count = 0;
             uint32_t bspc_callback(uint32_t trigger_time, void* cb_arg) {
-              tap_code(KC_BSPC);
-              if (rep_count < sizeof(REP_DELAY_MS)) { ++rep_count; }
-              return pgm_read_byte(REP_DELAY_MS - 1 + rep_count);
+                const uint8_t mods = get_mods();
+                if (mods & MOD_MASK_SHIFT) {
+                    del_mods(MOD_MASK_SHIFT);
+                    tap_code(KC_DEL);
+                    register_mods(mods);
+                } else {
+                    tap_code(KC_BSPC);
+                }
+                if (rep_count < sizeof(REP_DELAY_MS)) { ++rep_count; }
+                return pgm_read_byte(REP_DELAY_MS - 1 + rep_count);
             }
             bspc_token = defer_exec(INIT_DELAY_MS, bspc_callback, NULL);
         }
