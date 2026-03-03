@@ -1118,26 +1118,34 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             const uint8_t mods = get_mods();
             const uint8_t oneshot_mods = get_oneshot_mods();
             if ((mods | oneshot_mods) & MOD_MASK_SHIFT) {
+                bool lshift_held = mods & MOD_BIT(KC_LSFT);
+                bool rshift_held = mods & MOD_BIT(KC_RSFT);
                 is_delete = true;
                 // if right control is held, then send shift + delete
-                keep_shift_active = ((mods | oneshot_mods) & MOD_BIT(KC_RCTL));
+                keep_shift_active = mods & MOD_BIT(KC_RCTL);
                 if (keep_shift_active) {
-                    del_mods(MOD_BIT(KC_RCTL));
-                    del_weak_mods(MOD_BIT(KC_RCTL));
-                #ifndef NO_ACTION_ONESHOT
-                    del_oneshot_mods(MOD_BIT(KC_RCTL));
-                #endif
-                    send_keyboard_report();
+                    unregister_code(KC_RCTL);
                 } else {
-                    del_mods(MOD_MASK_SHIFT);
-                    del_weak_mods(MOD_MASK_SHIFT);
-                #ifndef NO_ACTION_ONESHOT
-                    del_oneshot_mods(MOD_MASK_SHIFT);
-                #endif
-                    send_keyboard_report();
+                    if (lshift_held)
+                        unregister_code(KC_LSFT);
+                    if (rshift_held)
+                        unregister_code(KC_RSFT);
                 }
-                tap_code(KC_DEL); // Initial tap of Delete key
-                set_mods(mods);
+                send_keyboard_report();
+                wait_ms(40);
+                // need this instead of a tap_code for windows explorer to not combine things
+                register_code(KC_DEL);
+                unregister_code(KC_DEL);
+                send_keyboard_report();
+                wait_ms(40);
+                if (keep_shift_active) {
+                    register_code(KC_RCTL);
+                } else {
+                    if (lshift_held)
+                        register_code(KC_LSFT);
+                    if (rshift_held)
+                        register_code(KC_RSFT);
+                }
                 send_keyboard_report();
             } else {
                 is_delete = false;
