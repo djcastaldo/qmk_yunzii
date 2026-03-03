@@ -1093,15 +1093,18 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             20, 19, 18, 17, 16, 15, 15, 14, 14, 13, 13, 12, 12, 11, 11, 10};
         static deferred_token bspc_token = INVALID_DEFERRED_TOKEN;
         static uint8_t rep_count = 0;
+        static bool isDelete = false;
         if (!record->event.pressed) {  // Backspace released: stop repeating
             cancel_deferred_exec(bspc_token);
             bspc_token = INVALID_DEFERRED_TOKEN;
+            isDelete = false;
         }
         else if (!bspc_token) {  // Backspace pressed: start repeating
             // if shift is held, do delete instead of bspc
             const uint8_t mods = get_mods();
             const uint8_t oneshot_mods = get_oneshot_mods();
             if ((mods | oneshot_mods) & MOD_MASK_SHIFT) {
+                isDelete = true;
                 del_mods(MOD_MASK_SHIFT);
                 del_weak_mods(MOD_MASK_SHIFT);
                 tap_code(KC_DEL); // Initial tap of Delete key
@@ -1112,7 +1115,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             rep_count = 0;
             uint32_t bspc_callback(uint32_t trigger_time, void* cb_arg) {
                 const uint8_t mods = get_mods();
-                if (mods & MOD_MASK_SHIFT) {
+                if (isDelete) {
                     del_mods(MOD_MASK_SHIFT);
                     tap_code(KC_DEL);
                     register_mods(mods);
