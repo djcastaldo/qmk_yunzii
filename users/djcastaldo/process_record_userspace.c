@@ -1121,7 +1121,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 is_delete = true;
                 // if right control is held, then send shift + delete
                 keep_shift_active = ((mods | oneshot_mods) & MOD_BIT(KC_RCTL));
-                if (!keep_shift_active) {
+                if (keep_shift_active) {
+                    del_mods(MOD_BIT(KC_RCTL));
+                    del_weak_mods(MOD_BIT(KC_RCTL));
+                #ifndef NO_ACTION_ONESHOT
+                    del_oneshot_mods(MOD_BIT(KC_RCTL));
+                #endif
+                    send_keyboard_report();
+                } else {
                     del_mods(MOD_MASK_SHIFT);
                     del_weak_mods(MOD_MASK_SHIFT);
                 #ifndef NO_ACTION_ONESHOT
@@ -1140,7 +1147,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             uint32_t bspc_callback(uint32_t trigger_time, void* cb_arg) {
                 const uint8_t current_mods = get_mods();
                 if (is_delete) {
-                    if (!keep_shift_active) {
+                    if (keep_shift_active) {
+                        del_mods(MOD_BIT(KC_RCTL));
+                        send_keyboard_report();
+                    } else {
                         del_mods(MOD_MASK_SHIFT);
                         send_keyboard_report();
                     }
