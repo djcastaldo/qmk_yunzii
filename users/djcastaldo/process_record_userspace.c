@@ -1088,42 +1088,70 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         // This array customizes the rate at which the Backspace key
         // repeats. The delay after the ith repeat is REP_DELAY_MS[i].
         // Values must be between 1 and 255.
+        /*
         static const uint8_t REP_DELAY_MS[] PROGMEM = {
             99, 79, 65, 57, 49, 43, 40, 35, 33, 30, 28, 26, 25, 23, 22, 20,
             20, 19, 18, 17, 16, 15, 15, 14, 14, 13, 13, 12, 12, 11, 11, 10};
+        */
+        /*
+        static const uint8_t REP_DELAY_MS[] PROGMEM = {
+            100, 75, 55, 40, 30, 24, 20, 17, 15, 14, 13, 12, 11, 10, 9, 8,
+            8, 7, 7, 7, 6, 6, 6, 6
+        };
+        */
+        static const uint8_t REP_DELAY_MS[] PROGMEM = {
+            110, 70, 45, 30, 22, 18, 15,
+            13, 12, 11, 10, 9, 8, 8, 7, 7, 7
+        };
         static deferred_token bspc_token = INVALID_DEFERRED_TOKEN;
         static uint8_t rep_count = 0;
-        static bool isDelete = false;
+        static bool is_delete = false;
+        static bool keep_shift_active = false;
         if (!record->event.pressed) {  // Backspace released: stop repeating
             cancel_deferred_exec(bspc_token);
             bspc_token = INVALID_DEFERRED_TOKEN;
-            isDelete = false;
+            is_delete = false;
+            keep_shift_active = false;
         }
         else if (!bspc_token) {  // Backspace pressed: start repeating
             // if shift is held, do delete instead of bspc
             const uint8_t mods = get_mods();
             const uint8_t oneshot_mods = get_oneshot_mods();
             if ((mods | oneshot_mods) & MOD_MASK_SHIFT) {
-                isDelete = true;
-                del_mods(MOD_MASK_SHIFT);
-                del_weak_mods(MOD_MASK_SHIFT);
+                is_delete = true;
+                // if right control is held, then send shift + delete
+                keep_shift_active = ((mods | oneshot_mods) & MOD_BIT(KC_RCTL));
+                if (!keep_shift_active) {
+                    del_mods(MOD_MASK_SHIFT);
+                    del_weak_mods(MOD_MASK_SHIFT);
+                #ifndef NO_ACTION_ONESHOT
+                    del_oneshot_mods(MOD_MASK_SHIFT);
+                #endif
+                    send_keyboard_report();
+                }
                 tap_code(KC_DEL); // Initial tap of Delete key
-                register_mods(mods);
+                set_mods(mods);
+                send_keyboard_report();
             } else {
+                is_delete = false;
                 tap_code(KC_BSPC);  // Initial tap of Backspace key
             }
             rep_count = 0;
             uint32_t bspc_callback(uint32_t trigger_time, void* cb_arg) {
-                const uint8_t mods = get_mods();
-                if (isDelete) {
-                    del_mods(MOD_MASK_SHIFT);
+                const uint8_t current_mods = get_mods();
+                if (is_delete) {
+                    if (!keep_shift_active) {
+                        del_mods(MOD_MASK_SHIFT);
+                        send_keyboard_report();
+                    }
                     tap_code(KC_DEL);
-                    register_mods(mods);
+                    set_mods(current_mods);
+                    send_keyboard_report();
                 } else {
                     tap_code(KC_BSPC);
                 }
-                if (rep_count < sizeof(REP_DELAY_MS)) { ++rep_count; }
-                return pgm_read_byte(REP_DELAY_MS - 1 + rep_count);
+                if (rep_count < sizeof(REP_DELAY_MS) / sizeof(REP_DELAY_MS[0])) { ++rep_count; }
+                return pgm_read_byte(&REP_DELAY_MS[rep_count - 1]);
             }
             bspc_token = defer_exec(INIT_DELAY_MS, bspc_callback, NULL);
         }
