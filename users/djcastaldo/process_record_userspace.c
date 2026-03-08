@@ -1679,12 +1679,44 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
         break;
     case DUAL_PLUSMIN:
+        if (oneshot_layer_active || sim_osl) {
+            reset_oneshot_layer();
+            if (sim_osl_token) {
+                cancel_deferred_exec(sim_osl_token);
+                sim_osl_token = INVALID_DEFERRED_TOKEN;
+            }
+            if (record->event.pressed) {
+                sim_osl = true;
+                uint8_t layer = get_highest_layer(layer_state);
+                layer_on(layer); // simulate that oneshot is still going
+            }
+            else {   // key release should use a delay for layer deactivation
+                     // this turns off the layer if further volume controls or numpad keys are not used within 500ms
+                sim_osl_token = defer_exec(500, sim_osl_callback, NULL);
+            }
+        }
         if (record->event.pressed) {
             // standard: plus symbol, while control is held: minus
             dual_key(KC_PPLS, KC_PMNS, MOD_MASK_CTRL);
         }
         return false;
     case DUAL_MULTDIV:
+        if (oneshot_layer_active || sim_osl) {
+            reset_oneshot_layer();
+            if (sim_osl_token) {
+                cancel_deferred_exec(sim_osl_token);
+                sim_osl_token = INVALID_DEFERRED_TOKEN;
+            }
+            if (record->event.pressed) {
+                sim_osl = true;
+                uint8_t layer = get_highest_layer(layer_state);
+                layer_on(layer); // simulate that oneshot is still going
+            }
+            else {   // key release should use a delay for layer deactivation
+                     // this turns off the layer if further volume controls or numpad keys are not used within 500ms
+                sim_osl_token = defer_exec(500, sim_osl_callback, NULL);
+            }
+        }
         if (record->event.pressed) {
             // standard: asterisk, while control is held: divide
             dual_key(KC_PAST, KC_PSLS, MOD_MASK_CTRL);
@@ -1923,6 +1955,18 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // volume up and down should be able to be pressed multiple times without cancelling a oneshot layer
     case KC_VOLD:
     case KC_VOLU:
+    // also add the same functionality to numpad for entering a pin 
+    case KC_P0:
+    case KC_P1:
+    case KC_P2:
+    case KC_P3:
+    case KC_P4:
+    case KC_P5:
+    case KC_P6:
+    case KC_P7:
+    case KC_P8:
+    case KC_P9:
+    case KC_PDOT:
         if (oneshot_layer_active || sim_osl) {
             reset_oneshot_layer();
             if (sim_osl_token) {
@@ -1935,7 +1979,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 layer_on(layer); // simulate that oneshot is still going
             }
             else {   // key release should use a delay for layer deactivation
-                     // this turns off the layer if further volume controls are not used within 500ms
+                     // this turns off the layer if further volume controls or numpad keys are not used within 500ms
                 sim_osl_token = defer_exec(500, sim_osl_callback, NULL);
             }
         }
