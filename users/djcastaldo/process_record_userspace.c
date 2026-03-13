@@ -358,9 +358,7 @@ void rgb_set_sleep_mode(bool enable) {
 
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t key_timer;
-    #ifdef CONFIG_HAS_FKEY_LAYR
     static uint8_t tap_count;
-    #endif
     if (record->event.pressed) {
         reset_last_activity_timer();
     }
@@ -4012,6 +4010,68 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     #endif
+    case OSL_FNSYM:
+        if (record->event.pressed) {
+            // check if this is a double tap
+            if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
+                tap_count = 2;
+                layer_off(FN_LAYR);
+                if (is_mac_base()) {
+                    layer_on(MSYM_LAYR);
+                    register_code(KC_LOPT);
+                }
+                else {
+                    layer_on(WSYM_LAYR);
+                }
+            } else {
+                tap_count = 1;
+                key_timer = timer_read32();
+                layer_on(FN_LAYR);
+            }
+        } else { // on release
+            if (tap_count == 2) {
+                // was this double-hold or double-tap?
+                if (timer_elapsed(key_timer) < 180 + 200) {
+                    // double-tap: one shot SYM_LAYR
+                    if (is_mac_base()) {
+                        unregister_code(KC_LOPT);
+                        layer_off(MSYM_LAYR);
+                        set_oneshot_layer(MSYM_LAYR, ONESHOT_START);
+                        add_oneshot_mods(MOD_BIT(KC_ROPT));
+                    } else {
+                        layer_off(WSYM_LAYR);
+                        set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
+                    }
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                } else {
+                    if (is_mac_base()) {
+                        if (!is_layer_locked(MSYM_LAYR)) {
+                            unregister_code(KC_LOPT);
+                            layer_off(MSYM_LAYR);
+                        }
+                    } else {
+                        if (!is_layer_locked(WSYM_LAYR)) {
+                            layer_off(WSYM_LAYR);
+                        } 
+                    }
+                }
+                tap_count = 0;
+            } else {
+                // was this single-hold or single-tap?
+                if (timer_elapsed(key_timer) >= 180) {
+                    // it was a hold so turn it off
+                    if (!is_layer_locked(FN_LAYR))
+                        layer_off(FN_LAYR);
+                    tap_count = 0;
+                } else {
+                    // it was a tap so do oneshot
+                    layer_off(FN_LAYR);
+                    set_oneshot_layer(FN_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                }
+            }
+        }
+        return false;
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
             if (record->event.pressed) {
@@ -4559,6 +4619,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(rgb_layer_indicators[i], RGB_GREEN);
             #endif
                 break;
+            #ifdef CONFIG_HAS_FKEY_LAYR
+            case FKEY_LAYR:
+                #ifdef CONFIG_FKEY_LAYR_COLOR
+                rgb_matrix_set_color(rgb_layer_indicators[i], CONFIG_FKEY_LAYR_COLOR);
+                #else
+                rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
+                #endif
+                break;
+            #endif
             case SFT_LAYR:
             #ifdef CONFIG_SHIFT_LAYR_COLOR
                 rgb_matrix_set_color(rgb_layer_indicators[i], CONFIG_SHIFT_LAYR_COLOR);
@@ -6705,25 +6774,23 @@ void fn_finished (tap_dance_state_t *state, void *user_data) {
             break;
         case DOUBLE_TAP:
             if (is_mac_base()) {
-                layer_off(MSYM_LAYR);
                 set_oneshot_layer(MSYM_LAYR, ONESHOT_START);
                 add_oneshot_mods(MOD_BIT(KC_LOPT));
                 clear_oneshot_layer_state(ONESHOT_PRESSED);
             }
             else {
-                layer_off(WSYM_LAYR);
                 set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
                 clear_oneshot_layer_state(ONESHOT_PRESSED);
             }
             break;
         case DOUBLE_HOLD:
-            //if (is_mac_base()) {
-            //    register_code(KC_LOPT);
-            //    layer_on(MSYM_LAYR);
-            //}
-            //else {
-            //    layer_on(WSYM_LAYR);
-            //}
+            if (is_mac_base()) {
+                register_code(KC_LOPT);
+                layer_on(MSYM_LAYR);
+            }
+            else {
+                layer_on(WSYM_LAYR);
+            }
             break;
     #ifdef CONFIG_NO_RCTL_KEY
         case TRIPLE_HOLD:
@@ -6766,23 +6833,6 @@ void fn_reset (tap_dance_state_t *state, void *user_data) {
     fn_tap_state.state = 0;
 }
 
-void fn_each(tap_dance_state_t *state, void *user_data) {
-    switch (state->count) {
-        case 1:
-            layer_on(FN_LAYR);
-            break;
-        case 2:
-            layer_off(FN_LAYR);
-            if (is_mac_base()) {
-                register_code(KC_LOPT);
-                layer_on(MSYM_LAYR);
-            }
-            else {
-                layer_on(WSYM_LAYR);
-            }
-            break;
-    }
-}
 // function for each press of rsft
 // this is needed so that pressing both shifts will activate caps_word, even when one of the shifts is a tap dance
 void rsft_each(tap_dance_state_t *state, void *user_data) {
@@ -7363,11 +7413,12 @@ void lgui_finished (tap_dance_state_t *state, void *user_data) {
             }
             break;
         case DOUBLE_TAP:
+            layer_off(WSYM_LAYR);
             set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
             clear_oneshot_layer_state(ONESHOT_PRESSED);
             break;
         case DOUBLE_HOLD:
-            layer_on(WSYM_LAYR);
+            //layer_on(WSYM_LAYR);
             break;
     }
 }
@@ -7391,6 +7442,16 @@ void lgui_reset (tap_dance_state_t *state, void *user_data) {
             break;
     }
     lgui_tap_state.state = 0;
+}
+
+void lgui_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            break;
+        case 2:
+            layer_on(WSYM_LAYR);
+            break;
+    }
 }
 
 // function for lopt tap dance
@@ -7667,7 +7728,7 @@ void capsfk_each(tap_dance_state_t *state, void *user_data) {
 // associate the tap dance keys with their funcitons
 tap_dance_action_t tap_dance_actions[19] = {
     [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
-    [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(fn_each, fn_finished, fn_reset),
+    [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
     [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(ralt_each, ralt_finished, ralt_reset),
     [RSFT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rsft_each, rsft_finished, rsft_reset),
     [KB_UNLOCK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, kbunlock_finished, kbunlock_reset),
@@ -7677,7 +7738,7 @@ tap_dance_action_t tap_dance_actions[19] = {
     [ACT_U] = ACTION_TAP_DANCE_FN_ADVANCED(actu_each, actu_finished, actu_reset),
     [ACT_I] = ACTION_TAP_DANCE_FN_ADVANCED(acti_each, acti_finished, acti_reset),
     [ACT_N] = ACTION_TAP_DANCE_FN_ADVANCED(actn_each, actn_finished, actn_reset),
-    [LGUI_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lgui_finished, lgui_reset),
+    [LGUI_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(lgui_each, lgui_finished, lgui_reset),
     [RCMD_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rcmd_each, rcmd_finished, rcmd_reset),
     [LOPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lopt_finished, lopt_reset),
     [ROPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ropt_finished, ropt_reset),

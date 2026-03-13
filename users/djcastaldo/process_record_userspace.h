@@ -353,6 +353,7 @@ enum userspace_keycodes {
     VSBASE,
     VSCLIPB,
     OSL_FKEY,
+    OSL_FNSYM,
     NOKEY,
     CSTMTOG,
     KB_RESET,

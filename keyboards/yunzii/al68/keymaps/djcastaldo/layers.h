@@ -6,6 +6,7 @@
 enum layers {
     WIN_BASE,
     MAC_BASE,
+    FKEY_LAYR,
     FN_LAYR,
     SFT_LAYR,
     KCTL_LAYR,

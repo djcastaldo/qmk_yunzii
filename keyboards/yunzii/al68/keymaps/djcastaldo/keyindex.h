@@ -22,6 +22,7 @@ enum key_indexes {
     I_INDICATOR = 3,
     I_INDICATOR2 = 4,
     I_UNDERLN = 8,
+    I_FKEY = 25,
     I_STHRU = 38,
     I_MHLD = 38,
     I_BARTEXT = 39,
