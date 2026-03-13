@@ -380,7 +380,8 @@ enum {
     ROPT_OSL    = 14,
     RCTL_OSL    = 15,
     MOUSE_ACCEL = 16,
-    DYN_LAYR    = 17
+    DYN_LAYR    = 17,
+    CAPSFK_OSL  = 18
 };
 
 // tap dance setup
@@ -434,7 +435,7 @@ enum {
 extern uint8_t wide_text_mode;
 extern bool wide_firstchar;
 
-extern tap_dance_action_t tap_dance_actions[18];
+extern tap_dance_action_t tap_dance_actions[19];
 // functions associated with all tap dances
 int cur_dance (tap_dance_state_t *state);
 // functions associated with individual tap dances
@@ -474,6 +475,8 @@ void macl_finished (tap_dance_state_t *state, void *user_data);
 void macl_reset (tap_dance_state_t *state, void *user_data);
 void dyn_finished (tap_dance_state_t *state, void *user_data);
 void dyn_reset (tap_dance_state_t *state, void *user_data);
+void capsfk_finished (tap_dance_state_t *state, void *user_data);
+void capsfk_reset (tap_dance_state_t *state, void *user_data);
 
 extern deferred_token jiggler_token;
 extern report_mouse_t jiggler_report;

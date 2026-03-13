@@ -6506,6 +6506,10 @@ static tap dyn_tap_state = {
     .is_press_action = true,
     .state = 0
 };
+static tap capsfk_tap_state = {
+    .is_press_action = true,
+    .state = 0
+};
 
 // caps tap dance key function
 void caps_finished (tap_dance_state_t *state, void *user_data) {
@@ -6600,11 +6604,12 @@ void ralt_finished (tap_dance_state_t *state, void *user_data) {
             register_code(KC_RALT);
             break;
         case DOUBLE_TAP:
+            layer_off(WSYM_LAYR);
             set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
             clear_oneshot_layer_state(ONESHOT_PRESSED);
             break;
         case DOUBLE_HOLD:
-            layer_on(WSYM_LAYR);
+            //layer_on(WSYM_LAYR);
             break;
     }
 }
@@ -6627,6 +6632,16 @@ void ralt_reset (tap_dance_state_t *state, void *user_data) {
     ralt_tap_state.state = 0;
 }
 
+void ralt_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            break;
+        case 2:
+            layer_on(WSYM_LAYR);
+            break;
+    }
+}
+
 // function for rcmd tap dance
 void rcmd_finished (tap_dance_state_t *state, void *user_data) {
     rcmd_tap_state.state = cur_dance(state);
@@ -6639,11 +6654,12 @@ void rcmd_finished (tap_dance_state_t *state, void *user_data) {
             register_code(KC_RCMD);
             break;
         case DOUBLE_TAP:
+            layer_off(EMO_LAYR);
             set_oneshot_layer(EMO_LAYR, ONESHOT_START);
             clear_oneshot_layer_state(ONESHOT_PRESSED);
             break;
         case DOUBLE_HOLD:
-            layer_on(EMO_LAYR);
+            //layer_on(EMO_LAYR);
             break;
     }
 }
@@ -6666,6 +6682,16 @@ void rcmd_reset (tap_dance_state_t *state, void *user_data) {
     rcmd_tap_state.state = 0;
 }
 
+void rcmd_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            break;
+        case 2:
+            layer_on(EMO_LAYR);
+            break;
+    }
+}
+
 // function for fn tap dance
 void fn_finished (tap_dance_state_t *state, void *user_data) {
     fn_tap_state.state = cur_dance(state);
@@ -6679,23 +6705,25 @@ void fn_finished (tap_dance_state_t *state, void *user_data) {
             break;
         case DOUBLE_TAP:
             if (is_mac_base()) {
+                layer_off(MSYM_LAYR);
                 set_oneshot_layer(MSYM_LAYR, ONESHOT_START);
                 add_oneshot_mods(MOD_BIT(KC_LOPT));
                 clear_oneshot_layer_state(ONESHOT_PRESSED);
             }
             else {
+                layer_off(WSYM_LAYR);
                 set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
                 clear_oneshot_layer_state(ONESHOT_PRESSED);
             }
             break;
         case DOUBLE_HOLD:
-            if (is_mac_base()) {
-                register_code(KC_LOPT);
-                layer_on(MSYM_LAYR);
-            }
-            else {
-                layer_on(WSYM_LAYR);
-            }
+            //if (is_mac_base()) {
+            //    register_code(KC_LOPT);
+            //    layer_on(MSYM_LAYR);
+            //}
+            //else {
+            //    layer_on(WSYM_LAYR);
+            //}
             break;
     #ifdef CONFIG_NO_RCTL_KEY
         case TRIPLE_HOLD:
@@ -6738,6 +6766,23 @@ void fn_reset (tap_dance_state_t *state, void *user_data) {
     fn_tap_state.state = 0;
 }
 
+void fn_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            layer_on(FN_LAYR);
+            break;
+        case 2:
+            layer_off(FN_LAYR);
+            if (is_mac_base()) {
+                register_code(KC_LOPT);
+                layer_on(MSYM_LAYR);
+            }
+            else {
+                layer_on(WSYM_LAYR);
+            }
+            break;
+    }
+}
 // function for each press of rsft
 // this is needed so that pressing both shifts will activate caps_word, even when one of the shifts is a tap dance
 void rsft_each(tap_dance_state_t *state, void *user_data) {
@@ -7546,11 +7591,84 @@ void dyn_reset (tap_dance_state_t *state, void *user_data) {
     dyn_tap_state.state = 0;
 }
 
+// capsfk tap dance key function
+void capsfk_finished (tap_dance_state_t *state, void *user_data) {
+    capsfk_tap_state.state = cur_dance(state);
+    switch (capsfk_tap_state.state) {
+        case SINGLE_TAP:
+            #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
+            if (is_mac_base()) {
+                if (layer_state_is(CLCK_LAYR)) {
+                    layer_off(CLCK_LAYR); 
+                } else {
+                    layer_on(CLCK_LAYR);
+                }
+            }
+            else {
+                tap_code(KC_CAPS);
+            }
+            #else
+            tap_code(KC_CAPS);
+            #endif
+            break;
+        case SINGLE_HOLD:
+            layer_on(FN_LAYR);
+            break;
+        case DOUBLE_TAP:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_off(FKEY_LAYR);
+            set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
+            clear_oneshot_layer_state(ONESHOT_PRESSED);
+        #endif
+            break;
+        case DOUBLE_HOLD:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_on(FKEY_LAYR);
+        #endif
+            break;
+    }
+}
+
+void capsfk_reset (tap_dance_state_t *state, void *user_data) {
+    //if the key was held down and now is released then switch off the layer
+    switch (capsfk_tap_state.state) {
+        case SINGLE_TAP:
+            break;
+        case SINGLE_HOLD:
+            if (!is_layer_locked(FN_LAYR)) {
+                layer_off(FN_LAYR);
+            }
+            break;
+        case DOUBLE_TAP:
+            break;
+        case DOUBLE_HOLD:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            if (!is_layer_locked(FKEY_LAYR)) {
+                layer_off(FKEY_LAYR);
+            }
+        #endif
+            break;
+    }
+    capsfk_tap_state.state = 0;
+}
+
+void capsfk_each(tap_dance_state_t *state, void *user_data) {
+    switch (state->count) {
+        case 1:
+            break;
+        case 2:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_on(FKEY_LAYR);
+        #endif
+            break;
+    }
+}
+
 // associate the tap dance keys with their funcitons
-tap_dance_action_t tap_dance_actions[18] = {
+tap_dance_action_t tap_dance_actions[19] = {
     [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
-    [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
-    [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ralt_finished, ralt_reset),
+    [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(fn_each, fn_finished, fn_reset),
+    [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(ralt_each, ralt_finished, ralt_reset),
     [RSFT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rsft_each, rsft_finished, rsft_reset),
     [KB_UNLOCK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, kbunlock_finished, kbunlock_reset),
     [ACT_GRV] = ACTION_TAP_DANCE_FN_ADVANCED(actgrv_each, actgrv_finished, actgrv_reset),
@@ -7560,12 +7678,13 @@ tap_dance_action_t tap_dance_actions[18] = {
     [ACT_I] = ACTION_TAP_DANCE_FN_ADVANCED(acti_each, acti_finished, acti_reset),
     [ACT_N] = ACTION_TAP_DANCE_FN_ADVANCED(actn_each, actn_finished, actn_reset),
     [LGUI_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lgui_finished, lgui_reset),
-    [RCMD_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rcmd_finished, rcmd_reset),
+    [RCMD_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rcmd_each, rcmd_finished, rcmd_reset),
     [LOPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lopt_finished, lopt_reset),
     [ROPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ropt_finished, ropt_reset),
     [RCTL_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rctl_finished, rctl_reset),
     [MOUSE_ACCEL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, macl_finished, macl_reset),
-    [DYN_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, dyn_finished, dyn_reset)
+    [DYN_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, dyn_finished, dyn_reset),
+    [CAPSFK_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(capsfk_each, capsfk_finished, capsfk_reset)
 };
 
 // accent tap dances should give a little bit longer to see the leds
