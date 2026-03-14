@@ -7752,7 +7752,16 @@ tap_dance_action_t tap_dance_actions[19] = {
 uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case TD(DYN_LAYR):
-            return 150;
+        case LT(EMO_LAYR,KC_BSLS):
+        case LT(TMUX_LAYR,KC_TAB):
+            return TAPPING_TERM - 100;
+        case TD(CAPSFK_OSL):
+        case TD(LGUI_OSL):
+        case TD(RCMD_OSL):
+        case TD(RALT_OSL):
+        case TD(RSFT_OSL):
+        case TD(CAPS_LAYR):
+            return TAPPING_TERM - 50;
         case TD(ACT_GRV):
         case TD(ACT_1):
         case TD(ACT_E):
