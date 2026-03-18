@@ -7,13 +7,24 @@
 #include "al68.h"
 
 void keyboard_pre_init_kb(void) {
+    // boardInit() sets BKP->DR10 = RTC_BOOTLOADER_FLAG, which causes the bootloader
+    // to stay in DFU mode on next boot. Clear it so normal reboot works.
+    // See: platforms/chibios/boards/STM32_F103_STM32DUINO/board/board.c
+    BKP->DR10 = 0;
+
     AFIO->MAPR = (AFIO->MAPR & ~AFIO_MAPR_SWJ_CFG_Msk);
     AFIO->MAPR |= AFIO_MAPR_SWJ_CFG_DISABLE; // diable JTAG (GD32 different to STM32)
     gpio_set_pin_output(A8);
     gpio_write_pin_high(A8); // ENABLE USB
     uart_init(460800);
-    wait_ms(600);
+    wait_ms(400);
 }
+// Override bootloader_jump to set the magic flag so bootloader stays in DFU mode.
+void bootloader_jump(void) {
+    BKP->DR10 = RTC_BOOTLOADER_FLAG;
+    NVIC_SystemReset();
+}
+
 
 bool process_record_kb(uint16_t keycode, keyrecord_t* record) {
 // batteries removed, don't need wireless keycodes
