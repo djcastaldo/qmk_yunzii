@@ -1115,19 +1115,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // if shift is held, do delete instead of bspc
             const uint8_t mods = get_mods();
             const uint8_t oneshot_mods = get_oneshot_mods();
-            if ((mods | oneshot_mods) & MOD_MASK_SHIFT) {
-                bool lshift_held = mods & MOD_BIT(KC_LSFT);
-                bool rshift_held = mods & MOD_BIT(KC_RSFT);
+            if ((mods | oneshot_mods) & MOD_BIT(KC_RSFT)) {
                 is_delete = true;
                 // if right control is held, then send shift + delete
                 keep_shift_active = mods & MOD_BIT(KC_RCTL);
                 if (keep_shift_active) {
                     unregister_code(KC_RCTL);
                 } else {
-                    if (lshift_held)
-                        unregister_code(KC_LSFT);
-                    if (rshift_held)
-                        unregister_code(KC_RSFT);
+                    unregister_code(KC_RSFT);
                 }
                 send_keyboard_report();
                 wait_ms(40);
@@ -1139,10 +1134,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 if (keep_shift_active) {
                     register_code(KC_RCTL);
                 } else {
-                    if (lshift_held)
-                        register_code(KC_LSFT);
-                    if (rshift_held)
-                        register_code(KC_RSFT);
+                    register_code(KC_RSFT);
                 }
                 send_keyboard_report();
             } else {
@@ -1157,7 +1149,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                         del_mods(MOD_BIT(KC_RCTL));
                         send_keyboard_report();
                     } else {
-                        del_mods(MOD_MASK_SHIFT);
+                        del_mods(MOD_BIT(KC_RSFT));
                         send_keyboard_report();
                     }
                     tap_code(KC_DEL);
@@ -7783,8 +7775,6 @@ tap_dance_action_t tap_dance_actions[19] = {
 uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case TD(DYN_LAYR):
-        case LT(EMO_LAYR,KC_BSLS):
-        case LT(TMUX_LAYR,KC_TAB):
             return TAPPING_TERM - 100;
         case TD(CAPSFK_OSL):
         case TD(LGUI_OSL):
