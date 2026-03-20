@@ -4087,9 +4087,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         } else { // on release
             if (tap_count == 2) {
-                del_mods(MOD_BIT(KC_LCTL));
+                // unregister_mods is better than del_mods so the host sees the mod release right away and later mouse clicks don't have control added
+                unregister_mods(MOD_BIT(KC_LCTL));
             } else {
-                del_mods(MOD_BIT(KC_RCTL));
+                unregister_mods(MOD_BIT(KC_RCTL));
             }
         }
         return false;
