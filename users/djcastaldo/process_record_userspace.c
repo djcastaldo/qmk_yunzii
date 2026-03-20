@@ -4072,6 +4072,27 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    // i use left control and right control to switch desktops on left/right monitors, so this lets me use both left/right control with one hand
+    // this logic should only be used on a single key
+    case SP_RCTL:
+        if (record->event.pressed) {
+            // check if this is a double tap
+            if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
+                tap_count = 2;
+                register_mods(MOD_BIT(KC_LCTL));
+            } else {
+                tap_count = 1;
+                key_timer = timer_read32();
+                register_mods(MOD_BIT(KC_RCTL));
+            }
+        } else { // on release
+            if (tap_count == 2) {
+                del_mods(MOD_BIT(KC_LCTL));
+            } else {
+                del_mods(MOD_BIT(KC_RCTL));
+            }
+        }
+        return false;
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
             if (record->event.pressed) {

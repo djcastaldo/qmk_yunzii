@@ -354,6 +354,7 @@ enum userspace_keycodes {
     VSCLIPB,
     OSL_FKEY,
     OSL_FNSYM,
+    SP_RCTL,
     NOKEY,
     CSTMTOG,
     KB_RESET,
