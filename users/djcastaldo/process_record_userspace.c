@@ -4075,6 +4075,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // i use left control and right control to switch desktops on left/right monitors, so this lets me use both left/right control with one hand
     // this logic should only be used on a single key
     case SP_RCTL:
+        // save current onshot layer (if any)
+        uint8_t saved_oneshot_layer = get_oneshot_layer();
         if (record->event.pressed) {
             // check if this is a double tap
             if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
@@ -4085,12 +4087,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 key_timer = timer_read32();
                 register_mods(MOD_BIT(KC_RCTL));
             }
+            // restore the oneshot layer state
+            if (saved_oneshot_layer) {
+                set_oneshot_layer(saved_oneshot_layer, ONESHOT_START);
+            }
         } else { // on release
             if (tap_count == 2) {
                 // unregister_mods is better than del_mods so the host sees the mod release right away and later mouse clicks don't have control added
                 unregister_mods(MOD_BIT(KC_LCTL));
             } else {
                 unregister_mods(MOD_BIT(KC_RCTL));
+            }
+            if (saved_oneshot_layer) {
+                clear_oneshot_layer_state(ONESHOT_PRESSED);
             }
         }
         return false;
