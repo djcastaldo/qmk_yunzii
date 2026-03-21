@@ -299,6 +299,7 @@ static uint8_t wake_retry = 0;
 static bool shift_pressed_for_caps_word = false;
 // for making globe key work with window tiling
 static bool globe_pressed = false;
+static bool f15_as_globe = false;
 // the is for tracking a mode used to drain the battery for storage
 bool battery_drain_mode = false;
 
@@ -2035,6 +2036,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
     case KC_DOWN:
         if (globe_pressed) {
+            if (f15_as_globe) {
+                unregister_code(KC_F15);
+            }
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_ALT) {
                 clear_keyboard();
@@ -2056,6 +2060,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {
                 tap_code16(S(A(G(keycode)))); // custom keys for positioning windows in macos
+            }
+            if (f15_as_globe) {
+                register_code(KC_F15);
             }
             return false;
         }
@@ -2108,6 +2115,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         host_consumer_send(record->event.pressed ? AC_NEXT_KEYBOARD_LAYOUT_SELECT : 0);
         globe_pressed = record->event.pressed;
         return false;
+    case KC_F15:
+        globe_pressed = record->event.pressed;
+        f15_as_globe = record->event.pressed;
+        break;
     case COLORTEST:
         if (record->event.pressed) {
             color_test_timer = timer_read();
