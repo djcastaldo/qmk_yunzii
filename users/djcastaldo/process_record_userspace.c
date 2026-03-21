@@ -1878,7 +1878,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         break;
     case KC_APP:
         if (is_mac_base() && record->event.pressed) {
+    #ifdef KEYBOARD_IS_WOMIER
+            tap_code(KC_F17);
+    #else
             tap_code(KC_LPAD);
+    #endif
             return false;
         }
         break;
@@ -1889,6 +1893,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         }
+    #ifdef KEYBOARD_IS_WOMIER
+        else {
+            if (record->event.pressed) {
+                tap_code(KC_F16);
+            }
+            return false;
+        }
+    #endif
         break;
     case KC_LPAD:
         if (!is_mac_base()) {
@@ -1901,6 +1913,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         }
+    #ifdef KEYBOARD_IS_WOMIER
+        else {
+            if (record->event.pressed) {
+                tap_code(KC_F17);
+            }
+            return false;
+        }
+    #endif
         break;
     case LOCKSCR:
         if (record->event.pressed) {
