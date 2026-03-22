@@ -302,7 +302,11 @@ static bool globe_pressed = false;
 static bool f15_as_globe = false;
 // the is for tracking a mode used to drain the battery for storage
 bool battery_drain_mode = false;
-
+// these are for the dynamic os-depended layer tap as alternative to DYN_LAYR tap dance
+static uint16_t dyn_timer = 0;
+static bool dyn_is_hold = false;
+static bool dyn_active = false;
+static bool dyn_interrupted = false;
 
 void reset_last_activity_timer(void) {
     last_activity_timer = timer_read32();
@@ -513,6 +517,23 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // layer lock
     if (!process_layer_lock(keycode, record, LLOCK)) {
        return false;
+    }
+    // permissive hold for DYN_LT (simulated LT with dynamic behavior per os mode)
+    if (dyn_active && record->event.pressed && keycode != DYN_LT) {
+        dyn_interrupted = true;
+
+        // trigger hold immediately if not already active
+        if (!dyn_is_hold) {
+            dyn_is_hold = true;
+
+            if (user_config.is_linux_base) {
+                layer_on(CIRC_LAYR);
+            } else {
+                layer_on(VS_LAYR);
+            }
+            // block original key
+            return false;
+        }
     }
 
     switch (keycode) {
@@ -4126,6 +4147,32 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    // this is an alternate way to do the DYN_LAYR tap dance used on windows on linux
+    case DYN_LT:
+        if (record->event.pressed) {
+            dyn_timer = timer_read();
+            dyn_is_hold = false;
+            dyn_active = true;
+            dyn_interrupted = false;
+        } else {
+            dyn_active = false;
+
+            if (!dyn_is_hold && !dyn_interrupted && timer_elapsed(dyn_timer) < get_tapping_term(keycode, record)) {
+                // TAP 
+                tap_code(KC_BSLS);
+            } else {
+                // HOLD RELEASE → turn off layer
+                if (user_config.is_linux_base) {
+                    if (!is_layer_locked(CIRC_LAYR)) layer_off(CIRC_LAYR);
+                } else {
+                    if (!is_layer_locked(VS_LAYR)) layer_off(VS_LAYR);
+                }
+            }
+
+            dyn_is_hold = false;
+        }
+        return false;
+    // this is needed for rliable caps word over windows rdp
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
             if (record->event.pressed) {
@@ -6040,6 +6087,15 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 void matrix_scan_user(void) {
     // check for and run active sequences
     process_key_sequence();
+    // check for a dynamic layer key hold
+    if (dyn_active && !dyn_is_hold && timer_elapsed(dyn_timer) > get_tapping_term(DYN_LT, NULL)) {
+        dyn_is_hold = true;
+        if (user_config.is_linux_base) {
+            layer_on(CIRC_LAYR);
+        } else {
+            layer_on(VS_LAYR);
+        }
+    }
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     if (!battery_drain_mode) {
