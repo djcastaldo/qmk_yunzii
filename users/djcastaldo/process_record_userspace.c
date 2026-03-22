@@ -362,8 +362,15 @@ void rgb_set_sleep_mode(bool enable) {
 #endif
 
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
-    static uint32_t key_timer;
-    static uint8_t tap_count;
+    static uint32_t bootldr_key_timer = 0;
+    #ifdef CONFIG_HAS_FKEY_LAYR
+    static uint32_t fkey_timer = 0;
+    static uint8_t fkey_tap_count = 0;
+    #endif
+    static uint32_t fnsym_timer = 0;
+    static uint8_t fnsym_tap_count = 0;
+    static uint32_t sp_rctl_timer = 0;
+    static uint8_t sp_rctl_tap_count = 0;
     if (record->event.pressed) {
         reset_last_activity_timer();
     }
@@ -4015,19 +4022,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case OSL_FKEY:
         if (record->event.pressed) {
             // check if this is a double tap
-            if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
-                tap_count = 2;
+            if (fkey_tap_count == 1 && timer_elapsed32(fkey_timer) < 200) {
+                fkey_tap_count = 2;
                 layer_off(FKEY_LAYR);
                 layer_on(FN_LAYR);
             } else {
-                tap_count = 1;
-                key_timer = timer_read32();
+                fkey_tap_count = 1;
+                fkey_timer = timer_read32();
                 layer_on(FKEY_LAYR);
             }
         } else { // on release
-            if (tap_count == 2) {
+            if (fkey_tap_count == 2) {
                 // was this double-hold or double-tap?
-                if (timer_elapsed(key_timer) < 180 + 200) {
+                if (timer_elapsed(fkey_timer) < 180 + 200) {
                     // double-tap: one shot FN_LAYR
                     layer_off(FN_LAYR);
                     set_oneshot_layer(FN_LAYR, ONESHOT_START);
@@ -4036,14 +4043,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     if (!is_layer_locked(FN_LAYR))
                         layer_off(FN_LAYR);
                 }
-                tap_count = 0;
+                fkey_tap_count = 0;
             } else {
                 // was this single-hold or single-tap?
-                if (timer_elapsed(key_timer) >= 180) {
+                if (timer_elapsed(fkey_timer) >= 180) {
                     // it was a hold so turn it off
                     if (!is_layer_locked(FKEY_LAYR))
                         layer_off(FKEY_LAYR);
-                    tap_count = 0;
+                    fkey_tap_count = 0;
                 } else {
                     // it was a tap so do oneshot
                     layer_off(FKEY_LAYR);
@@ -4057,8 +4064,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case OSL_FNSYM:
         if (record->event.pressed) {
             // check if this is a double tap
-            if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
-                tap_count = 2;
+            if (fnsym_tap_count == 1 && timer_elapsed32(fnsym_timer) < 200) {
+                fnsym_tap_count = 2;
                 layer_off(FN_LAYR);
                 if (is_mac_base()) {
                     layer_on(MSYM_LAYR);
@@ -4068,14 +4075,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     layer_on(WSYM_LAYR);
                 }
             } else {
-                tap_count = 1;
-                key_timer = timer_read32();
+                fnsym_tap_count = 1;
+                fnsym_timer = timer_read32();
                 layer_on(FN_LAYR);
             }
         } else { // on release
-            if (tap_count == 2) {
+            if (fnsym_tap_count == 2) {
                 // was this double-hold or double-tap?
-                if (timer_elapsed(key_timer) < 180 + 200) {
+                if (timer_elapsed(fnsym_timer) < 180 + 200) {
                     // double-tap: one shot SYM_LAYR
                     if (is_mac_base()) {
                         unregister_code(KC_LOPT);
@@ -4099,14 +4106,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                         } 
                     }
                 }
-                tap_count = 0;
+                fnsym_tap_count = 0;
             } else {
                 // was this single-hold or single-tap?
-                if (timer_elapsed(key_timer) >= 180) {
+                if (timer_elapsed(fnsym_timer) >= 180) {
                     // it was a hold so turn it off
                     if (!is_layer_locked(FN_LAYR))
                         layer_off(FN_LAYR);
-                    tap_count = 0;
+                    fnsym_tap_count = 0;
                 } else {
                     // it was a tap so do oneshot
                     layer_off(FN_LAYR);
@@ -4123,12 +4130,12 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         uint8_t saved_oneshot_layer = get_oneshot_layer();
         if (record->event.pressed) {
             // check if this is a double tap
-            if (tap_count == 1 && timer_elapsed32(key_timer) < 200) {
-                tap_count = 2;
+            if (sp_rctl_tap_count == 1 && timer_elapsed32(sp_rctl_timer) < 200) {
+                sp_rctl_tap_count = 2;
                 register_mods(MOD_BIT(KC_LCTL));
             } else {
-                tap_count = 1;
-                key_timer = timer_read32();
+                sp_rctl_tap_count = 1;
+                sp_rctl_timer = timer_read32();
                 register_mods(MOD_BIT(KC_RCTL));
             }
             // restore the oneshot layer state
@@ -4136,7 +4143,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 set_oneshot_layer(saved_oneshot_layer, ONESHOT_START);
             }
         } else { // on release
-            if (tap_count == 2) {
+            if (sp_rctl_tap_count == 2) {
                 // unregister_mods is better than del_mods so the host sees the mod release right away and later mouse clicks don't have control added
                 unregister_mods(MOD_BIT(KC_LCTL));
             } else {
@@ -4272,8 +4279,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 	return false;
     case BOOTLDR:
         if (record->event.pressed) {
-            key_timer = timer_read32();
-        } else if (timer_elapsed32(key_timer) >= 500) {
+            bootldr_key_timer = timer_read32();
+        } else if (timer_elapsed32(bootldr_key_timer) >= 500) {
             reset_keyboard();
         }
 	return false;
@@ -7667,9 +7674,7 @@ void rctl_finished (tap_dance_state_t *state, void *user_data) {
             }
             break;
         case DOUBLE_HOLD:
-            if (is_mac_base()) {    
-                layer_on(EMO_LAYR);
-            } 
+            register_code(KC_LCTL);
             break;
     }
 }
@@ -7683,9 +7688,7 @@ void rctl_reset (tap_dance_state_t *state, void *user_data) {
         case DOUBLE_TAP:
             break;
         case DOUBLE_HOLD:
-            if (is_mac_base() && !is_layer_locked(EMO_LAYR)) {
-                layer_off(EMO_LAYR);
-            }
+            unregister_code(KC_LCTL);
             break;
     }
     rctl_tap_state.state = 0;
