@@ -307,6 +307,11 @@ static uint16_t dyn_timer = 0;
 static bool dyn_is_hold = false;
 static bool dyn_active = false;
 static bool dyn_interrupted = false;
+// state tracking for RSFT_TD, a keycode replaced for the RSFT tap dance
+static uint16_t rsft_timer = 0;
+static uint8_t rsft_tap_count = 0;
+static bool rsft_pressed = false;
+static bool rsft_interrupted = false;
 
 void reset_last_activity_timer(void) {
     last_activity_timer = timer_read32();
@@ -541,6 +546,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // block original key
             return false;
         }
+    }
+    // setup for RSFT_TD keycode: detect interruption by other keys
+    if (rsft_pressed && record->event.pressed && keycode != RSFT_TD) {
+        rsft_interrupted = true;
     }
 
     switch (keycode) {
@@ -4179,6 +4188,28 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             dyn_is_hold = false;
         }
         return false;
+    // this is replacement for the RSFT tap dance that works better over RDP connections
+    case RSFT_TD:
+        if (record->event.pressed) {
+            rsft_pressed = true;
+            rsft_interrupted = false;
+
+            rsft_timer = timer_read();
+            rsft_tap_count++;
+
+            // caps word if both shifts
+            if (get_mods() & MOD_BIT(KC_LSFT)) {
+                caps_word_on();
+            } else {
+                // IMMEDIATE SHIFT
+                register_code(KC_RSFT);
+            }
+        } else {
+            rsft_pressed = false;
+            // don't decide here yet
+            // wait for tapping term to finish (handled in matrix_scan)
+        }
+        return false; 
     // this is needed for rliable caps word over windows rdp
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
@@ -6102,6 +6133,52 @@ void matrix_scan_user(void) {
         } else {
             layer_on(VS_LAYR);
         }
+    }
+    // setup for RSFT_TD keycode
+    if (rsft_tap_count > 0 && !rsft_pressed &&
+        timer_elapsed(rsft_timer) > TAPPING_TERM) {
+
+        switch (rsft_tap_count) {
+
+            case 1:
+                if (!rsft_interrupted) {
+                    // TAP → cancel shift
+                    unregister_code(KC_RSFT);
+
+                    if (!is_caps_word_on()) {
+                        set_oneshot_layer(SFT_LAYR, ONESHOT_START);
+                        clear_oneshot_layer_state(ONESHOT_PRESSED);
+                    }
+                } else {
+                    // HOLD → keep shift until keyup already handled
+                    unregister_code(KC_RSFT);
+                }
+                break;
+
+            case 2:
+                unregister_code(KC_RSFT);
+
+                if (IS_LAYER_ON(WIDE_LAYR)) {
+                    layer_lock_off(WIDE_LAYR);
+                } else {
+                    layer_lock_on(WIDE_LAYR);
+                    wide_firstchar = true;
+                }
+                break;
+
+            case 3:
+                unregister_code(KC_RSFT);
+
+                if (IS_LAYER_ON(CIRC_LAYR)) {
+                    layer_lock_off(CIRC_LAYR);
+                } else {
+                    layer_lock_on(CIRC_LAYR);
+                }
+                break;
+        }
+
+        // reset state
+        rsft_tap_count = 0;
     }
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
