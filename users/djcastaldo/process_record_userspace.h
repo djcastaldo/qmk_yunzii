@@ -9,6 +9,9 @@
 #include "lemokey_common.h"
 #endif
 #include "features/layer_lock.h"
+#ifndef RGB_MATRIX_MAXIMUM_BRIGHTNESS
+#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 255
+#endif
 
 #define NEWFINDER LOPT(LCMD(KC_SPC))            // open new Finder search window
 #define FHOME LCMD(LSFT(KC_H))                  // open new Finder home dir
