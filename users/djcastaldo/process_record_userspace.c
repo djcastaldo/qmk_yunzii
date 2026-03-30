@@ -122,6 +122,11 @@ const uint8_t vs_delay = CONFIG_VS_LAYR_SEND_STRING_DELAY;
 const uint8_t vs_delay = 0;
 #endif
 
+// which keycode does DYN_LT send on a tap?
+__attribute__((weak)) uint16_t get_dyn_ltkey(void) {
+    return KC_BSLS; // default fallback
+}
+
 __attribute__ ((weak))
 bool rgb_matrix_indicators_keymap(uint8_t led_min, uint8_t led_max) {
   return false;
@@ -4175,7 +4180,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 
             if (!dyn_is_hold && !dyn_interrupted && timer_elapsed(dyn_timer) < get_tapping_term(keycode, record)) {
                 // TAP 
-                tap_code(KC_BSLS);
+                tap_code(get_dyn_ltkey());
             } else {
                 // HOLD RELEASE → turn off layer
                 if (user_config.is_linux_base) {
