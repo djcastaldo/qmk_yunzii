@@ -126,6 +126,10 @@ const uint8_t vs_delay = 0;
 __attribute__((weak)) uint16_t get_dyn_ltkey(void) {
     return KC_BSLS; // default fallback
 }
+// which led index is under the DYN_LT key?
+__attribute__((weak)) uint16_t get_dyn_ltindex(void) {
+    return I_BSLS; // default fallback
+}
 
 __attribute__ ((weak))
 bool rgb_matrix_indicators_keymap(uint8_t led_min, uint8_t led_max) {
@@ -4989,9 +4993,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(I_TAB, RGB_CYAN);    // tab
             #endif
             #ifdef CONFIG_VS_LAYR_COLOR
-                rgb_matrix_set_color(I_BSLS, CONFIG_VS_LAYR_COLOR);    // backslash
+                rgb_matrix_set_color(get_dyn_ltindex(), CONFIG_VS_LAYR_COLOR);    // backslash
             #else
-                rgb_matrix_set_color(I_BSLS, RGB_PURPLE);    // backslash
+                rgb_matrix_set_color(get_dyn_ltindex(), RGB_PURPLE);    // backslash
             #endif
             #ifdef CONFIG_SYM_LAYR_COLOR
                 rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // left win / left opt 
@@ -5112,12 +5116,12 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     break;
                 case VS_LAYR:
                 #ifdef CONFIG_VS_LAYR_COLOR
-                    rgb_matrix_set_color(I_BSLS, CONFIG_VS_LAYR_COLOR); // backslash
+                    rgb_matrix_set_color(get_dyn_ltindex(), CONFIG_VS_LAYR_COLOR); // backslash
                     #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                     rgb_matrix_set_color(I_CAPS, CONFIG_VS_LAYR_COLOR); // caps
                     #endif
                 #else
-                    rgb_matrix_set_color(I_BSLS, RGB_PURPLE); // backslash
+                    rgb_matrix_set_color(get_dyn_ltindex(), RGB_PURPLE); // backslash
                     #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                     rgb_matrix_set_color(I_CAPS, RGB_PURPLE); // caps
                     #endif
@@ -5228,7 +5232,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 #ifdef CONFIG_CIRC_LAYR_COLOR
                     rgb_matrix_set_color(I_RSFT, CONFIG_CIRC_LAYR_COLOR);      // rshift
                     if (!is_mac_base() && user_config.is_linux_base) {
-                        rgb_matrix_set_color(I_BSLS, CONFIG_CIRC_LAYR_COLOR);  // backslash
+                        rgb_matrix_set_color(get_dyn_ltindex(), CONFIG_CIRC_LAYR_COLOR);  // backslash
                     }
                     #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                     rgb_matrix_set_color(I_CAPS, CONFIG_CIRC_LAYR_COLOR);      // caps
@@ -5236,7 +5240,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 #else
                     rgb_matrix_set_color(I_RSFT, RGB_CORAL);                   // rshift
                     if (!is_mac_base() && user_config.is_linux_base) {
-                        rgb_matrix_set_color(I_BSLS, RGB_CORAL);               // backslash
+                        rgb_matrix_set_color(get_dyn_ltindex(), RGB_CORAL);               // backslash
                     }
                     #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                     rgb_matrix_set_color(I_CAPS, RGB_CORAL);                   // caps
@@ -5253,7 +5257,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #elif defined(CONFIG_NO_RCMD_KEY) && !defined(CONFIG_NO_RCTL_KEY)
                     rgb_matrix_set_color(I_RCTL, CONFIG_EMO_LAYR_COLOR);      // rctl
                     #endif
-                    rgb_matrix_set_color(I_BSLS, CONFIG_EMO_LAYR_COLOR);      // backslash
+                    rgb_matrix_set_color(get_dyn_ltindex(), CONFIG_EMO_LAYR_COLOR);      // backslash
                     #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                     rgb_matrix_set_color(I_CAPS, CONFIG_EMO_LAYR_COLOR);      // caps
                     #endif
@@ -5266,7 +5270,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     #elif defined(CONFIG_NO_RCMD_KEY) && !defined(CONFIG_NO_RCTL_KEY)
                     rgb_matrix_set_color(I_RCTL, RGB_YELLOW);     // rctl
                     #endif
-                    rgb_matrix_set_color(I_BSLS, RGB_YELLOW);     // backslash
+                    rgb_matrix_set_color(get_dyn_ltindex(), RGB_YELLOW);     // backslash
                     #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                     rgb_matrix_set_color(I_CAPS, RGB_YELLOW);     // caps
                     #endif
@@ -5395,7 +5399,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                       #endif
                         break;
                     case VS_LAYR:
-                        rgb_matrix_set_color(I_BSLS, RGB_BLACK);           // backslash
+                        rgb_matrix_set_color(get_dyn_ltindex(), RGB_BLACK);           // backslash
                       #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         if (is_layer_locked(layer)) {
@@ -5499,7 +5503,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                     case CIRC_LAYR:
                         rgb_matrix_set_color(I_RSFT, RGB_BLACK);           // rshift
                         if (!is_mac_base() && user_config.is_linux_base) {
-                            rgb_matrix_set_color(I_BSLS, RGB_BLACK);       // backslash
+                            rgb_matrix_set_color(get_dyn_ltindex(), RGB_BLACK);       // backslash
                         }
                       #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
@@ -5527,7 +5531,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         #elif defined(CONFIG_NO_RCMD_KEY) && !defined(CONFIG_NO_RCTL_KEY)
                         rgb_matrix_set_color(I_RCTL, RGB_BLACK);           // rctl
                         #endif
-                        rgb_matrix_set_color(I_BSLS, RGB_BLACK);           // backslash
+                        rgb_matrix_set_color(get_dyn_ltindex(), RGB_BLACK);           // backslash
                       #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         if (is_layer_locked(layer)) {
@@ -6872,12 +6876,11 @@ void ralt_finished (tap_dance_state_t *state, void *user_data) {
             register_code(KC_RALT);
             break;
         case DOUBLE_TAP:
-            layer_off(WSYM_LAYR);
             set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
             clear_oneshot_layer_state(ONESHOT_PRESSED);
             break;
         case DOUBLE_HOLD:
-            //layer_on(WSYM_LAYR);
+            layer_on(WSYM_LAYR);
             break;
     }
 }
@@ -6900,16 +6903,6 @@ void ralt_reset (tap_dance_state_t *state, void *user_data) {
     ralt_tap_state.state = 0;
 }
 
-void ralt_each(tap_dance_state_t *state, void *user_data) {
-    switch (state->count) {
-        case 1:
-            break;
-        case 2:
-            layer_on(WSYM_LAYR);
-            break;
-    }
-}
-
 // function for rcmd tap dance
 void rcmd_finished (tap_dance_state_t *state, void *user_data) {
     rcmd_tap_state.state = cur_dance(state);
@@ -6922,12 +6915,11 @@ void rcmd_finished (tap_dance_state_t *state, void *user_data) {
             register_code(KC_RCMD);
             break;
         case DOUBLE_TAP:
-            layer_off(EMO_LAYR);
             set_oneshot_layer(EMO_LAYR, ONESHOT_START);
             clear_oneshot_layer_state(ONESHOT_PRESSED);
             break;
         case DOUBLE_HOLD:
-            //layer_on(EMO_LAYR);
+            layer_on(EMO_LAYR);
             break;
     }
 }
@@ -6948,16 +6940,6 @@ void rcmd_reset (tap_dance_state_t *state, void *user_data) {
             break;
     }
     rcmd_tap_state.state = 0;
-}
-
-void rcmd_each(tap_dance_state_t *state, void *user_data) {
-    switch (state->count) {
-        case 1:
-            break;
-        case 2:
-            layer_on(EMO_LAYR);
-            break;
-    }
 }
 
 // function for fn tap dance
@@ -7924,7 +7906,7 @@ void capsfk_each(tap_dance_state_t *state, void *user_data) {
 tap_dance_action_t tap_dance_actions[19] = {
     [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
     [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
-    [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(ralt_each, ralt_finished, ralt_reset),
+    [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ralt_finished, ralt_reset),
     [RSFT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rsft_each, rsft_finished, rsft_reset),
     [KB_UNLOCK] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, kbunlock_finished, kbunlock_reset),
     [ACT_GRV] = ACTION_TAP_DANCE_FN_ADVANCED(actgrv_each, actgrv_finished, actgrv_reset),
@@ -7934,7 +7916,7 @@ tap_dance_action_t tap_dance_actions[19] = {
     [ACT_I] = ACTION_TAP_DANCE_FN_ADVANCED(acti_each, acti_finished, acti_reset),
     [ACT_N] = ACTION_TAP_DANCE_FN_ADVANCED(actn_each, actn_finished, actn_reset),
     [LGUI_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(lgui_each, lgui_finished, lgui_reset),
-    [RCMD_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(rcmd_each, rcmd_finished, rcmd_reset),
+    [RCMD_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rcmd_finished, rcmd_reset),
     [LOPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, lopt_finished, lopt_reset),
     [ROPT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ropt_finished, ropt_reset),
     [RCTL_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rctl_finished, rctl_reset),
@@ -8183,7 +8165,7 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         #ifdef CONFIG_HAS_FKEY_LAYR
         (layer == FKEY_LAYR && key.index == I_FKEY) ||                                                // fkey_layr key
         #endif
-        (key.index == I_CAPS || key.index == I_FN || key.index == I_TAB || key.index == I_BSLS)) {    // caps lock, fn, tab, bsls
+        (key.index == I_CAPS || key.index == I_FN || key.index == I_TAB || key.index == get_dyn_ltindex())) {    // caps lock, fn, tab, bsls
             should_fade = false;
         }
     return should_fade;
@@ -8365,22 +8347,40 @@ void leader_start_user(void) {
     is_in_leader_sequence = true;
 }
 
+
 // fade the rgb animation when layer is changed so that the layer keys are more prominent
+static uint8_t brightness_saved_val = RGB_MATRIX_DEFAULT_VAL;
+static bool val_saved = false;
+
 layer_state_t layer_state_set_user(layer_state_t state) {
-    if (is_base_layer(get_highest_layer(state))) {
-        rgb_matrix_reload_from_eeprom();
-    }
+    uint8_t layer = get_highest_layer(state);
+
+    if (layer == LOCK_LAYR
     #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
     // womier and bridge have a custom caps lock that i don't want to dim the layer leds
-    else if (get_highest_layer(state) == CLCK_LAYR) {
+        || layer = CLCK_LAYR
+    #endif
+    ) {
         return state;
     }
-    #endif
-    else if (get_highest_layer(state) != LOCK_LAYR) {
-        HSV hsv = rgb_matrix_get_hsv();
-        if (hsv.v >= 180) {
-            rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, 180);
+
+    if (is_base_layer(layer)) {
+        if (val_saved) {
+            HSV hsv = rgb_matrix_get_hsv();
+            rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, brightness_saved_val);
+            val_saved = false;
         }
+        return state;
+    }
+
+    if (!val_saved) {
+        brightness_saved_val = rgb_matrix_get_val();
+        val_saved = true;
+    }
+
+    HSV hsv = rgb_matrix_get_hsv();
+    if (hsv.v >= 180) {
+        rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, 180);
     }
     return state;
 }

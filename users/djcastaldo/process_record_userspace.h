@@ -562,3 +562,4 @@ uint32_t cmd_tab_callback(uint32_t trigger_time, void* cb_arg);
 uint32_t leader_error_callback(uint32_t trigger_time, void* cb_arg);
 uint32_t wireless_mode_callback(uint32_t trigger_time, void *cb_arg);
 uint16_t get_dyn_ltkey(void);
+uint16_t get_dyn_ltindex(void);
