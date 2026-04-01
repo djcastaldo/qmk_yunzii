@@ -7929,6 +7929,8 @@ tap_dance_action_t tap_dance_actions[19] = {
 uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case TD(DYN_LAYR):
+        case DYN_LT:
+        case LT(TMUX_LAYR,KC_TAB):
             return TAPPING_TERM - 100;
         case TD(CAPSFK_OSL):
         case TD(LGUI_OSL):
