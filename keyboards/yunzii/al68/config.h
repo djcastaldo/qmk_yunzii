@@ -109,5 +109,5 @@
 //#    define CONFIG_LOCK_LAYR_EXTRA_FLASH_KEYS_COUNT 2
 //#    define CONFIG_LOCK_LAYR_EXTRA_FLASH_COLOR RGB_BLUE
 
-/* for process_key_sequence */
-#    define CONFIG_MAX_SEQ_QUEUE 3
+// for key sequnece processing
+#    define CONFIG_MAX_SEQ_QUEUE 4

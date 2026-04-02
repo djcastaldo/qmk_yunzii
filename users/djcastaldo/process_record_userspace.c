@@ -321,6 +321,11 @@ static uint16_t rsft_timer = 0;
 static uint8_t rsft_tap_count = 0;
 static bool rsft_pressed = false;
 static bool rsft_interrupted = false;
+// program vars for macros
+static const char poc_firstname[] PROGMEM = "Firstname";
+static const char poc_lastname[]  PROGMEM = "Lastname";
+static const char poc_phone[]     PROGMEM = "123-456-7890";
+static const char poc_email[]     PROGMEM = "first.last@mail.mil";
 
 void reset_last_activity_timer(void) {
     last_activity_timer = timer_read32();
@@ -760,7 +765,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 tap_code16(TOVERVIEW);
             }
             else if (!user_config.is_linux_base) {
-                // windows 11 doesn't have an equiv here so just show desktop switcher 
+                // windows 11 doesn't have an equiv here so just show desktop switcher
                 tap_code16(LGUI(KC_TAB));
             }
         }
@@ -1904,7 +1909,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             if ((mods | oneshot_mods) & MOD_MASK_CTRL) {
                 del_oneshot_mods(MOD_MASK_CTRL);
                 unregister_mods(MOD_MASK_CTRL);
-                // if control is held, then do the snap combination to switch to Finder app 
+                // if control is held, then do the snap combination to switch to Finder app
                 tap_code16(LCMD(LOPT(LSFT(KC_GRV))));
                 register_mods(mods);
             }
@@ -2012,7 +2017,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // volume up and down should be able to be pressed multiple times without cancelling a oneshot layer
     case KC_VOLD:
     case KC_VOLU:
-    // also add the same functionality to numpad for entering a pin 
+    // also add the same functionality to numpad for entering a pin
     case KC_P0:
     case KC_P1:
     case KC_P2:
@@ -4121,7 +4126,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     } else {
                         if (!is_layer_locked(WSYM_LAYR)) {
                             layer_off(WSYM_LAYR);
-                        } 
+                        }
                     }
                 }
                 fnsym_tap_count = 0;
@@ -4183,7 +4188,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             dyn_active = false;
 
             if (!dyn_is_hold && !dyn_interrupted && timer_elapsed(dyn_timer) < get_tapping_term(keycode, record)) {
-                // TAP 
+                // TAP
                 tap_code(get_dyn_ltkey());
             } else {
                 // HOLD RELEASE → turn off layer
@@ -4218,7 +4223,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // don't decide here yet
             // wait for tapping term to finish (handled in matrix_scan)
         }
-        return false; 
+        return false;
     // this is needed for rliable caps word over windows rdp
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
@@ -4542,19 +4547,12 @@ bool process_leader_userspace(void) {
     }
     else if (leader_sequence_three_keys(KC_P, KC_O, KC_C)) {  // insert test POC data for template
         //send_string_with_delay("Firstname" SS_TAP(X_TAB) "Lastname" SS_TAP(X_TAB) "123-456-7890" SS_TAP(X_TAB) "first.last@mail.mil" SS_TAP(X_TAB),20);
-        rdp_send_string("Firstname");
-        key_action_t tab_seq[] = {
-            { KC_TAB,   true, CONFIG_RDP_DELAY_KEY },
-            { KC_TAB,  false, CONFIG_RDP_DELAY_KEY }
-        };
-        START_KEY_SEQUENCE(tab_seq);
-        rdp_send_string("Lastname");
-        START_KEY_SEQUENCE(tab_seq);
-        rdp_send_string("123-456-7890");
-        START_KEY_SEQUENCE(tab_seq);
-        rdp_send_string("first.last@mail.mil");
-        START_KEY_SEQUENCE(tab_seq);
-        
+        rdp_send_fields_P(
+            poc_firstname,
+            poc_lastname,
+            poc_phone,
+            poc_email
+        );
     }
     else if (leader_sequence_five_keys(KC_K, KC_I, KC_L, KC_L, KC_B)) { // restart bt daemon
         SEND_STRING("sudo pkill bluetoothd" SS_TAP(X_ENT));
@@ -4858,7 +4856,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             for (uint8_t row = 0; row < MATRIX_ROWS; ++row) {
                 for (uint8_t col = 0; col < MATRIX_COLS; ++col) {
                     uint8_t index = g_led_config.matrix_co[row][col];
-        
+
                     if (index >= led_min && index < led_max && index != NO_LED &&
                     keymap_key_to_keycode(layer, (keypos_t){col,row}) > KC_TRNS) {
                         switch (layer) {
@@ -4975,14 +4973,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             #ifdef CONFIG_KCTL_LAYR_COLOR
                 rgb_matrix_set_color(I_LCMD, CONFIG_KCTL_LAYR_COLOR);  // left alt / left cmd
                 #ifndef CONFIG_NO_RCMD_KEY
-                rgb_matrix_set_color(I_RCMD, CONFIG_KCTL_LAYR_COLOR);  // right alt / right cmd 
+                rgb_matrix_set_color(I_RCMD, CONFIG_KCTL_LAYR_COLOR);  // right alt / right cmd
                 #elif !defined(CONFIG_NO_RCTL_KEY)
                 rgb_matrix_set_color(I_RCTL, CONFIG_KCTL_LAYR_COLOR);  // right control
                 #endif
             #else
                 rgb_matrix_set_color(I_LCMD, RGB_RED);    // left alt / left cmd
                 #ifndef CONFIG_NO_RCMD_KEY
-                rgb_matrix_set_color(I_RCMD, RGB_RED);    // right alt / right cmd 
+                rgb_matrix_set_color(I_RCMD, RGB_RED);    // right alt / right cmd
                 #elif !defined(CONFIG_NO_RCTL_KEY)
                 rgb_matrix_set_color(I_RCTL, RGB_RED);  // right control
                 #endif
@@ -4998,22 +4996,22 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(get_dyn_ltindex(), RGB_PURPLE);    // backslash
             #endif
             #ifdef CONFIG_SYM_LAYR_COLOR
-                rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // left win / left opt 
+                rgb_matrix_set_color(I_LGUI, CONFIG_SYM_LAYR_COLOR);   // left win / left opt
                 #ifdef CONFIG_HAS_ROPT_KEY
-                rgb_matrix_set_color(I_ROPT, CONFIG_SYM_LAYR_COLOR);   // right win / right opt 
+                rgb_matrix_set_color(I_ROPT, CONFIG_SYM_LAYR_COLOR);   // right win / right opt
                 //#else
                 //rgb_matrix_set_color(I_FN, CONFIG_SYM_LAYR_COLOR);     // if no ropt, light fn
                 #endif
             #else
-                rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // left win / left opt 
+                rgb_matrix_set_color(I_LGUI, RGB_BLUE);   // left win / left opt
                 #ifdef CONFIG_HAS_ROPT_KEY
-                rgb_matrix_set_color(I_ROPT, RGB_BLUE);   // right win / right opt 
+                rgb_matrix_set_color(I_ROPT, RGB_BLUE);   // right win / right opt
                 //#else
                 //rgb_matrix_set_color(I_FN, RGB_BLUE);     // if no ropt, light fn
                 #endif
             #endif
             }
-    // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ 
+    // ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~
             // custom colors for tap dance keys on symbol layer
             else if (layer == WSYM_LAYR || layer == MSYM_LAYR) {
             #ifdef CONFIG_ACCENT_KEY_COLOR
@@ -5312,7 +5310,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 }
             }
             #ifdef CONFIG_BLINK_LAYR_EVEN_WITH_KEYCODE_ASSIGNED
-            // this was originally only for if a keycode was assigned, but also works to not show any bg animation 
+            // this was originally only for if a keycode was assigned, but also works to not show any bg animation
             else {
                 switch (layer) {
                     case FN_LAYR:
@@ -5333,7 +5331,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                             rgb_matrix_set_color(I_CAPS, RGB_BLACK);       // caps
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         }
-                        #endif 
+                        #endif
                         break;
                     case SFT_LAYR:
                         rgb_matrix_set_color(I_LSFT, RGB_BLACK);           // lshift
@@ -5579,7 +5577,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                       #ifdef CONFIG_FLASH_CAPS_ON_ALL_LAYERS
                         #ifdef CONFIG_LOCKED_LAYERS_STOP_FLASHING
                         if (is_layer_locked(layer)) {
-                        #ifdef CONFIG_DEFUALT_LAYR_COLOR 
+                        #ifdef CONFIG_DEFUALT_LAYR_COLOR
                             rgb_matrix_set_color(I_CAPS, CONFIG_DEFUALT_LAYR_COLOR);
                         #else
                             rgb_matrix_set_color(I_CAPS, 0x77,0x77,0x77);
@@ -5610,7 +5608,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(rgb_layer_indicators[i], RGB_WHITE);
                     }
                 }
-                else if ((timer_elapsed(layer_lock_timer) > 200 && timer_elapsed(layer_lock_timer) < 400) || 
+                else if ((timer_elapsed(layer_lock_timer) > 200 && timer_elapsed(layer_lock_timer) < 400) ||
                          (timer_elapsed(layer_lock_timer) > 600)) {
                 #ifdef CONFIG_HAS_LLOCK_KEY
                     rgb_matrix_set_color(I_LLOCK, RGB_WHITE); // white alternate with layer color
@@ -5648,7 +5646,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                         rgb_matrix_set_color(winkey_scut_altcolor[i], RGB_BLUE);   // winkey shortcut keys
                     }
                 }
-            }    
+            }
             // color caps word keys
             if (is_caps_word_on()) {
                 // set capitilized keys red when caps word is active
@@ -5665,7 +5663,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 rgb_matrix_set_color(I_RSFT, 0x77, 0x77, 0x77); // color right shift when caps_word is active
             #endif
             }
-            // if not caps word, nor caps lock, then do the hrow colors if hrow_light setting is turned on       
+            // if not caps word, nor caps lock, then do the hrow colors if hrow_light setting is turned on
             else if (!host_keyboard_led_state().caps_lock) {
                 if (hrow_light) {
                 #ifdef CONFIG_HROWLIGHT_COLOR
@@ -5966,12 +5964,12 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
                 else if (key_should_fade(tracked_keys[i], layer)) {
                     if (tracked_keys[i].fade > 255) {
                         rgb_matrix_set_color(tracked_keys[i].index, RGB_WHITE);
-                    } 
+                    }
                     else if (tracked_keys[i].fade > 230) {
                         rgb_matrix_set_color(tracked_keys[i].index, tracked_keys[i].fade, tracked_keys[i].fade, 255);
                     } else {
                         rgb_matrix_set_color(tracked_keys[i].index, tracked_keys[i].fade, tracked_keys[i].fade, tracked_keys[i].fade + 25);
-                    }  
+                    }
                 }
             #endif
             }
@@ -6035,8 +6033,8 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         }
         // track if this is the middle of an accent key tap dance and illuminate the appropriate accent char
         if (act_char_led_index > 0) {
-            rgb_matrix_set_color(act_char_led_index, RGB_WHITE);  // accent char led 
-        } 
+            rgb_matrix_set_color(act_char_led_index, RGB_WHITE);  // accent char led
+        }
         // track if mouse button is held on SFT_LAYR
         if (layer == SFT_LAYR && ms_btn_held) {
             rgb_matrix_set_color(I_MHLD, RGB_WHITE);         // mouse btn1 hold key
@@ -6073,7 +6071,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
         if (layer == CLCK_LAYR) {
             rgb_matrix_set_color(I_CAPS, RGB_WHITE);  // caps
-        } 
+        }
         #endif
         // track num_lock
         if (layer == SFT_LAYR && host_keyboard_led_state().num_lock) {
@@ -6101,7 +6099,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             lock_anim_active = false;
         }
         #endif
-            
+
     #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         #ifdef LK_WIRELESS_ENABLE
         // show wireless connection if just switched modes or if on KCTL_LAYR in bt or 2.4g modes
@@ -6355,7 +6353,7 @@ void matrix_scan_user(void) {
 
 #endif // KEYBOARD_IS_WOMIER
 #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
-    if (wake_seq_active) { 
+    if (wake_seq_active) {
         switch (wake_step) {
             case 0:
                 // wait until transport reports connected, with extra Lemokey settle delay
@@ -6791,7 +6789,7 @@ void caps_finished (tap_dance_state_t *state, void *user_data) {
             #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
             if (is_mac_base()) {
                 if (layer_state_is(CLCK_LAYR)) {
-                    layer_off(CLCK_LAYR); 
+                    layer_off(CLCK_LAYR);
                 } else {
                     layer_on(CLCK_LAYR);
                 }
@@ -7101,7 +7099,7 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
             housekeeping_restore_lock_anim = false;
             housekeeping_retry_anim_restore = false;
             #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
-            // cancel lock anim color change if token is active 
+            // cancel lock anim color change if token is active
             if (anim_color_token) {
                 cancel_deferred_exec(anim_color_token);
                 anim_color_token = INVALID_DEFERRED_TOKEN;
@@ -7837,7 +7835,7 @@ void capsfk_finished (tap_dance_state_t *state, void *user_data) {
             #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
             if (is_mac_base()) {
                 if (layer_state_is(CLCK_LAYR)) {
-                    layer_off(CLCK_LAYR); 
+                    layer_off(CLCK_LAYR);
                 } else {
                     layer_on(CLCK_LAYR);
                 }
@@ -8108,7 +8106,7 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         ((layer == FN_LAYR || layer == SFT_LAYR || layer == WIDE_LAYR ||
         layer == CIRC_LAYR || is_caps_word_on()) &&
         (key.index == I_LSFT || key.index == I_RSFT)) ||                                              // l/r shift
-        ((layer == FN_LAYR || layer == KCTL_LAYR) && 
+        ((layer == FN_LAYR || layer == KCTL_LAYR) &&
                                 (key.index == I_LOPT ||
                                 #ifdef CONFIG_HAS_ROPT_KEY
                                  key.index == I_ROPT ||
@@ -8127,7 +8125,7 @@ bool key_should_fade(keytracker key, uint8_t layer) {
         (layer == FN_LAYR && key.index == I_SLOCK) ||                                                 // scroll lock
         (layer == WIDE_LAYR && (key.index == I_BARTEXT || key.index == I_STHRU ||
         key.index == I_UNDERLN || key.index == I_BBRTEXT)) ||                                         // wide-text toggles
-        (layer == KCTL_LAYR && (key.index == I_FJLIGHT || key.index == I_HROWLIGHT || 
+        (layer == KCTL_LAYR && (key.index == I_FJLIGHT || key.index == I_HROWLIGHT ||
                                 key.index == I_KTRACK
         #ifdef CONFIG_HAS_SECOND_KTRACK_KEY
                                 || key.index == I_KTRACK2
@@ -8360,7 +8358,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     if (layer == LOCK_LAYR
     #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
     // womier and bridge have a custom caps lock that i don't want to dim the layer leds
-        || layer = CLCK_LAYR
+        || layer == CLCK_LAYR
     #endif
     ) {
         return state;

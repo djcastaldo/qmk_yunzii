@@ -6,13 +6,13 @@
 #include "quantum.h"
 
 #ifndef CONFIG_MAX_SEQ_LEN
-    #define CONFIG_MAX_SEQ_LEN   128
+    #define CONFIG_MAX_SEQ_LEN   96
 #endif
 #ifndef CONFIG_MAX_SEQ_QUEUE
-    #define CONFIG_MAX_SEQ_QUEUE 5
+    #define CONFIG_MAX_SEQ_QUEUE 3
 #endif
 #ifndef CONFIG_MAX_KEYS_HELD
-    #define CONFIG_MAX_KEYS_HELD 8
+    #define CONFIG_MAX_KEYS_HELD 5
 #endif
 // --- configuration for RDP delays ---
 #ifndef CONFIG_RDP_DELAY_KEY
@@ -39,11 +39,19 @@ typedef struct {
 void start_key_sequence(key_action_t *seq, uint8_t len);
 
 // run the sequencer.
-void process_key_sequence(void);
+bool process_key_sequence(void);
 
 // for converting a string to sequeunce actions
 void rdp_send_string(const char *str);
 void rdp_send_string_P(const char *str);
 
+void rdp_send_fields_P(const char *a, const char *b, const char *c, const char *d);
+
+void wait_for_queue_space(void);
+
 // convenience macro: automatically calculate length of a static array
-#define START_KEY_SEQUENCE(seq) start_key_sequence(seq, sizeof(seq) / sizeof((seq)[0]))
+#define START_KEY_SEQUENCE(seq)                          \
+    do {                                                 \
+        wait_for_queue_space();                          \
+        start_key_sequence(seq, sizeof(seq) / sizeof((seq)[0])); \
+    } while (0)
