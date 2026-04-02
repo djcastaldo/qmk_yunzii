@@ -715,7 +715,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else if (!user_config.is_linux_base) {
                 key_action_t preview_seq[] = {
-                    { KC_LALT,  true, 0 },
+                    { KC_LALT,  true, 10 },
                     { KC_P,     true, CONFIG_RDP_DELAY_KEY },
                     { KC_P,    false, CONFIG_RDP_DELAY_KEY },
                     { KC_LALT, false, CONFIG_RDP_DELAY_MOD }
@@ -750,7 +750,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             else if (!user_config.is_linux_base) {
                 // windows 11 doesn't have an easy hidden toggle so just show item details
                 key_action_t details_seq[] = {
-                    { KC_LALT,  true, 0 },
+                    { KC_LALT,  true, 10 },
                     { KC_ENT,   true, CONFIG_RDP_DELAY_KEY },
                     { KC_ENT,  false, CONFIG_RDP_DELAY_KEY },
                     { KC_LALT, false, CONFIG_RDP_DELAY_MOD }
@@ -3636,7 +3636,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSMVLNU:
         if (record->event.pressed) {
             key_action_t mvlineup_seq[] = {
-                { KC_LALT,  true, 0 },
+                { KC_LALT,  true, 10 },
                 { KC_UP,    true, vs_delay },
                 { KC_UP,   false, vs_delay },
                 { KC_LALT, false, vs_delay }
@@ -3648,7 +3648,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSMVLND:
         if (record->event.pressed) {
             key_action_t mvlinedown_seq[] = {
-                { KC_LALT,  true, 0 },
+                { KC_LALT,  true, 10 },
                 { KC_DOWN,  true, vs_delay },
                 { KC_DOWN, false, vs_delay },
                 { KC_LALT, false, vs_delay }
@@ -3660,7 +3660,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSDUPLN:
         if (record->event.pressed) {
             key_action_t dupeline_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_D,     true, vs_delay },
                 { KC_D,    false, vs_delay },
                 { KC_LCTL, false, vs_delay }
@@ -3688,7 +3688,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             if (get_mods() & MOD_MASK_CTRL) {
                 // below
                 key_action_t inslnbelow_seq[] = {
-                    { KC_LSFT,  true, 0 },
+                    { KC_LSFT,  true, 10 },
                     { KC_ENT,   true, vs_delay },
                     { KC_ENT,  false, vs_delay },
                     { KC_LSFT, false, vs_delay }
@@ -3698,7 +3698,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             else {
                 // above
                 key_action_t inslnabove_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_ENT,   true, vs_delay },
                     { KC_ENT,  false, vs_delay },
                     { KC_LCTL, false, vs_delay }
@@ -3712,7 +3712,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) {
                 key_action_t blockcomment_seq[] = {
-                    { KC_LSFT,  true, 0 },
+                    { KC_LSFT,  true, 10 },
                     { KC_SLSH,  true, vs_delay },
                     { KC_SLSH, false, vs_delay },
                     { KC_LSFT, false, vs_delay }
@@ -3721,7 +3721,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {
                 key_action_t linecomment_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_K,     true, vs_delay },
                     { KC_K,    false, vs_delay },
                     { KC_SLSH,  true, vs_delay },
@@ -3737,7 +3737,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // uncomment
                 key_action_t uncommentline_seq[] = {
-                    { KC_K,  true, 0 },
+                    { KC_K,  true, 10 },
                     { KC_K, false, vs_delay },
                     { KC_U,  true, vs_delay },
                     { KC_U, false, vs_delay }
@@ -3746,7 +3746,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {  // comment
                 key_action_t commentline_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_K,     true, vs_delay },
                     { KC_K,    false, vs_delay },
                     { KC_C,     true, vs_delay },
@@ -3762,7 +3762,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // comment
                 key_action_t uncommentline_seq[] = {
-                    { KC_K,  true, 0 },
+                    { KC_K,  true, 10 },
                     { KC_K, false, vs_delay },
                     { KC_C,  true, vs_delay },
                     { KC_C, false, vs_delay }
@@ -3771,7 +3771,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {  // uncomment
                 key_action_t uncommentline_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_K,     true, vs_delay },
                     { KC_K,    false, vs_delay },
                     { KC_U,     true, vs_delay },
@@ -3787,7 +3787,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // view whitespace
                 key_action_t whitespace_seq[] = {
-                    { KC_R,  true, 0 },
+                    { KC_R,  true, 10 },
                     { KC_R, false, vs_delay },
                     { KC_W,  true, vs_delay },
                     { KC_W, false, vs_delay }
@@ -3796,7 +3796,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else { // toggle word warp
                 key_action_t wordwrap_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_E,     true, vs_delay },
                     { KC_E,    false, vs_delay },
                     { KC_W,     true, vs_delay },
@@ -3843,7 +3843,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSMATCH:
         if (record->event.pressed) {
             key_action_t matchbrace_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_RBRC,  true, vs_delay },
                 { KC_RBRC, false, vs_delay },
                 { KC_LCTL, false, vs_delay }
@@ -3856,7 +3856,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // show immediate
                 key_action_t immediate_seq[] = {
-                    { KC_LALT,  true, 0 },
+                    { KC_LALT,  true, 10 },
                     { KC_I,     true, vs_delay },
                     { KC_I,    false, vs_delay },
                     { KC_LALT, false, vs_delay }
@@ -3865,7 +3865,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else { // show info
                 key_action_t info_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_K,     true, vs_delay },
                     { KC_K,    false, vs_delay },
                     { KC_I,     true, vs_delay },
@@ -3880,7 +3880,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSNOTIF:
         if (record->event.pressed) {
             key_action_t notify_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_BSLS,  true, vs_delay },
                 { KC_BSLS, false, vs_delay },
                 { KC_N,     true, vs_delay },
@@ -3894,7 +3894,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSFIND:
         if (record->event.pressed) {
             key_action_t find_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_F,     true, vs_delay },
                 { KC_F,    false, vs_delay },
                 { KC_LCTL, false, vs_delay }
@@ -3906,7 +3906,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSREPL:
         if (record->event.pressed) {
             key_action_t replace_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_H,     true, vs_delay },
                 { KC_H,    false, vs_delay },
                 { KC_LCTL, false, vs_delay }
@@ -3919,7 +3919,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             send_string_with_delay(SS_LCTL("rr"), vs_delay);
             key_action_t rename_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_R,     true, vs_delay },
                 { KC_R,    false, vs_delay },
                 { KC_R,     true, vs_delay },
@@ -3933,7 +3933,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSGOTO:
         if (record->event.pressed) {
             key_action_t goto_seq[] = {
-                { KC_LCTL,  true, 0 },
+                { KC_LCTL,  true, 10 },
                 { KC_G,     true, vs_delay },
                 { KC_G,    false, vs_delay },
                 { KC_LCTL, false, vs_delay }
@@ -3960,7 +3960,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed) {
             if (get_mods() & MOD_MASK_CTRL) { // exception settings
                 key_action_t exception_seq[] = {
-                    { KC_LALT,  true, 0 },
+                    { KC_LALT,  true, 10 },
                     { KC_E,     true, vs_delay },
                     { KC_E,    false, vs_delay },
                     { KC_LALT, false, vs_delay }
@@ -3969,7 +3969,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else { // show error window
                 key_action_t error_seq[] = {
-                    { KC_LCTL,  true, 0 },
+                    { KC_LCTL,  true, 10 },
                     { KC_BSLS,  true, vs_delay },
                     { KC_BSLS, false, vs_delay },
                     { KC_E,     true, vs_delay },
@@ -4018,7 +4018,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case VSBASE:
         if (record->event.pressed) {
             key_action_t baseclass_seq[] = {
-                { KC_LALT,  true, 0 },
+                { KC_LALT,  true, 10 },
                 { KC_HOME,  true, vs_delay },
                 { KC_HOME, false, vs_delay },
                 { KC_LALT, false, vs_delay }
@@ -4229,7 +4229,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
             if (record->event.pressed) {
                 key_action_t underscore_seq[] = {
-                    { KC_LSFT,  true, 0 },
+                    { KC_LSFT,  true, 10 },
                     { KC_MINS,     true, vs_delay },
                     { KC_MINS,    false, vs_delay },
                     { KC_LSFT, false, vs_delay }
@@ -4614,7 +4614,7 @@ bool process_leader_userspace(void) {
         else {
             //SEND_STRING(SS_LCTL(SS_TAP(X_LEFT) SS_LSFT(SS_TAP(X_RIGHT))));
             key_action_t sw_seq[] = {
-                { KC_RCTL,   true, 0 },
+                { KC_RCTL,   true, 10 },
                 { KC_LEFT,   true, CONFIG_RDP_DELAY_KEY },
                 { KC_LEFT,  false, CONFIG_RDP_DELAY_KEY },
                 { KC_LSFT,   true, CONFIG_RDP_DELAY_KEY },
@@ -7928,8 +7928,8 @@ uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
     switch (keycode) {
         case TD(DYN_LAYR):
         case DYN_LT:
-        case LT(TMUX_LAYR,KC_TAB):
             return TAPPING_TERM - 100;
+        case LT(TMUX_LAYR,KC_TAB):
         case TD(CAPSFK_OSL):
         case TD(LGUI_OSL):
         case TD(RCMD_OSL):
