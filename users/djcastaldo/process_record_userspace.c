@@ -121,6 +121,7 @@ const uint8_t vs_delay = CONFIG_VS_LAYR_SEND_STRING_DELAY;
 #else
 const uint8_t vs_delay = 0;
 #endif
+static uint8_t user_brightness = RGB_MATRIX_DEFAULT_VAL;
 
 // which keycode does DYN_LT send on a tap?
 __attribute__((weak)) uint16_t get_dyn_ltkey(void) {
@@ -1601,7 +1602,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             else {
                 rgb_matrix_mode(RGB_MATRIX_DEFAULT_MODE);
                 rgb_matrix_set_speed(RGB_MATRIX_DEFAULT_SPD);
-                rgb_matrix_sethsv(RGB_MATRIX_DEFAULT_HUE, RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgb_matrix_sethsv(RGB_MATRIX_DEFAULT_HUE, RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_DEFAULT_VAL);
+                user_brightness = RGB_MATRIX_DEFAULT_VAL;
             }
         }
         return false;
@@ -1633,6 +1635,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {
                 rgb_matrix_decrease_val();
+                user_brightness = rgb_matrix_get_val();
             }
         }
         return false;
@@ -1660,6 +1663,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             else {
                 rgb_matrix_increase_val();
+                user_brightness = rgb_matrix_get_val();
             }
         }
         return false;
@@ -1720,6 +1724,18 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (record->event.pressed)
             rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
         break;
+    case RGB_VAD:
+        if (record->event.pressed)
+            user_brightness = (user_brightness < RGB_MATRIX_VAL_STEP)
+                ? 0
+                : user_brightness - RGB_MATRIX_VAL_STEP;
+        break; 
+    case RGB_VAI:
+        if (record->event.pressed)
+            user_brightness = (user_brightness > 255 - RGB_MATRIX_VAL_STEP)
+                ? 255
+                : user_brightness + RGB_MATRIX_VAL_STEP;
+        break; 
     case DUAL_PLUSMIN:
         if (oneshot_layer_active || sim_osl) {
             reset_oneshot_layer();
@@ -4251,11 +4267,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // also nice to have a way to turn off the animation without turning off the indicators
     case CSTMTOG:
 	if (record->event.pressed) {
+            HSV hsv = rgb_matrix_get_hsv();
             if (rgb_matrix_get_val() > 1) {
-                rgb_matrix_sethsv(0, 0, 1);
+                rgb_matrix_sethsv(hsv.h, hsv.s, 1);
+                user_brightness = 1;
             }
             else {
-                rgb_matrix_sethsv(RGB_MATRIX_DEFAULT_HUE, RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_DEFAULT_VAL);
+                rgb_matrix_sethsv(hsv.h, hsv.s, RGB_MATRIX_DEFAULT_VAL);
+                user_brightness = RGB_MATRIX_DEFAULT_VAL;
             }
 	}
         return false;
@@ -4477,6 +4496,10 @@ bool process_leader_userspace(void) {
     }
     else if (leader_sequence_four_keys(KC_L, KC_O, KC_C, KC_K)) { // switch to LOCK_LAYR
         user_config.rgb_mode = rgb_matrix_get_mode();
+        HSV hsv = rgb_matrix_get_hsv();
+        user_config.hue = hsv.h;
+        user_config.sat = hsv.s;
+        user_config.val = hsv.v;
         eeconfig_update_user(user_config.raw);
         layer_on(LOCK_LAYR);
         #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
@@ -7123,6 +7146,11 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
             delay_time = delay_time + 50;
             uint32_t matrix_mode_callback(uint32_t trigger_time, void* cb_arg) {
                 rgb_matrix_mode_noeeprom(user_config.rgb_mode);
+                rgb_matrix_sethsv_noeeprom(
+                    user_config.hue,
+                    user_config.sat,
+                    user_config.val
+                );
                 return 0;
             }
             defer_exec(delay_time, matrix_mode_callback, NULL);
@@ -8349,9 +8377,6 @@ void leader_start_user(void) {
 
 
 // fade the rgb animation when layer is changed so that the layer keys are more prominent
-static uint8_t brightness_saved_val = RGB_MATRIX_DEFAULT_VAL;
-static bool val_saved = false;
-
 layer_state_t layer_state_set_user(layer_state_t state) {
     uint8_t layer = get_highest_layer(state);
 
@@ -8364,24 +8389,16 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         return state;
     }
 
-    if (is_base_layer(layer)) {
-        if (val_saved) {
-            HSV hsv = rgb_matrix_get_hsv();
-            rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, brightness_saved_val);
-            val_saved = false;
+    uint8_t effective = user_brightness;
+    if (!is_base_layer(layer)) {
+        if (effective > 180) {
+            effective = 180;
         }
-        return state;
-    }
-
-    if (!val_saved) {
-        brightness_saved_val = rgb_matrix_get_val();
-        val_saved = true;
     }
 
     HSV hsv = rgb_matrix_get_hsv();
-    if (hsv.v >= 180) {
-        rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, 180);
-    }
+    rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, effective);
+
     return state;
 }
 
@@ -8549,6 +8566,9 @@ void eeconfig_init_user(void) {  // EEPROM is getting reset!
     user_config.is_linux_base = false; // set default here
     #endif
     user_config.rgb_mode = RGB_MATRIX_DEFAULT_MODE;
+    user_config.hue = RGB_MATRIX_DEFAULT_HUE;
+    user_config.sat = RGB_MATRIX_DEFAULT_SAT;
+    user_config.val = RGB_MATRIX_DEFAULT_VAL;
     eeconfig_update_user(user_config.raw); // write default value to EEPROM now
     #if defined(CONFIG_HAS_BASE_LAYER_TOGGLE)
         #ifdef CONFIG_SWITCH_PIN

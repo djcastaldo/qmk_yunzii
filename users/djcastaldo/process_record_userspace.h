@@ -12,6 +12,9 @@
 #ifndef RGB_MATRIX_MAXIMUM_BRIGHTNESS
 #define RGB_MATRIX_MAXIMUM_BRIGHTNESS 255
 #endif
+#ifndef RGB_MATRIX_VAL_STEP
+#define RGB_MATRIX_VAL_STEP 16
+#endif
 
 #define NEWFINDER LOPT(LCMD(KC_SPC))            // open new Finder search window
 #define FHOME LCMD(LSFT(KC_H))                  // open new Finder home dir
@@ -413,6 +416,9 @@ typedef union {
     struct {
         bool is_linux_base : 1;
         uint8_t rgb_mode   : 7;
+        uint8_t hue        : 8;
+        uint8_t sat        : 8;
+        uint8_t val        : 8;
     };
 } user_config_t;
 
