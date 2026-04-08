@@ -2334,13 +2334,35 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_LEFT:
     case KC_RIGHT:
         if (record->event.pressed && !globe_pressed) {
-           // check which control is being held and mouse mouse to monitor with CatchMouse
-           if (get_mods() == MOD_BIT(KC_LCTL)) {
-               send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P1)))));
-           }
-           else if (get_mods() == MOD_BIT(KC_RCTL)) {
-               send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P2)))));
-           }
+            uint8_t mods = get_mods();
+            bool is_shifted = (mods & MOD_BIT(KC_LSFT)) || (mods & MOD_BIT(KC_RSFT));
+            // check which control is being held and mouse mouse to monitor with CatchMouse
+            if (mods & MOD_BIT(KC_LCTL)) {
+                if (is_shifted) {
+                    // temp remove shift if applied
+                    set_mods(mods & ~(MOD_BIT(KC_LSFT) | MOD_BIT(KC_RSFT)));
+                    // Opposite: Send P2 instead of P1
+                    send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P2)))));
+                    tap_code(keycode);
+                    set_mods(mods);
+                    return false;
+                } else {
+                    send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P1)))));
+                }
+            }
+            else if (mods & MOD_BIT(KC_RCTL)) {
+                if (is_shifted) {
+                    // temp remove shift if applied
+                    set_mods(mods & ~(MOD_BIT(KC_LSFT) | MOD_BIT(KC_RSFT)));
+                    // Opposite: Send P1 instead of P2
+                    send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P1)))));
+                    tap_code(keycode);
+                    set_mods(mods);
+                    return false;
+                } else {
+                    send_string(SS_LOPT(SS_LCMD(SS_LSFT(SS_TAP(X_P2)))));
+                }
+            }
         }
     case KC_DOWN:
         if (globe_pressed) {
