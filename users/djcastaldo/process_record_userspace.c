@@ -328,6 +328,16 @@ static uint16_t tmux_timer = 0;
 static bool tmux_is_hold = false;
 static bool tmux_active = false;
 static bool tmux_interrupted = false;
+// an alternative for TD(RCMD_OSL) to be used on older qmk like is on the Agar
+static uint16_t rcmd_timer = 1;
+static uint8_t  rcmd_tap_count = 0;
+static bool     rcmd_active = false;
+static bool     rcmd_interrupted = false;
+// an alternative for TD(RALT_OSL) to be used on older qmk like is on the Agar
+static uint16_t ralt_timer = 1;
+static uint8_t  ralt_tap_count = 0;
+static bool     ralt_active = false;
+static bool     ralt_interrupted = false;
 // state tracking for RSFT_TD, a keycode replaced for the RSFT tap dance
 static uint16_t rsft_timer = 0;
 static uint8_t rsft_tap_count = 0;
@@ -604,6 +614,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             process_record(record);
             return false;
         }
+    }
+    // setup for RCMD_TD
+    if (rcmd_active && record->event.pressed && keycode != RCMD_TD) {
+        rcmd_interrupted = true;
+    }
+    // setup for RALT_TD
+    if (ralt_active && record->event.pressed && keycode != RALT_TD) {
+        ralt_interrupted = true;
     }
     // setup for RSFT_TD keycode: detect interruption by other keys
     if (rsft_pressed && record->event.pressed && keycode != RSFT_TD && keycode != KC_MS_BTN1) {
@@ -4532,6 +4550,90 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             tmux_is_hold = false;
         }
         return false;
+    // alternative for TD(RCMD_OSL) to be used on older qmk like the Agar
+    case RCMD_TD:
+        if (record->event.pressed) {
+            rcmd_active = true;
+            
+            if (rcmd_tap_count > 0 && timer_elapsed(rcmd_timer) < TAPPING_TERM) {
+                rcmd_tap_count++;
+                reset_oneshot_layer(); 
+                layer_off(KCTL_LAYR);
+            } else {
+                rcmd_tap_count = 1;
+                rcmd_interrupted = false;
+            }
+            
+            register_code(KC_RCMD); 
+        } else {
+            // RELEASE
+            rcmd_active = false;
+            unregister_code(KC_RCMD);
+            
+            // If we were in EMO_LAYR (Double Hold), turn it off immediately on release
+            if (IS_LAYER_ON(EMO_LAYR) && !is_layer_locked(EMO_LAYR)) {
+                layer_off(EMO_LAYR);
+            }
+
+            if (!rcmd_interrupted) {
+                if (rcmd_tap_count == 1) {
+                    set_oneshot_layer(KCTL_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                } 
+                else if (rcmd_tap_count == 2) {
+                    // INSTANT ONESHOT: This fixes the "waiting" issue
+                    set_oneshot_layer(EMO_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                }
+            }
+            
+            // Start timer for potential next tap (if you wanted a triple tap)
+            // or for matrix_scan cleanup
+            rcmd_timer = timer_read(); 
+        }
+        return false;
+    // alternative for TD(RALT_OSL) to be used on older qmk like the Agar
+    case RALT_TD:
+        if (record->event.pressed) {
+            ralt_active = true;
+            
+            if (ralt_tap_count > 0 && timer_elapsed(ralt_timer) < TAPPING_TERM) {
+                ralt_tap_count++;
+                reset_oneshot_layer(); 
+                layer_off(KCTL_LAYR);
+            } else {
+                ralt_tap_count = 1;
+                ralt_interrupted = false;
+            }
+            
+            register_code(KC_RALT); 
+        } else {
+            // RELEASE
+            ralt_active = false;
+            unregister_code(KC_RALT);
+            
+            // If we were in WSYM_LAYR (Double Hold), turn it off immediately on release
+            if (IS_LAYER_ON(WSYM_LAYR) && !is_layer_locked(WSYM_LAYR)) {
+                layer_off(WSYM_LAYR);
+            }
+
+            if (!ralt_interrupted) {
+                if (ralt_tap_count == 1) {
+                    set_oneshot_layer(KCTL_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                } 
+                else if (ralt_tap_count == 2) {
+                    // INSTANT ONESHOT: This fixes the "waiting" issue
+                    set_oneshot_layer(WSYM_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                }
+            }
+            
+            // Start timer for potential next tap (if you wanted a triple tap)
+            // or for matrix_scan cleanup
+            ralt_timer = timer_read(); 
+        }
+        return false;
     // this is replacement for the RSFT tap dance that works better over RDP connections
     case KC_MS_BTN1:
         // Update your existing tracker
@@ -6721,6 +6823,38 @@ void matrix_scan_user(void) {
     if (tmux_active && !tmux_is_hold && timer_elapsed(tmux_timer) > get_tapping_term(TMUX_LT, NULL)) {
         tmux_is_hold = true;
         layer_on(TMUX_LAYR);
+    }
+    // setup for RCMD_TD
+    if (rcmd_tap_count > 0) {
+        // 1. Handle the "Double Hold" (EMO_LAYR)
+        if (rcmd_tap_count == 2 && rcmd_active && !rcmd_interrupted) {
+            if (!IS_LAYER_ON(EMO_LAYR)) {
+                unregister_code(KC_RCMD);
+                layer_on(EMO_LAYR);
+            }
+        }
+
+        // 2. Handle Sequence Timeout/Cleanup
+        if (!rcmd_active && timer_elapsed(rcmd_timer) > TAPPING_TERM) {
+            rcmd_tap_count = 0;
+            rcmd_interrupted = false;
+        }
+    }
+    // setup for RALT_TD
+    if (ralt_tap_count > 0) {
+        // 1. Handle the "Double Hold" (WSYM_LAYR)
+        if (ralt_tap_count == 2 && ralt_active && !ralt_interrupted) {
+            if (!IS_LAYER_ON(WSYM_LAYR)) {
+                unregister_code(KC_RALT);
+                layer_on(WSYM_LAYR);
+            }
+        }
+
+        // 2. Handle Sequence Timeout/Cleanup
+        if (!ralt_active && timer_elapsed(ralt_timer) > TAPPING_TERM) {
+            ralt_tap_count = 0;
+            ralt_interrupted = false;
+        }
     }
     // setup for RSFT_TD keycode
     // Only fire if the key is released and the tapping term has EXPIRED

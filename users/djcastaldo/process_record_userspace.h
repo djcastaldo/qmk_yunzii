@@ -154,6 +154,8 @@ enum userspace_keycodes {
     VSEMOLR,
     DYN_LT,
     TMUX_LT,
+    RCMD_TD,
+    RALT_TD,
     JIGGLE,
     FJLIGHT,
     HROWLIGHT,
