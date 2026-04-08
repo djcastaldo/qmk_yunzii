@@ -580,13 +580,15 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         // trigger hold immediately if not already active
         if (!dyn_is_hold) {
             dyn_is_hold = true;
-
-            if (user_config.is_linux_base) {
+            if (is_mac_base()) {
+                layer_on(EMO_LAYR);
+            } else if (user_config.is_linux_base) {
                 layer_on(CIRC_LAYR);
             } else {
                 layer_on(VS_LAYR);
             }
-            // block original key
+            // reprocess key 
+            process_record(record);
             return false;
         }
     }
@@ -598,12 +600,13 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (!tmux_is_hold) {
             tmux_is_hold = true;
             layer_on(TMUX_LAYR);
-            // block original key
+            // reprocess key 
+            process_record(record);
             return false;
         }
     }
     // setup for RSFT_TD keycode: detect interruption by other keys
-    if (rsft_pressed && record->event.pressed && keycode != RSFT_TD) {
+    if (rsft_pressed && record->event.pressed && keycode != RSFT_TD && keycode != KC_MS_BTN1) {
         rsft_interrupted = true;
     }
     // permissive hold setup for FN_HHKB keycode
@@ -2095,9 +2098,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         break;
-    case KC_MS_BTN1:
-        ms_btn_held = record->event.pressed;
-        break; // this can continue processing
     case MK_ACCEL0:
         tap_code(record->event.pressed ? KC_MS_ACCEL0 : KC_MS_ACCEL1);
         return false;
@@ -4533,25 +4533,58 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         return false;
     // this is replacement for the RSFT tap dance that works better over RDP connections
+    case KC_MS_BTN1:
+        // Update your existing tracker
+        ms_btn_held = record->event.pressed;
+
+        // HIJACK LOGIC: Check if this is actually a follow-up tap for RSFT_TD
+        if (rsft_tap_count > 0 && timer_elapsed(rsft_timer) < TAPPING_TERM) {
+            if (record->event.pressed) {
+                rsft_tap_count++;
+                
+                // Kill the OneShot so the mouse click doesn't actually register
+                reset_oneshot_layer();
+                clear_oneshot_layer_state(ONESHOT_PRESSED);
+                layer_off(SFT_LAYR);
+                
+                // Update timer for the next potential tap
+                rsft_timer = timer_read(); 
+            }
+            // Block standard processing so the mouse doesn't click during a dance
+            return false; 
+        }
+        // If we aren't in a tap dance, let it continue processing normally
+        break; 
+
     case RSFT_TD:
         if (record->event.pressed) {
             rsft_pressed = true;
-            rsft_interrupted = false;
+            
+            if (rsft_tap_count > 0 && timer_elapsed(rsft_timer) < TAPPING_TERM) {
+                rsft_tap_count++;
+                reset_oneshot_layer();
+                layer_off(SFT_LAYR);
+            } else {
+                rsft_tap_count = 1;
+                rsft_interrupted = false;
+            }
 
             rsft_timer = timer_read();
-            rsft_tap_count++;
 
-            // caps word if both shifts
-            if (get_mods() & MOD_BIT(KC_LSFT)) {
-                caps_word_on();
-            } else {
-                // IMMEDIATE SHIFT
+            if (!(get_mods() & MOD_BIT(KC_LSFT))) {
                 register_code(KC_RSFT);
+            } else {
+                caps_word_on();
             }
         } else {
             rsft_pressed = false;
-            // don't decide here yet
-            // wait for tapping term to finish (handled in matrix_scan)
+            unregister_code(KC_RSFT);
+            rsft_timer = timer_read(); 
+
+            if (rsft_tap_count == 1 && !rsft_interrupted && !is_caps_word_on()) {
+                set_oneshot_layer(SFT_LAYR, ONESHOT_START);
+                clear_oneshot_layer_state(ONESHOT_PRESSED);
+            }
         }
         return false;
     // this is needed for rliable caps word over windows rdp
@@ -6690,49 +6723,37 @@ void matrix_scan_user(void) {
         layer_on(TMUX_LAYR);
     }
     // setup for RSFT_TD keycode
-    if (rsft_tap_count > 0 && !rsft_pressed &&
-        timer_elapsed(rsft_timer) > TAPPING_TERM) {
-
-        switch (rsft_tap_count) {
-
-            case 1:
-                if (!rsft_interrupted) {
-                    // TAP → cancel shift
-                    unregister_code(KC_RSFT);
-
-                    if (!is_caps_word_on()) {
-                        set_oneshot_layer(SFT_LAYR, ONESHOT_START);
-                        clear_oneshot_layer_state(ONESHOT_PRESSED);
-                    }
-                } else {
-                    // HOLD → keep shift until keyup already handled
-                    unregister_code(KC_RSFT);
-                }
-                break;
-
-            case 2:
-                unregister_code(KC_RSFT);
-
-                if (IS_LAYER_ON(WIDE_LAYR)) {
-                    layer_lock_off(WIDE_LAYR);
-                } else {
-                    layer_lock_on(WIDE_LAYR);
-                    wide_firstchar = true;
-                }
-                break;
-
-            case 3:
-                unregister_code(KC_RSFT);
-
-                if (IS_LAYER_ON(CIRC_LAYR)) {
-                    layer_lock_off(CIRC_LAYR);
-                } else {
-                    layer_lock_on(CIRC_LAYR);
-                }
-                break;
+    // Only fire if the key is released and the tapping term has EXPIRED
+    if (rsft_tap_count > 0 && !rsft_pressed && timer_elapsed(rsft_timer) > TAPPING_TERM) {
+        
+        if (rsft_interrupted) {
+            rsft_tap_count = 0;
+            return;
         }
 
-        // reset state
+        // We ONLY handle multi-taps here. 
+        // Tap 1 is ignored because it's already a OneShot.
+        if (rsft_tap_count == 2) {
+            // WIDE_LAYR Toggle
+            if (IS_LAYER_ON(WIDE_LAYR)) {
+                layer_off(WIDE_LAYR);
+                layer_lock_off(WIDE_LAYR);
+            } else {
+                layer_lock_on(WIDE_LAYR);
+                wide_firstchar = true;
+            }
+        } 
+        else if (rsft_tap_count == 3) {
+            // CIRC_LAYR Toggle
+            if (IS_LAYER_ON(CIRC_LAYR)) {
+                layer_off(CIRC_LAYR);
+                layer_lock_off(CIRC_LAYR);
+            } else {
+                layer_lock_on(CIRC_LAYR);
+            }
+        }
+
+        // Sequence is finished, reset everything
         rsft_tap_count = 0;
     }
 
