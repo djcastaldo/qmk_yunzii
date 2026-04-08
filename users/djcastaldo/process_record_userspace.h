@@ -16,6 +16,29 @@
 #define RGB_MATRIX_VAL_STEP 16
 #endif
 
+#ifdef KEYBOARD_IS_AGAR
+#    define tap_dance_action_t qk_tap_dance_action_t
+#    define tap_dance_state_t qk_tap_dance_state_t
+extern uint16_t leader_sequence[5];
+#    define leader_sequence_two_keys(k1, k2) \
+        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && leader_sequence[2] == 0)
+
+#    define leader_sequence_three_keys(k1, k2, k3) \
+        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && leader_sequence[2] == (k3) && leader_sequence[3] == 0)
+
+#    define leader_sequence_four_keys(k1, k2, k3, k4) \
+        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && \
+         leader_sequence[2] == (k3) && leader_sequence[3] == (k4) && leader_sequence[4] == 0)
+
+#    define leader_sequence_five_keys(k1, k2, k3, k4, k5) \
+        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && \
+         leader_sequence[2] == (k3) && leader_sequence[3] == (k4) && \
+         leader_sequence[4] == (k5))
+
+#    define AC_NEXT_KEYBOARD_LAYOUT_SELECT 0x029D
+void rgb_extra_process(LED_TYPE *rgbled);
+#endif
+
 #define NEWFINDER LOPT(LCMD(KC_SPC))            // open new Finder search window
 #define FHOME LCMD(LSFT(KC_H))                  // open new Finder home dir
 #define FAPPS LCMD(LSFT(KC_A))                  // open new Finder apps dir
@@ -100,6 +123,9 @@ enum userspace_keycodes {
     SECRET44,
     SECRET45,
     SECRET46,
+    SECRET47,
+    SECRET48,
+    SECRET49,
     LLOCK,
     BASE_CHG,
     WM_MYCM,
@@ -127,6 +153,7 @@ enum userspace_keycodes {
     WM_SIRCAT,
     VSEMOLR,
     DYN_LT,
+    TMUX_LT,
     JIGGLE,
     FJLIGHT,
     HROWLIGHT,
@@ -143,6 +170,11 @@ enum userspace_keycodes {
     TWINLFT,
     TWINRGT,
     TJPANE,
+    TKC_PGUP,
+    TKC_UP,
+    TKC_LEFT,
+    TKC_DOWN,
+    TKC_RGHT,
     ENC_TMON,
     ENC_TSIZEL,
     ENC_TSIZER,
@@ -361,6 +393,7 @@ enum userspace_keycodes {
     OSL_FKEY,
     OSL_FNSYM,
     RSFT_TD,
+    FN_HHKB,
     SP_RCTL,
     NOKEY,
     CSTMTOG,
@@ -390,7 +423,8 @@ enum {
     RCTL_OSL    = 15,
     MOUSE_ACCEL = 16,
     DYN_LAYR    = 17,
-    CAPSFK_OSL  = 18
+    CAPSFK_OSL  = 18,
+    HHKB_CTRL   = 19
 };
 
 // tap dance setup
@@ -447,7 +481,7 @@ enum {
 extern uint8_t wide_text_mode;
 extern bool wide_firstchar;
 
-extern tap_dance_action_t tap_dance_actions[19];
+extern tap_dance_action_t tap_dance_actions[20];
 // functions associated with all tap dances
 int cur_dance (tap_dance_state_t *state);
 // functions associated with individual tap dances
@@ -489,6 +523,8 @@ void dyn_finished (tap_dance_state_t *state, void *user_data);
 void dyn_reset (tap_dance_state_t *state, void *user_data);
 void capsfk_finished (tap_dance_state_t *state, void *user_data);
 void capsfk_reset (tap_dance_state_t *state, void *user_data);
+void hhkb_finished (tap_dance_state_t *state, void *user_data);
+void hhkb_reset (tap_dance_state_t *state, void *user_data);
 
 extern deferred_token jiggler_token;
 extern report_mouse_t jiggler_report;

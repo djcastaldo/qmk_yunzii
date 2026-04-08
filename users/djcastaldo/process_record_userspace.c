@@ -1,4 +1,4 @@
-// process_record_userspace.c
+
 // @davex 07/30/2025
 // this file is the majority of the shared user code for qmk keyboards
 
@@ -20,6 +20,12 @@
 #include "wireless/transport.h"
 __attribute__((weak)) void bt_transport_enable(bool enable);
 __attribute__((weak)) void p24g_transport_enable(bool enable);
+#endif
+#if defined(KEYBOARD_IS_AGAR)
+#include "host.h"
+#include "led.h"
+#include "rgblight.h"
+#include "process_leader.h"
 #endif
 
 #define BAT_DRAIN_CUTOFF_PERCENT 40
@@ -317,6 +323,11 @@ static uint16_t dyn_timer = 0;
 static bool dyn_is_hold = false;
 static bool dyn_active = false;
 static bool dyn_interrupted = false;
+// and this is an alternative to the tmux LT
+static uint16_t tmux_timer = 0;
+static bool tmux_is_hold = false;
+static bool tmux_active = false;
+static bool tmux_interrupted = false;
 // state tracking for RSFT_TD, a keycode replaced for the RSFT tap dance
 static uint16_t rsft_timer = 0;
 static uint8_t rsft_tap_count = 0;
@@ -366,8 +377,10 @@ void reset_last_activity_timer(void) {
         // some keyboards need a 2nd retry before the color sets correctly
         housekeeping_retry_anim_restore = true;
         #endif
-        #else
+        #elif defined(RGB_MATRIX_ENABLE)
         rgb_matrix_enable_noeeprom();
+        #elif defined(RGBLIGHT_ENABLE)
+        rgblight_enable_noeeprom();
         #endif
         rgb_set_sleep_mode(false);
     }
@@ -381,12 +394,26 @@ void rgb_set_sleep_mode(bool enable) {
 }
 #endif
 
+#ifdef KEYBOARD_IS_AGAR
+void send_launchpad(void) {
+    host_consumer_send(0x029F);
+    wait_ms(10);
+    host_consumer_send(0);
+}
+#endif
+
 bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t bootldr_key_timer = 0;
     #ifdef CONFIG_HAS_FKEY_LAYR
     static uint32_t fkey_timer = 0;
     static uint8_t fkey_tap_count = 0;
     #endif
+    static uint32_t fnhhkb_timer = 0;
+    static uint8_t fnhhkb_tap_count = 0;
+    static bool fnhhkb_is_pressed = false;
+    static bool fnhhkb_interrupted = false;
+    static bool fnhhkb_ctrl_active = false;
+    
     static uint32_t fnsym_timer = 0;
     static uint8_t fnsym_tap_count = 0;
     static uint32_t sp_rctl_timer = 0;
@@ -416,7 +443,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     }
     #endif
     #endif
-
+#if defined(RGB_MATRIX_ENABLE)
     // record key index pressed for rgb reactive changes
     if (enable_keytracker && !is_macro_playing && keycode != QK_LEAD && keycode != KC_NO && keycode != NOKEY) {
         uint8_t key_idx = g_led_config.matrix_co[record->event.key.row][record->event.key.col];
@@ -489,6 +516,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         #endif
     }
+#endif
 
     #if defined(KEYBOARD_IS_WOMIER)
     // if LOCK_LAYR, bypass the wake system entirely
@@ -562,9 +590,36 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             return false;
         }
     }
+    // permissive hold for TMUX_LT
+    if (tmux_active && record->event.pressed && keycode != TMUX_LT) {
+        tmux_interrupted = true;
+
+        // trigger hold immediately if not already active
+        if (!tmux_is_hold) {
+            tmux_is_hold = true;
+            layer_on(TMUX_LAYR);
+            // block original key
+            return false;
+        }
+    }
     // setup for RSFT_TD keycode: detect interruption by other keys
     if (rsft_pressed && record->event.pressed && keycode != RSFT_TD) {
         rsft_interrupted = true;
+    }
+    // permissive hold setup for FN_HHKB keycode
+    if (record->event.pressed) {
+        // permissive hold interrupt
+        if (fnhhkb_tap_count > 0 && keycode != FN_HHKB) {
+            fnhhkb_interrupted = true;
+        }
+
+        // Only trigger Ctrl if we are actually ON the second tap and holding it
+        if (keycode != FN_HHKB && fnhhkb_tap_count == 2 && fnhhkb_is_pressed) {
+            if (!fnhhkb_ctrl_active && (fnhhkb_interrupted || timer_elapsed32(fnhhkb_timer) >= 250)) {
+                register_code(KC_LCTL);
+                fnhhkb_ctrl_active = true;
+            }
+        }
     }
 
     switch (keycode) {
@@ -575,7 +630,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             uint8_t layer = get_highest_layer(layer_state);
             const uint8_t mods = get_mods();
             // prefix to send for the TMUX_LAYR
-            if (layer == TMUX_LAYR) {
+            if (layer == TMUX_LAYR
+                #ifdef CONFIG_HAS_TMUX_LAYR_NAV
+                || layer == TMUX_LAYR_NAV
+                #endif
+                ) {
                 unregister_mods(mods); // temp remove mods
                 tap_code16(C(KC_B));   // send ctrl-b before keycode processing
                 register_mods(mods);   // reapply mods
@@ -649,6 +708,55 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
         else {
             unregister_code(keymap_key_to_keycode(biton32(default_layer_state), record->event.key));
+        }
+        return false;
+    case TKC_PGUP:
+    case TKC_UP:
+    case TKC_LEFT:
+    case TKC_DOWN:
+    case TKC_RGHT:
+        if (record->event.pressed) {
+            const uint8_t mods = get_mods();
+            unregister_mods(mods); // temp remove mods
+            tap_code16(C(KC_B));   // send ctrl-b before keycode processing
+            register_mods(mods);   // reapply mods
+            // send keydown
+            switch (keycode) {
+                case TKC_PGUP:
+                    register_code(KC_PGUP);
+                    break;
+                case TKC_UP:
+                    register_code(KC_UP);
+                    break;
+                case TKC_LEFT:
+                    register_code(KC_LEFT);
+                    break;
+                case TKC_DOWN:
+                    register_code(KC_DOWN);
+                    break;
+                case TKC_RGHT:
+                    register_code(KC_RGHT);
+                    break;
+            }
+        }
+        else {
+            switch (keycode) {
+                case TKC_PGUP:
+                    unregister_code(KC_PGUP);
+                    break;
+                case TKC_UP:
+                    unregister_code(KC_UP);
+                    break;
+                case TKC_LEFT:
+                    unregister_code(KC_LEFT);
+                    break;
+                case TKC_DOWN:
+                    unregister_code(KC_DOWN);
+                    break;
+                case TKC_RGHT:
+                    unregister_code(KC_RGHT);
+                    break;
+            }
         }
         return false;
     case STHRU:
@@ -1586,24 +1694,48 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // get current mod states
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_SHIFT) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_set_speed(RGB_MATRIX_DEFAULT_SPD);
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_set_speed(RGB_MATRIX_DEFAULT_SPD);
+                #endif
             }
             else if ((mods & MOD_MASK_CTRL) && (mods & (MOD_MASK_ALT | MOD_MASK_GUI))) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_mode(RGB_MATRIX_DEFAULT_MODE);
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_mode(RGB_MATRIX_DEFAULT_MODE);
+                #endif
             }
             else if (mods & MOD_MASK_CTRL) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv(RGB_MATRIX_DEFAULT_HUE, rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv(RGB_MATRIX_DEFAULT_HUE, rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                #endif
             }
             else if (mods & (MOD_MASK_ALT | MOD_MASK_GUI)) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv(rgb_matrix_get_hue(), RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv(rgblight_get_hue(), RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                #endif
             }
             // otherwise reset everything
             else {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_mode(RGB_MATRIX_DEFAULT_MODE);
                 rgb_matrix_set_speed(RGB_MATRIX_DEFAULT_SPD);
                 rgb_matrix_sethsv(RGB_MATRIX_DEFAULT_HUE, RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_DEFAULT_VAL);
                 user_brightness = RGB_MATRIX_DEFAULT_VAL;
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_mode(RGB_MATRIX_DEFAULT_MODE);
+                rgblight_set_speed(RGB_MATRIX_DEFAULT_SPD);
+                rgblight_sethsv(RGB_MATRIX_DEFAULT_HUE, RGB_MATRIX_DEFAULT_SAT, RGB_MATRIX_DEFAULT_VAL);
+                user_brightness = RGB_MATRIX_DEFAULT_VAL;
+                #endif 
             }
         }
         return false;
@@ -1618,24 +1750,49 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // get current mod states
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_SHIFT) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_decrease_speed();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_decrease_speed();
+                #endif
             }
             else if ((mods & MOD_MASK_CTRL) && (mods & (MOD_MASK_ALT | MOD_MASK_GUI))) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_step_reverse();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_step_reverse();
+                #endif
             }
             else if (mods & MOD_MASK_CTRL) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_decrease_hue();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_decrease_hue();
+                #endif
             }
             else if (mods & (MOD_MASK_ALT | MOD_MASK_GUI)) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_decrease_sat();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_decrease_sat();
+                #endif
             }
             else {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_decrease_val();
                 user_brightness = rgb_matrix_get_val();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_decrease_val();
+                user_brightness = rgblight_get_val();
+                #endif
             }
         }
         return false;
@@ -1646,24 +1803,49 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             // get current mod states
             const uint8_t mods = get_mods();
             if (mods & MOD_MASK_SHIFT) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_increase_speed();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_increase_speed();
+                #endif
             }
             else if ((mods & MOD_MASK_CTRL) && (mods & (MOD_MASK_ALT | MOD_MASK_GUI))) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_step();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_step();
+                #endif
             }
             else if (mods & MOD_MASK_CTRL) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_increase_hue();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_step();
+                #endif
             }
             else if (mods & (MOD_MASK_ALT | MOD_MASK_GUI)) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
                 rgb_matrix_increase_sat();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+                rgblight_increase_sat();
+                #endif
             }
             else {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_increase_val();
                 user_brightness = rgb_matrix_get_val();
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_increase_val();
+                user_brightness = rgblight_get_val();
+                #endif
             }
         }
         return false;
@@ -1722,7 +1904,11 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case RGB_SPD:
     case RGB_SPI:
         if (record->event.pressed)
+            #if defined(RGB_MATRIX_ENABLE)
             rgb_matrix_sethsv_noeeprom(rgb_matrix_get_hue(), rgb_matrix_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+            #elif defined(RGBLIGHT_ENABLE)
+            rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+            #endif
         break;
     case RGB_VAD:
         if (record->event.pressed)
@@ -1947,6 +2133,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         if (is_mac_base() && record->event.pressed) {
     #ifdef KEYBOARD_IS_WOMIER
             tap_code(KC_F17);
+    #elif KEYBOARD_IS_AGAR
+            send_launchpad();
     #else
             tap_code(KC_LPAD);
     #endif
@@ -1967,6 +2155,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
         }
+    #elif KEYBOARD_IS_AGAR
+        else {
+            if (record->event.pressed) {
+                tap_code16(C(KC_UP));
+            }
+            return false;
+        }
+    
     #endif
         break;
     case KC_LPAD:
@@ -1984,6 +2180,13 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         else {
             if (record->event.pressed) {
                 tap_code(KC_F17);
+            }
+            return false;
+        }
+    #elif KEYBOARD_IS_AGAR
+        else {
+            if (record->event.pressed) {
+                send_launchpad();
             }
             return false;
         }
@@ -4162,6 +4365,94 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    // alternative to tap dance for hhkb style caps layer key that includes KC_LCTL
+    case FN_HHKB:
+    if (record->event.pressed) {
+        fnhhkb_is_pressed = true;
+        fnhhkb_interrupted = false;
+        
+        // 1. Check gap BEFORE resetting timer
+        if (fnhhkb_tap_count > 0 && timer_elapsed32(fnhhkb_timer) < 250) {
+            fnhhkb_tap_count++;
+            // Kill FN_LAYR if we are moving to tap 2 or 3
+            layer_off(FN_LAYR); 
+            if (fnhhkb_tap_count == 3) {
+                // Cancel the OneShot that was armed during the release of Tap 2
+                reset_oneshot_layer();
+            }
+        } else {
+            fnhhkb_tap_count = 1;
+        }
+
+        // 2. Reset timer for current press duration
+        fnhhkb_timer = timer_read32();
+
+        // 3. PRESS ACTIONS (Momentary)
+        if (fnhhkb_tap_count == 1) {
+            layer_on(FN_LAYR); 
+        } else if (fnhhkb_tap_count == 3) {
+            #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_on(FKEY_LAYR);
+            #endif
+        }
+
+    } else {
+        // RELEASE ACTIONS
+        fnhhkb_is_pressed = false; // Mark physical release
+
+        if (fnhhkb_ctrl_active) {
+            unregister_code(KC_LCTL);
+            fnhhkb_ctrl_active = false;
+        }
+
+        uint16_t elapsed = timer_elapsed32(fnhhkb_timer);
+        bool is_hold = fnhhkb_interrupted || (elapsed >= 250);
+
+        switch (fnhhkb_tap_count) {
+            case 1:
+                if (is_hold) {
+                    if (!is_layer_locked(FN_LAYR))
+                        layer_off(FN_LAYR); 
+                } else {
+                    // Single Tap -> FN OneShot
+                    layer_off(FN_LAYR); 
+                    set_oneshot_layer(FN_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                }
+                break;
+
+            case 2:
+                if (!is_hold) {
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    // Double Tap -> FKEY OneShot
+                    set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                    #endif
+                }
+                break;
+
+            case 3:
+                if (is_hold) {
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    if (!is_layer_locked(FKEY_LAYR))
+                        layer_off(FKEY_LAYR); 
+                    #endif
+                } else {
+                    // Triple Tap -> Caps
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    layer_off(FKEY_LAYR);
+                    #endif
+                    tap_code(KC_CAPS);
+                }
+                break;
+        }
+
+        // Reset count if it was a hold or we finished the sequence
+        if (is_hold || fnhhkb_tap_count >= 3) {
+            fnhhkb_tap_count = 0;
+        }
+    }
+    return false;
     // i use left control and right control to switch desktops on left/right monitors, so this lets me use both left/right control with one hand
     // this logic should only be used on a single key
     case SP_RCTL:
@@ -4193,7 +4484,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
-    // this is an alternate way to do the DYN_LAYR tap dance used on windows on linux
+    // this is an alternate way to do the DYN_LAYR tap dance for multiple os 
     case DYN_LT:
         if (record->event.pressed) {
             dyn_timer = timer_read();
@@ -4208,7 +4499,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 tap_code(get_dyn_ltkey());
             } else {
                 // HOLD RELEASE → turn off layer
-                if (user_config.is_linux_base) {
+                if (is_mac_base()) {
+                    if (!is_layer_locked(EMO_LAYR)) layer_off(EMO_LAYR);
+                } else if (user_config.is_linux_base) {
                     if (!is_layer_locked(CIRC_LAYR)) layer_off(CIRC_LAYR);
                 } else {
                     if (!is_layer_locked(VS_LAYR)) layer_off(VS_LAYR);
@@ -4216,6 +4509,27 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
 
             dyn_is_hold = false;
+        }
+        return false;
+    // this is an alternate way to do LT of TMUX_LAYR 
+    case TMUX_LT:
+        if (record->event.pressed) {
+            tmux_timer = timer_read();
+            tmux_is_hold = false;
+            tmux_active = true;
+            tmux_interrupted = false;
+        } else {
+            tmux_active = false;
+
+            if (!tmux_is_hold && !tmux_interrupted && timer_elapsed(tmux_timer) < get_tapping_term(keycode, record)) {
+                // TAP
+                tap_code(KC_TAB);
+            } else if (!is_layer_locked(TMUX_LAYR)) {
+                // HOLD RELEASE → turn off layer
+                layer_off(TMUX_LAYR);
+            }
+
+            tmux_is_hold = false;
         }
         return false;
     // this is replacement for the RSFT tap dance that works better over RDP connections
@@ -4267,6 +4581,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     // also nice to have a way to turn off the animation without turning off the indicators
     case CSTMTOG:
 	if (record->event.pressed) {
+            #if defined(RGB_MATRIX_ENABLE)
             HSV hsv = rgb_matrix_get_hsv();
             if (rgb_matrix_get_val() > 1) {
                 rgb_matrix_sethsv(hsv.h, hsv.s, 1);
@@ -4276,6 +4591,16 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 rgb_matrix_sethsv(hsv.h, hsv.s, RGB_MATRIX_DEFAULT_VAL);
                 user_brightness = RGB_MATRIX_DEFAULT_VAL;
             }
+            #elif defined(RGBLIGHT_ENABLE)
+            if (rgblight_get_val() > 1) {
+                rgblight_sethsv(rgblight_get_hue(), rgblight_get_sat(), 1);
+                user_brightness = 1;
+            }
+            else {
+                rgblight_sethsv(rgblight_get_hue(), rgblight_get_sat(), RGB_MATRIX_DEFAULT_VAL);
+                user_brightness = RGB_MATRIX_DEFAULT_VAL;
+            }
+            #endif
 	}
         return false;
     case KB_RESET:
@@ -4353,6 +4678,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 }
 
 bool process_leader_userspace(void) {
+    uprintf("\n\n[LEADER] >>> process_leader_userspace CALLED <<<\n\n");
     bool continue_leader_process = false;
     if (leader_sequence_two_keys(KC_O, KC_S)) {                   // show current os
         // just show which os is currently set
@@ -4495,11 +4821,18 @@ bool process_leader_userspace(void) {
         }
     }
     else if (leader_sequence_four_keys(KC_L, KC_O, KC_C, KC_K)) { // switch to LOCK_LAYR
+        #if defined(RGB_MATRIX_ENABLE)
         user_config.rgb_mode = rgb_matrix_get_mode();
         HSV hsv = rgb_matrix_get_hsv();
         user_config.hue = hsv.h;
         user_config.sat = hsv.s;
         user_config.val = hsv.v;
+        #elif defined(RGBLIGHT_ENABLE)
+        user_config.rgb_mode = rgblight_get_mode();
+        user_config.hue = rgblight_get_hue();
+        user_config.sat = rgblight_get_sat();
+        user_config.val = rgblight_get_val();
+        #endif
         eeconfig_update_user(user_config.raw);
         layer_on(LOCK_LAYR);
         #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
@@ -4699,6 +5032,12 @@ bool process_leader_userspace(void) {
     else if (leader_sequence_five_keys(KC_G, KC_I, KC_T, KC_C, KC_O)) {  // git checkout .
         SEND_STRING("git checkout .\n");
     }
+    else if (leader_sequence_three_keys(KC_Q, KC_C, KC_A)) {  // qmk compile agar firmware
+        SEND_STRING("qmk compile -j 0 -kb ydkb/agar -km djcastaldo" SS_TAP(X_ENT));
+    }
+    else if (leader_sequence_three_keys(KC_Q, KC_F, KC_A)) {  // qmk create flash udf agar firmware
+        SEND_STRING("~/qmk_public/agar/bin2uf2.sh ~/qmk_public/agar/ydkb_agar_djcastaldo.bin" SS_TAP(X_ENT));
+    }
     else if (leader_sequence_three_keys(KC_Q, KC_C, KC_N)) {  // qmk compile neo65 firmware
         SEND_STRING("qmk compile -j 0 -kb neo/neo65/ansi_072 -km djcastaldo" SS_TAP(X_ENT));
     }
@@ -4775,6 +5114,7 @@ bool process_leader_userspace(void) {
     return continue_leader_process;
 }
 
+#if defined(RGB_MATRIX_ENABLE)
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     uint8_t layer = get_highest_layer(layer_state);
     #ifdef CONFIG_RGB_LAYER_INDICATORS
@@ -6151,18 +6491,203 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     }
     return rgb_matrix_indicators_keymap(led_min, led_max);
 }
+// end of rgb_matrix_indicators_advanced_user() -------------------
+#elif defined(KEYBOARD_IS_AGAR)
+void rgb_matrix_layer_helper(LED_TYPE *rgbled, uint8_t layer) {
+    LED_TYPE color;
+    
+    if (host_keyboard_led_state().caps_lock || is_caps_word_on()) {
+        color = (LED_TYPE){0, 255, 15};
+    }
+    else if (is_in_leader_sequence) {
+        if (!leader_timer || timer_elapsed(leader_timer) > 500) {
+            is_leader_led_on = !is_leader_led_on;
+            leader_timer = timer_read();
+        }
+        if (is_leader_led_on) {
+        #ifdef CONFIG_LEADER_COLORA
+            color = (LED_TYPE){CONFIG_LEADER_COLORA};
+        #endif
+        }
+        else {
+        #ifdef CONFIG_LEADER_COLORB
+            color = (LED_TYPE){CONFIG_LEADER_COLORB};
+        #endif
+        }
+    }
+    // if a leader sequence error occured, blink all leds red
+    else if (is_leader_error) {
+        if (!leader_error_timer || timer_elapsed(leader_error_timer) > 250) {
+            is_leader_error_led_on = !is_leader_error_led_on;
+            leader_error_timer = timer_read();
+        }
+        if (is_leader_error_led_on) {
+            color = (LED_TYPE){0,255,0};
+        }
+    }
+    else if (macro_recording) {
+        // flash the indicator if macro is recording
+        if (timer_elapsed(macro_timer) > 250) {
+            is_macro_led_on = !is_macro_led_on;;
+            macro_timer = timer_read();
+        }
+        if (is_macro_led_on) {
+            color = (LED_TYPE){0,255,0};
+        }
+        else {
+            color = (LED_TYPE){0,0,0};
+        }
+    }
+    else if (os_changed) {
+        if (!os_change_timer) {
+            os_change_timer = timer_read();
+        }
+        color = (LED_TYPE){255,255,255};
+        if (timer_elapsed(os_change_timer) > 300) {
+            color = (LED_TYPE){0,0,0};
+        }
+        if (timer_elapsed(os_change_timer) > 600) {
+            color = (LED_TYPE){255,255,255};
+        }
+        if (timer_elapsed(os_change_timer) > 1800) {
+            os_changed = false;
+            os_change_timer = 0;
+        }
+    }
+    else { 
+        switch (layer) {
+            case MAC_BASE:
+            case WIN_BASE:
+                #ifdef CONFIG_BASE_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_BASE_LAYR_COLOR};
+                #else
+                color = (LED_TYPE){10, 10, 10};    // very dim white
+                #endif
+                break;
+            #ifdef CONFIG_HAS_FKEY_LAYR
+            case FKEY_LAYR:
+                #ifdef CONFIG_FKEY_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_FKEY_LAYR_COLOR};
+                #endif
+                break;
+            #endif
+            case FN_LAYR:
+                #ifdef CONFIG_FN_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_FN_LAYR_COLOR};
+                #endif
+                break;
+            case SFT_LAYR:
+                #ifdef CONFIG_SHIFT_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_SHIFT_LAYR_COLOR};
+                #endif
+                break;
+            #ifdef SFT_TRILAYER
+            case SFT_LAYR_NAV:
+                #ifdef CONFIG_SHIFTB_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_SHIFTB_LAYR_COLOR};
+                #endif
+                break;
+            #endif
+            case KCTL_LAYR:
+                #ifdef CONFIG_KCTL_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_KCTL_LAYR_COLOR};
+                #endif
+                break;
+            case TMUX_LAYR:
+                #ifdef CONFIG_TMUX_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_TMUX_LAYR_COLOR};
+                #endif
+                break;
+            #ifdef TMUX_TRILAYER
+            case TMUX_LAYR_NAV:
+                #ifdef CONFIG_TMUXB_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_TMUXB_LAYR_COLOR};
+                #endif
+                break;
+            #endif
+            case VS_LAYR:
+                #ifdef CONFIG_VS_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_VS_LAYR_COLOR};
+                #endif
+                break;
+            case WSYM_LAYR:
+            case MSYM_LAYR:
+                #ifdef CONFIG_SYM_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_SYM_LAYR_COLOR};
+                #endif
+                break;
+            case WIDE_LAYR:
+                #ifdef CONFIG_WIDE_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_WIDE_LAYR_COLOR};
+                #endif
+                break;
+            case CIRC_LAYR:
+                #ifdef CONFIG_CIRC_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_CIRC_LAYR_COLOR};
+                #endif
+                break;
+            case EMO_LAYR:
+                #ifdef CONFIG_EMO_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_EMO_LAYR_COLOR};
+                #endif
+                break;
+            case LOCK_LAYR:
+                color = (LED_TYPE){0,0,0};
+                break;
+            default:
+                #ifdef CONFIG_DEFUALT_LAYR_COLOR
+                color = (LED_TYPE){CONFIG_DEFUALT_LAYR_COLOR};
+                #endif
+                break;
+        }
+        if (is_layer_locked(layer)) {
+            if (!layer_lock_timer || timer_elapsed(layer_lock_timer) > 1000) {
+                is_layer_lock_led_on = !is_layer_lock_led_on;
+                layer_lock_timer = timer_read();
+            }
+            if (is_layer_lock_led_on) {
+                color = (LED_TYPE){255,255,255};
+            }
+            else if ((timer_elapsed(layer_lock_timer) > 200 && timer_elapsed(layer_lock_timer) < 400) ||
+                     (timer_elapsed(layer_lock_timer) > 600)) {
+                color = (LED_TYPE){255,255,255}; // white alternate with layer color
+            }
+        }
+    }
+
+    //for (uint8_t i = 0; i < RGBLED_NUM; i++) {
+    //    rgbled[i] = color;
+    //}
+    rgbled[0] = color;
+}
+void rgb_extra_process(LED_TYPE *rgbled) {
+    uint8_t layer = get_highest_layer(layer_state);
+
+    rgb_matrix_layer_helper(rgbled, layer);
+
+}
+#endif
 
 void matrix_scan_user(void) {
+    #if defined(RGBLIGHT_ENABLE)
+    rgblight_set();
+    #endif
     // check for and run active sequences
     process_key_sequence();
     // check for a dynamic layer key hold
     if (dyn_active && !dyn_is_hold && timer_elapsed(dyn_timer) > get_tapping_term(DYN_LT, NULL)) {
         dyn_is_hold = true;
-        if (user_config.is_linux_base) {
+        if (is_mac_base()) {
+            layer_on(EMO_LAYR);
+        } else if (user_config.is_linux_base) {
             layer_on(CIRC_LAYR);
         } else {
             layer_on(VS_LAYR);
         }
+    }
+    if (tmux_active && !tmux_is_hold && timer_elapsed(tmux_timer) > get_tapping_term(TMUX_LT, NULL)) {
+        tmux_is_hold = true;
+        layer_on(TMUX_LAYR);
     }
     // setup for RSFT_TD keycode
     if (rsft_tap_count > 0 && !rsft_pressed &&
@@ -6231,8 +6756,10 @@ void matrix_scan_user(void) {
         if (!rgb_reached_timeout && timer_elapsed32(last_activity_timer) > CONFIG_CUSTOM_SLEEP_TIMEOUT) {
             #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
             rgb_matrix_sethsv_noeeprom(0, 0, 1);
-            #else
+            #elif defined(RGB_MATRIX_ENABLE)
             rgb_matrix_disable_noeeprom();
+            #elif defined(RGBLIGHT_ENABLE)
+            rgblight_disable_noeeprom();
             #endif
             warning_active = false;
             rgb_set_sleep_mode(true);
@@ -6247,7 +6774,7 @@ void matrix_scan_user(void) {
             wait_ms(50);
             #endif
             bt_is_on = false;
-            #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY) && !defined(KEYBOARD_IS_NEO)
+            #if !defined(KEYBOARD_IS_KEYCHRON) && !defined(KEYBOARD_IS_LEMOKEY) && !defined(KEYBOARD_IS_NEO) && !defined(KEYBOARD_IS_AGAR)
             if (get_transport() != TRANSPORT_USB)
                 suspend_power_down();
             #endif
@@ -6452,6 +6979,7 @@ void suspend_power_down_user(void) {
     if (battery_drain_mode) {
         return;  // block suspend behavior
     }
+    #if defined(RGB_MATRIX_ENABLE)
     if (rgb_matrix_is_enabled()) {
         #if defined(KEYBOARD_IS_KEYCHRON) || defined(KEYBOARD_IS_LEMOKEY)
         dprintf("rgb_matrix_sethsv 1 val\n");
@@ -6461,6 +6989,13 @@ void suspend_power_down_user(void) {
         rgb_matrix_disable_noeeprom();
         #endif
     }
+    #elif defined(RGBLIGHT_ENABLE)
+    if (rgblight_is_enabled()) {
+        dprintf("rgblight_disable\n");
+        rgblight_disable_noeeprom();
+    }
+    #endif
+    
     rgb_indicators_enabled = false;
     #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
     lock_anim_active = false;
@@ -6553,6 +7088,9 @@ static inline bool battery_at_or_below_drain_cutoff(void) {
 
 // --- housekeeping detect suspend ---
 void housekeeping_task_user(void) {
+    #ifdef KEYBOARD_IS_AGAR
+    leader_task();
+    #endif
     uint32_t idle_ms_for_suspend = 600000;
     #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
     if (CONFIG_CUSTOM_SLEEP_TIMEOUT < 600000) {
@@ -6598,7 +7136,11 @@ void housekeeping_task_user(void) {
             suspend_wakeup_init_user();
             #endif
         }
+        #if defined(RGB_MATRIX_ENABLE)
         rgb_matrix_reload_from_eeprom(); // restore saved mode & brightness
+        #elif defined(RGBLIGHT_ENABLE)
+        rgblight_reload_from_eeprom(); // restore saved mode & brightness
+        #endif
         was_suspended = false;
         power_down_ran = false; // reset
         dprintf("housekeeping: wake path complete\n");
@@ -6614,6 +7156,7 @@ void housekeeping_task_user(void) {
             rgb_matrix_enable_noeeprom();
         }
         #endif
+        #if defined(RGB_MATRIX_ENABLE)
         if (!rgb_matrix_is_enabled()) {
             dprintf("housekeeping: enabling rgb_matrix\n");
             rgb_matrix_enable_noeeprom();
@@ -6622,6 +7165,16 @@ void housekeeping_task_user(void) {
             dprintf("housekeeping: set_animation_if_lock_layr()\n");
             set_animation_if_lock_layr();
         }
+        #elif defined(RGBLIGHT_ENABLE)
+        if (!rgblight_is_enabled()) {
+            dprintf("housekeeping: enabling rgblight\n");
+            rgblight_enable_noeeprom();
+        }
+        if (rgblight_is_enabled()) {
+            dprintf("housekeeping: set_animation_if_lock_layr()\n");
+            set_animation_if_lock_layr();
+        }
+        #endif
         // if retries are needed, loop through this some more times
         // some keyboards (keychron) need the retries to take the setting after a deep sleep
         static uint8_t retries = 6; // this will cause the set_animation to run at start, 1, 2, 3, 4, 5, 6 seconds out
@@ -6653,6 +7206,7 @@ void housekeeping_task_user(void) {
             warning_led_state = !warning_led_state;
         }
 
+        #if defined(RGB_MATRIX_ENABLE)
         if (warning_active) {
             if (warning_led_state) {
                 rgb_matrix_set_color(I_ESC, RGB_RED);
@@ -6667,6 +7221,7 @@ void housekeeping_task_user(void) {
                 }
             }
         }
+        #endif
     #endif
 
     // this keeps keychron from turning off rgb in battery drain mode
@@ -6681,14 +7236,24 @@ void housekeeping_task_user(void) {
 void set_animation_if_lock_layr(void) {
     dprintf("set_animation_if_lock_layr()\n");
     if (get_highest_layer(layer_state) == LOCK_LAYR) {
+        #if defined(RGB_MATRIX_ENABLE)
         if (rgb_matrix_get_mode() != lock_animation) {
             dprintf("set_animation_if_lock_layr(): set animation\n");
             rgb_matrix_mode_noeeprom(lock_animation);
         }
+        #elif defined(RGBLIGHT_ENABLE)
+        if (rgblight_get_mode() != lock_animation) {
+            rgblight_mode_noeeprom(lock_animation);
+        }
+        #endif
         #ifdef CONFIG_LOCK_ANIMATION_COLOR_HSV
         uint32_t set_anim_color_callback(uint32_t trigger_time, void* cb_arg) {
             dprintf("set_animation_if_lock_layr(): set color\n");
+            #if defined(RGB_MATRIX_ENABLE)
             rgb_matrix_sethsv_noeeprom(CONFIG_LOCK_ANIMATION_COLOR_HSV);
+            #elif defined(RGBLIGHT_ENABLE)
+            rgblight_sethsv_noeeprom(CONFIG_LOCK_ANIMATION_COLOR_HSV);
+            #endif
             return 0;
         }
         anim_color_token = defer_exec(250, set_anim_color_callback, NULL);
@@ -6800,6 +7365,10 @@ static tap dyn_tap_state = {
     .state = 0
 };
 static tap capsfk_tap_state = {
+    .is_press_action = true,
+    .state = 0
+};
+static tap hhkb_tap_state = {
     .is_press_action = true,
     .state = 0
 };
@@ -7145,12 +7714,21 @@ void kbunlock_finished (tap_dance_state_t *state, void *user_data) {
             #endif
             delay_time = delay_time + 50;
             uint32_t matrix_mode_callback(uint32_t trigger_time, void* cb_arg) {
+                #if defined(RGB_MATRIX_ENABLE)
                 rgb_matrix_mode_noeeprom(user_config.rgb_mode);
                 rgb_matrix_sethsv_noeeprom(
                     user_config.hue,
                     user_config.sat,
                     user_config.val
                 );
+                #elif defined(RGBLIGHT_ENABLE)
+                rgblight_mode_noeeprom(user_config.rgb_mode);
+                rgblight_sethsv_noeeprom(
+                    user_config.hue,
+                    user_config.sat,
+                    user_config.val
+                );
+                #endif
                 return 0;
             }
             defer_exec(delay_time, matrix_mode_callback, NULL);
@@ -7928,8 +8506,81 @@ void capsfk_each(tap_dance_state_t *state, void *user_data) {
     }
 }
 
+// hhkb_ctrl tap dance key function
+void hhkb_finished (tap_dance_state_t *state, void *user_data) {
+    hhkb_tap_state.state = cur_dance(state);
+    switch (hhkb_tap_state.state) {
+        case SINGLE_TAP:
+            #if defined(KEYBOARD_IS_WOMIER) || defined(KEYBOARD_IS_BRIDGE)
+            if (is_mac_base()) {
+                if (layer_state_is(CLCK_LAYR)) {
+                    layer_off(CLCK_LAYR);
+                } else {
+                    layer_on(CLCK_LAYR);
+                }
+            }
+            else {
+                tap_code(KC_CAPS);
+            }
+            #else
+            tap_code(KC_CAPS);
+            #endif
+            break;
+        case SINGLE_HOLD:
+            layer_on(FN_LAYR);
+            break;
+        case DOUBLE_TAP:
+            layer_off(FN_LAYR);
+            set_oneshot_layer(FN_LAYR, ONESHOT_START);
+            clear_oneshot_layer_state(ONESHOT_PRESSED);
+            break;
+        case DOUBLE_HOLD:
+            register_code(KC_LCTL);
+            break;
+        case TRIPLE_TAP:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_off(FKEY_LAYR);
+            set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
+            clear_oneshot_layer_state(ONESHOT_PRESSED);
+        #endif
+            break;
+        case TRIPLE_HOLD:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_on(FKEY_LAYR);
+        #endif
+            break;
+    }
+}
+
+void hhkb_reset (tap_dance_state_t *state, void *user_data) {
+    //if the key was held down and now is released then switch off the layer
+    switch (hhkb_tap_state.state) {
+        case SINGLE_TAP:
+            break;
+        case SINGLE_HOLD:
+            if (!is_layer_locked(FN_LAYR)) {
+                layer_off(FN_LAYR);
+            }
+            break;
+        case DOUBLE_TAP:
+            break;
+        case DOUBLE_HOLD:
+            unregister_code(KC_LCTL);
+        case TRIPLE_TAP:
+            break;
+        case TRIPLE_HOLD:
+        #ifdef CONFIG_HAS_FKEY_LAYR
+            if (!is_layer_locked(FKEY_LAYR)) {
+                layer_off(FKEY_LAYR);
+            }
+        #endif
+            break;
+    }
+    hhkb_tap_state.state = 0;
+}
+
 // associate the tap dance keys with their funcitons
-tap_dance_action_t tap_dance_actions[19] = {
+tap_dance_action_t tap_dance_actions[20] = {
     [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
     [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
     [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ralt_finished, ralt_reset),
@@ -7948,7 +8599,8 @@ tap_dance_action_t tap_dance_actions[19] = {
     [RCTL_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, rctl_finished, rctl_reset),
     [MOUSE_ACCEL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, macl_finished, macl_reset),
     [DYN_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, dyn_finished, dyn_reset),
-    [CAPSFK_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(capsfk_each, capsfk_finished, capsfk_reset)
+    [CAPSFK_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(capsfk_each, capsfk_finished, capsfk_reset),
+    [HHKB_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, hhkb_finished, hhkb_reset)
 };
 
 // accent tap dances should give a little bit longer to see the leds
@@ -7958,7 +8610,9 @@ uint16_t get_tapping_term(uint16_t keycode, keyrecord_t *record) {
         case DYN_LT:
             return TAPPING_TERM - 100;
         case LT(TMUX_LAYR,KC_TAB):
+        case TMUX_LT:
         case TD(CAPSFK_OSL):
+        case TD(HHKB_CTRL):
         case TD(LGUI_OSL):
         case TD(RCMD_OSL):
         case TD(RALT_OSL):
@@ -8316,6 +8970,9 @@ uint32_t wireless_mode_callback(uint32_t trigger_time, void *cb_arg) {
 // setup to store vars when macro recording starts or ends. then can flash some rgb
 #if defined(KEYBOARD_IS_BRIDGE) || defined(KEYBOARD_IS_YUNZII) || defined(KEYBOARD_IS_WOMIER)
 bool dynamic_macro_record_start_user(int8_t direction) {
+#elif defined(KEYBOARD_IS_AGAR)
+void dynamic_macro_record_start_user(void) {
+    uint8_t direction = 0;
 #else
 void dynamic_macro_record_start_user(int8_t direction) {
 #endif
@@ -8378,6 +9035,12 @@ void leader_start_user(void) {
 
 // fade the rgb animation when layer is changed so that the layer keys are more prominent
 layer_state_t layer_state_set_user(layer_state_t state) {
+    #ifdef SFT_TRILAYER
+    state = update_tri_layer_state(state, SFT_LOWER, SFT_UPPER, SFT_ADJUST);
+    #endif
+    #ifdef TMUX_TRILAYER
+    state = update_tri_layer_state(state, TMUX_LOWER, TMUX_UPPER, TMUX_ADJUST);
+    #endif
     uint8_t layer = get_highest_layer(state);
 
     if (layer == LOCK_LAYR
@@ -8396,8 +9059,12 @@ layer_state_t layer_state_set_user(layer_state_t state) {
         }
     }
 
+    #if defined(RGB_MATRIX_ENABLE)
     HSV hsv = rgb_matrix_get_hsv();
     rgb_matrix_sethsv_noeeprom(hsv.h, hsv.s, effective);
+    #elif defined(RGBLIGHT_ENABLE)
+    rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), effective);
+    #endif
 
     return state;
 }
@@ -8555,7 +9222,18 @@ void keyboard_post_init_user(void) {
     deferred_indicator_timer = timer_read32() + 2000;
     // and set this so layers switch correctly on user's first os change
     layer_state_set(default_layer_state);
+    #if defined(RGB_MATRIX_ENABLE)
     rgb_matrix_mode(user_config.rgb_mode);
+    #elif defined(RGBLIGHT_ENABLE)
+    rgblight_mode(user_config.rgb_mode);
+    #endif
+    #ifdef KEYBOARD_IS_AGAR
+      // Customise these values to desired behaviour
+      debug_enable=true;
+      debug_matrix=true;
+      debug_keyboard=true;
+      //debug_mouse=true;
+    #endif
 }
 
 void eeconfig_init_user(void) {  // EEPROM is getting reset!

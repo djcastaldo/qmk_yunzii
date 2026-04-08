@@ -25,6 +25,21 @@
 #pragma message \
     "Custom Layer Lock loaded"
 
+#ifndef QK_MOMENTARY_GET_LAYER
+#    define QK_MOMENTARY_GET_LAYER(kc) ((kc) & 0xFF)
+#endif
+
+#ifndef QK_LAYER_TAP_TOGGLE_GET_LAYER
+#    define QK_LAYER_TAP_TOGGLE_GET_LAYER(kc) ((kc) & 0xFF)
+#endif
+
+#ifndef QK_LAYER_MOD_GET_LAYER
+#    define QK_LAYER_MOD_GET_LAYER(kc) ((kc) & 0xFF)
+#endif
+
+#ifndef QK_LAYER_TAP_GET_LAYER
+#    define QK_LAYER_TAP_GET_LAYER(kc) ((kc) & 0xFF)
+#endif
 
 // The current lock state. The kth bit is on if layer k is locked.
 static layer_state_t locked_layers = 0;
