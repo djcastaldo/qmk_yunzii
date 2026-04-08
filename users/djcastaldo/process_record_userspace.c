@@ -406,7 +406,7 @@ void rgb_set_sleep_mode(bool enable) {
 
 #ifdef KEYBOARD_IS_AGAR
 void send_launchpad(void) {
-    host_consumer_send(0x029F);
+    host_consumer_send(0x02A0);
     wait_ms(10);
     host_consumer_send(0);
 }
