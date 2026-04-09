@@ -330,11 +330,13 @@ static bool tmux_active = false;
 static bool tmux_interrupted = false;
 // an alternative for TD(RCMD_OSL) to be used on older qmk like is on the Agar
 static uint16_t rcmd_timer = 1;
+static uint16_t rcmd_press_timer = 0;
 static uint8_t  rcmd_tap_count = 0;
 static bool     rcmd_active = false;
 static bool     rcmd_interrupted = false;
 // an alternative for TD(RALT_OSL) to be used on older qmk like is on the Agar
 static uint16_t ralt_timer = 1;
+static uint16_t ralt_press_timer = 0;
 static uint8_t  ralt_tap_count = 0;
 static bool     ralt_active = false;
 static bool     ralt_interrupted = false;
@@ -4576,6 +4578,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case RCMD_TD:
         if (record->event.pressed) {
             rcmd_active = true;
+            rcmd_press_timer = timer_read();
             
             if (rcmd_tap_count > 0 && timer_elapsed(rcmd_timer) < TAPPING_TERM) {
                 rcmd_tap_count++;
@@ -4597,7 +4600,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 layer_off(EMO_LAYR);
             }
 
-            if (!rcmd_interrupted) {
+            if (!rcmd_interrupted && timer_elapsed(rcmd_press_timer) < TAPPING_TERM) {
                 if (rcmd_tap_count == 1) {
                     set_oneshot_layer(KCTL_LAYR, ONESHOT_START);
                     clear_oneshot_layer_state(ONESHOT_PRESSED);
@@ -4609,8 +4612,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 }
             }
             
-            // Start timer for potential next tap (if you wanted a triple tap)
-            // or for matrix_scan cleanup
             rcmd_timer = timer_read(); 
         }
         return false;
@@ -4618,6 +4619,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case RALT_TD:
         if (record->event.pressed) {
             ralt_active = true;
+            ralt_press_timer = timer_read();
             
             if (ralt_tap_count > 0 && timer_elapsed(ralt_timer) < TAPPING_TERM) {
                 ralt_tap_count++;
@@ -4639,7 +4641,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 layer_off(WSYM_LAYR);
             }
 
-            if (!ralt_interrupted) {
+            if (!ralt_interrupted && timer_elapsed(ralt_press_timer) < TAPPING_TERM) {
                 if (ralt_tap_count == 1) {
                     set_oneshot_layer(KCTL_LAYR, ONESHOT_START);
                     clear_oneshot_layer_state(ONESHOT_PRESSED);
