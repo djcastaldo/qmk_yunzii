@@ -128,6 +128,9 @@ const uint8_t vs_delay = CONFIG_VS_LAYR_SEND_STRING_DELAY;
 const uint8_t vs_delay = 0;
 #endif
 static uint8_t user_brightness = RGB_MATRIX_DEFAULT_VAL;
+#ifdef KEYBOARD_IS_AGAR
+static bool agar_caps_active = false;
+#endif
 
 // which keycode does DYN_LT send on a tap?
 __attribute__((weak)) uint16_t get_dyn_ltkey(void) {
@@ -4485,6 +4488,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     layer_off(FKEY_LAYR);
                     #endif
                     tap_code(KC_CAPS);
+                    #ifdef KEYBOARD_IS_AGAR
+                    agar_caps_active = !agar_caps_active;
+                    #endif
                 }
                 break;
         }
@@ -4802,6 +4808,13 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
          }
          break;
     #endif
+#endif
+#ifdef KEYBOARD_IS_AGAR
+    case KC_CAPS:
+        if (record->event.pressed) {
+            agar_caps_active = !agar_caps_active;
+        }
+        break;
 #endif
 #ifndef CONFIG_HAS_LLOCK_KEY
     case KC_ENT:
@@ -6655,7 +6668,7 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
 void rgb_matrix_layer_helper(LED_TYPE *rgbled, uint8_t layer) {
     LED_TYPE color;
     
-    if (host_keyboard_led_state().caps_lock || is_caps_word_on()) {
+    if (agar_caps_active || is_caps_word_on()) {
         color = (LED_TYPE){0, 255, 15};
     }
     else if (is_in_leader_sequence) {
@@ -7570,6 +7583,9 @@ void caps_finished (tap_dance_state_t *state, void *user_data) {
             }
             #else
             tap_code(KC_CAPS);
+            #ifdef KEYBOARD_IS_AGAR
+            agar_caps_active = !agar_caps_active;
+            #endif
             #endif
             break;
         case SINGLE_HOLD:
@@ -8630,6 +8646,9 @@ void capsfk_finished (tap_dance_state_t *state, void *user_data) {
             }
             #else
             tap_code(KC_CAPS);
+            #ifdef KEYBOARD_IS_AGAR
+            agar_caps_active = !agar_caps_active;
+            #endif
             #endif
             break;
         case SINGLE_HOLD:
@@ -8703,6 +8722,9 @@ void hhkb_finished (tap_dance_state_t *state, void *user_data) {
             }
             #else
             tap_code(KC_CAPS);
+            #ifdef KEYBOARD_IS_AGAR
+            agar_caps_active = !agar_caps_active;
+            #endif
             #endif
             break;
         case SINGLE_HOLD:
