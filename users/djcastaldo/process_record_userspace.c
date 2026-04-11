@@ -127,9 +127,11 @@ const uint8_t vs_delay = CONFIG_VS_LAYR_SEND_STRING_DELAY;
 #else
 const uint8_t vs_delay = 0;
 #endif
-static uint8_t user_brightness = RGB_MATRIX_DEFAULT_VAL;
 #ifdef KEYBOARD_IS_AGAR
 static bool agar_caps_active = false;
+static uint8_t user_brightness = 0;
+#else
+static uint8_t user_brightness = RGB_MATRIX_DEFAULT_VAL;
 #endif
 
 // which keycode does DYN_LT send on a tap?
@@ -4850,7 +4852,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 }
 
 bool process_leader_userspace(void) {
-    uprintf("\n\n[LEADER] >>> process_leader_userspace CALLED <<<\n\n");
+    dprintf("\n\n[LEADER] >>> process_leader_userspace CALLED <<<\n\n");
     bool continue_leader_process = false;
     if (leader_sequence_two_keys(KC_O, KC_S)) {                   // show current os
         // just show which os is currently set
@@ -6827,10 +6829,62 @@ void rgb_matrix_layer_helper(LED_TYPE *rgbled, uint8_t layer) {
         }
     }
 
-    //for (uint8_t i = 0; i < RGBLED_NUM; i++) {
-    //    rgbled[i] = color;
-    //}
-    rgbled[0] = color;
+    #ifdef CONFIG_LOCK_ANIMATION_TIMEOUT
+    // check if lock animation is on and have it timeout
+    if (lock_anim_active && timer_elapsed32(last_activity_timer) > CONFIG_LOCK_ANIMATION_TIMEOUT) {
+        #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+        last_activity_timer = timer_read32() - CONFIG_CUSTOM_SLEEP_TIMEOUT + CONFIG_CUSTOM_SLEEP_WARNING;
+        #else
+        dprintf("rgmlight_disable\n");
+        rgblight_disable_noeeprom();
+        rgb_indicators_enabled = false;
+        #endif
+        lock_anim_active = false;
+    }
+    #endif
+    if (deferred_indicator_enable && timer_expired32(timer_read32(), deferred_indicator_timer)) {
+        rgb_indicators_enabled = true;
+        deferred_indicator_enable = false;
+    }
+    #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
+    if (warning_active) {
+        if (warning_led_state) {
+            for (uint8_t i = 0; i < RGBLED_NUM; i++) {
+                rgbled[i] = (LED_TYPE){0,255,0};
+            }
+        } else {
+            for (uint8_t i = 0; i < RGBLED_NUM; i++) {
+                rgbled[i] = (LED_TYPE){0,0,0};
+            }
+        }
+    }
+    else 
+    #endif
+    if (rgb_indicators_enabled) {
+        rgbled[0] = color;
+        if (layer == LOCK_LAYR) {
+            // set up the layer key blinking indicator
+            if (!layer_timer) {
+                is_led_on = true;
+                layer_timer = timer_read();
+            }
+            // toggle an led light every 500 ms while the layer is active
+            else if (timer_elapsed(layer_timer) > 500)
+            {
+                is_led_on = !is_led_on;
+                layer_timer = timer_read();
+            }
+            // LOCK_LAYR can flash underglow red
+            for (uint8_t i = 1; i < RGBLED_NUM; i++) {
+                rgbled[i] = (is_led_on) ? (LED_TYPE){0,255,0} : (LED_TYPE){0,0,0};
+            }
+        }
+    }
+    else {
+        for (uint8_t i = 0; i < RGBLED_NUM; i++) {
+            rgbled[i] = (LED_TYPE){0,0,0};
+        }
+    }
 }
 void rgb_extra_process(LED_TYPE *rgbled) {
     uint8_t layer = get_highest_layer(layer_state);
@@ -9429,11 +9483,7 @@ void keyboard_post_init_user(void) {
     rgblight_mode(user_config.rgb_mode);
     #endif
     #ifdef KEYBOARD_IS_AGAR
-      // Customise these values to desired behaviour
-      debug_enable=true;
-      debug_matrix=true;
-      debug_keyboard=true;
-      //debug_mouse=true;
+    rgblight_sethsv_noeeprom(rgblight_get_hue(), rgblight_get_sat(), 0); // startup with underglow at 0 since it is barely visible anyway
     #endif
 }
 
