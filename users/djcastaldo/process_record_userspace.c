@@ -350,6 +350,12 @@ static uint16_t rsft_timer = 0;
 static uint8_t rsft_tap_count = 0;
 static bool rsft_pressed = false;
 static bool rsft_interrupted = false;
+// state trackign for FN_HHKB, used in multiple functions
+static uint32_t fnhhkb_timer = 0;
+static uint8_t fnhhkb_tap_count = 0;
+static bool fnhhkb_is_pressed = false;
+static bool fnhhkb_interrupted = false;
+static bool fnhhkb_ctrl_active = false;
 // program vars for macros
 static const char poc_firstname[] PROGMEM = "Firstname";
 static const char poc_lastname[]  PROGMEM = "Lastname";
@@ -425,11 +431,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     static uint32_t fkey_timer = 0;
     static uint8_t fkey_tap_count = 0;
     #endif
-    static uint32_t fnhhkb_timer = 0;
-    static uint8_t fnhhkb_tap_count = 0;
-    static bool fnhhkb_is_pressed = false;
-    static bool fnhhkb_interrupted = false;
-    static bool fnhhkb_ctrl_active = false;
     
     static uint32_t fnsym_timer = 0;
     static uint8_t fnsym_tap_count = 0;
@@ -643,7 +644,7 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 
         // Only trigger Ctrl if we are actually ON the second tap and holding it
         if (keycode != FN_HHKB && fnhhkb_tap_count == 2 && fnhhkb_is_pressed) {
-            if (!fnhhkb_ctrl_active && (fnhhkb_interrupted || timer_elapsed32(fnhhkb_timer) >= 250)) {
+            if (!fnhhkb_ctrl_active) {
                 register_code(KC_LCTL);
                 fnhhkb_ctrl_active = true;
             }
@@ -6980,6 +6981,13 @@ void matrix_scan_user(void) {
 
         // Sequence is finished, reset everything
         rsft_tap_count = 0;
+    }
+    // setup to activate KC_LCTL if FN_HHKB is doing a double-hold (so can work with a mouse-click)
+    if (fnhhkb_is_pressed && fnhhkb_tap_count == 2) {
+        if (!fnhhkb_ctrl_active && timer_elapsed32(fnhhkb_timer) >= 250) {
+            register_code(KC_LCTL);
+            fnhhkb_ctrl_active = true;
+        }
     }
 
 #ifdef CONFIG_CUSTOM_SLEEP_TIMEOUT
