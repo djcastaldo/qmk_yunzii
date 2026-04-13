@@ -8842,8 +8842,120 @@ void hhkb_reset (tap_dance_state_t *state, void *user_data) {
     hhkb_tap_state.state = 0;
 }
 
+// functions for cycling superscript numbers 1 2 3 
+// Array index 0-8 is digits 1-9. Index 9 is digit 0.
+// [i][0] = Superscript (Normal), [i][1] = Subscript (Shifted)
+const char* num_hex_mac_linux[10][2] PROGMEM = {
+    {"00b9", "2081"}, // 1
+    {"00b2", "2082"}, // 2
+    {"00b3", "2083"}, // 3
+    {"2074", "2084"}, // 4
+    {"2075", "2085"}, // 5
+    {"2076", "2086"}, // 6
+    {"2077", "2087"}, // 7
+    {"2078", "2088"}, // 8
+    {"2079", "2089"}, // 9
+    {"2070", "2080"}  // 0
+};
+
+// Windows Alt Codes (Subscripts don't have standard legacy Alt codes, so we'll fallback)
+const char* num_dec_win[10] PROGMEM = {"0185", "0178", "0179", "", "", "", "", "", "", ""};
+
+void sup_each(tap_dance_state_t *state, void *user_data) {
+    int i = (state->count - 1) % 10;
+
+    if (state->count > 1) {
+        if (is_mac_base()) {
+            unregister_code(KC_LOPT);
+            tap_code(KC_BSPC);
+            register_code(KC_LOPT);
+        } else {
+            tap_code(KC_BSPC);
+        } 
+        wait_ms(20); 
+    }
+
+    // Retrieve the string pointers from PROGMEM
+    // we use [i][0] for normal, [i][1] for shifted
+    char* normal_hex  = (char*)pgm_read_ptr(&(num_hex_mac_linux[i][0]));
+    char* shifted_hex = (char*)pgm_read_ptr(&(num_hex_mac_linux[i][1]));
+    
+    if (is_mac_base()) {
+        symbol_key_mac(normal_hex, shifted_hex);
+    } 
+    else if (user_config.is_linux_base) {
+        symbol_key_linux(normal_hex, shifted_hex);
+    } 
+    else {
+        // WINDOWS LOGIC
+        // Check if Shift is held (get_mods() & MOD_MASK_SHIFT)
+        if (!(get_mods() & MOD_MASK_SHIFT) && i <= 2) {
+            // Unshifted 1, 2, or 3: Use Legacy Alt Codes
+            char* legacy_dec = (char*)pgm_read_ptr(&(num_dec_win[i])); 
+            symbol_key_win(legacy_dec, legacy_dec);
+        } 
+        else {
+            // Shifted OR digits 0, 4-9: Use Alt+X logic
+            const char* target_hex = (get_mods() & MOD_MASK_SHIFT) ? shifted_hex : normal_hex;
+            send_string(target_hex);
+            register_code(KC_LALT);
+            tap_code(KC_X);
+            unregister_code(KC_LALT);
+        }
+    }
+}
+
+// and another simple tap dance for cycling through suits
+// Arrays for the 4 suits: Hearts, Diamonds, Clubs, Spades
+// Array 0 = Normal (Filled), Array 1 = Shifted (Outline)
+const char* suit_hex_mac_linux[4][2] PROGMEM = {
+    {"2665", "2661"}, // Hearts
+    {"2666", "2662"}, // Diamonds
+    {"2663", "2667"}, // Clubs
+    {"2660", "2664"}  // Spades
+};
+
+// Windows Alt codes (usually the same for filled/outline in standard sets)
+const char* suit_dec_win[4][2] PROGMEM = {
+    {"3", "3"},
+    {"4", "4"},
+    {"5", "5"},
+    {"6", "6"}
+};
+
+void suit_each(tap_dance_state_t *state, void *user_data) {
+    int i = (state->count - 1) % 4;
+
+    if (state->count > 1) {
+        if (is_mac_base()) {
+            unregister_code(KC_LOPT);
+            tap_code(KC_BSPC);
+            register_code(KC_LOPT);
+        } else {
+            tap_code(KC_BSPC);
+        } 
+        wait_ms(20); 
+    }
+    
+    // Pull the strings from memory
+    char* s_normal  = (char*)pgm_read_ptr(&(suit_hex_mac_linux[i][0]));
+    char* s_shifted = (char*)pgm_read_ptr(&(suit_hex_mac_linux[i][1]));
+    char* w_normal  = (char*)pgm_read_ptr(&(suit_dec_win[i][0]));
+    char* w_shifted = (char*)pgm_read_ptr(&(suit_dec_win[i][1]));
+
+    if (is_mac_base()) {
+        symbol_key_mac(s_normal, s_shifted);
+    } 
+    else if (user_config.is_linux_base) {
+        symbol_key_linux(s_normal, s_shifted);
+    } 
+    else {
+        symbol_key_win(w_normal, w_shifted);
+    }
+}
+
 // associate the tap dance keys with their funcitons
-tap_dance_action_t tap_dance_actions[20] = {
+tap_dance_action_t tap_dance_actions[22] = {
     [CAPS_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, caps_finished, caps_reset),
     [FN_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, fn_finished, fn_reset),
     [RALT_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, ralt_finished, ralt_reset),
@@ -8863,7 +8975,9 @@ tap_dance_action_t tap_dance_actions[20] = {
     [MOUSE_ACCEL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, macl_finished, macl_reset),
     [DYN_LAYR] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, dyn_finished, dyn_reset),
     [CAPSFK_OSL] = ACTION_TAP_DANCE_FN_ADVANCED(capsfk_each, capsfk_finished, capsfk_reset),
-    [HHKB_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, hhkb_finished, hhkb_reset)
+    [HHKB_CTRL] = ACTION_TAP_DANCE_FN_ADVANCED(NULL, hhkb_finished, hhkb_reset),
+    [SUP_CYCLE] = ACTION_TAP_DANCE_FN_ADVANCED(sup_each, NULL, NULL), 
+    [SUIT_CYCLE] = ACTION_TAP_DANCE_FN_ADVANCED(suit_each, NULL, NULL)
 };
 
 // accent tap dances should give a little bit longer to see the leds

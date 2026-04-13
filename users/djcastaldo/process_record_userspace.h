@@ -426,7 +426,9 @@ enum {
     MOUSE_ACCEL = 16,
     DYN_LAYR    = 17,
     CAPSFK_OSL  = 18,
-    HHKB_CTRL   = 19
+    HHKB_CTRL   = 19,
+    SUP_CYCLE   = 20,
+    SUIT_CYCLE  = 21
 };
 
 // tap dance setup
@@ -483,7 +485,7 @@ enum {
 extern uint8_t wide_text_mode;
 extern bool wide_firstchar;
 
-extern tap_dance_action_t tap_dance_actions[20];
+extern tap_dance_action_t tap_dance_actions[22];
 // functions associated with all tap dances
 int cur_dance (tap_dance_state_t *state);
 // functions associated with individual tap dances
