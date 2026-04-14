@@ -8895,12 +8895,19 @@ void sup_each(tap_dance_state_t *state, void *user_data) {
             symbol_key_win(legacy_dec, legacy_dec);
         } 
         else {
+            uint8_t mods = get_mods();
+            uint8_t oneshot = get_oneshot_mods();
+            clear_mods();
+            clear_oneshot_mods(); 
             // Shifted OR digits 0, 4-9: Use Alt+X logic
-            const char* target_hex = (get_mods() & MOD_MASK_SHIFT) ? shifted_hex : normal_hex;
+            const char* target_hex = (mods & MOD_MASK_SHIFT) ? shifted_hex : normal_hex;
             send_string(target_hex);
             register_code(KC_LALT);
             tap_code(KC_X);
             unregister_code(KC_LALT);
+            // Restore mods
+            set_mods(mods);
+            set_oneshot_mods(oneshot);
         }
     }
 }
