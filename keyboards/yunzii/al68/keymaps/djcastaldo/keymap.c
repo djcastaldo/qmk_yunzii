@@ -99,23 +99,23 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 //  [FN_LAYR]
 //  ____________________________________________________________________________________________________________________________________
 // :   _______________________________________________________________________________________________________________________ .----.   :
-// :  |  `   ||      ||      ||ViRepl||      ||ChkOut||      ||      ||      || News ||      ||Arrow || Wave ||              |: Zoom :  :
+// :  |  `   ||      ||      ||ViRepl||      ||ChkOut||      ||GitLog||GitAdd||GitCmt||GitPsh||Arrow || Wave ||              |: Zoom :  :
 // :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
 // :  |MO(TMUX_L)||WMail2||WMail1||Mail  ||RPhone||WPhone||      ||      ||      ||      ||      ||MRec1 ||MRec2 ||VSEMOLAYR || Ins  |  :
 // :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
 // :  |             ||Addr  ||City  ||ZIP   ||Phone ||      ||      ||      ||      || Lead ||SLock || PScr ||               || Home |  :
 // :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
-// :  | MO(SFT_LAYR)    ||      ||Rout  ||Acct  || DPW  ||SDFCU ||      ||      ||MPly1 ||MPly2 ||Pause || MO(SFT_L) ||GitLog|| End  |  :
+// :  | MO(SFT_LAYR)    ||      ||Rout  ||Acct  || DPW  ||SDFCU || News ||      ||MPly1 ||MPly2 ||Pause || MO(SFT_L) ||GitLog|| End  |  :
 // :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
 // :  |         ||        ||MO(CTL_L)||                                              ||         ||MO(CTL_L)|  |GitAdd||GitCmt||GitPsh|  :
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [FN_LAYR] = LAYOUT_65_ansi_blocker(
-        KC_GRV, _______, _______, VI_REPLACE, _______, GIT_CHKOUT, _______,_______,_______,GNEWS,_______, ARROW, WAVE, _______, F_ZOOMR,
+        KC_GRV, _______,_______,VI_REPLACE,_______,GIT_CHKOUT,_______,GIT_LOG,GIT_ADD,GIT_COMMIT,GIT_PUSH, ARROW,WAVE, _______, F_ZOOMR,
         MO(TMUX_LAYR),SECRET3,SECRET2,SECRET1,SECRET8,SECRET9,_______,_______,_______,_______,_______,DM_REC1,DM_REC2, VSEMOLR,  KC_INS,
         _______,SECRET4,SECRET5,SECRET6,SECRET7,_______,_______,_______,_______,    QK_LEAD,  KC_SCRL, KC_PSCR,     _______,    KC_HOME,
-        MO(SFT_LAYR), _______,SECRET10,SECRET11,SECRET12,SECRET13,_______,_______,DM_PLY1,DM_PLY2,KC_PAUS,MO(SFT_LAYR), GIT_LOG, KC_END,
-        _______, WM_SYM, MO(KCTL_LAYR),                   _______,               _______,  MO(KCTL_LAYR), GIT_ADD, GIT_COMMIT, GIT_PUSH
+        MO(SFT_LAYR), _______,SECRET10,SECRET11,SECRET12,SECRET13, GNEWS, _______,DM_PLY1,DM_PLY2,KC_PAUS,MO(SFT_LAYR), _______, KC_END,
+        _______, WM_SYM, MO(KCTL_LAYR),                    _______,                  _______,  MO(KCTL_LAYR), _______, _______, _______
     ),
 //  [SFT_LAYR]
 //  ____________________________________________________________________________________________________________________________________
@@ -206,9 +206,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :   _______________________________________________________________________________________________________________________ .----.   :
 // :  |TD(G) ||TD(1) ||OPT2  ||OPT3  ||OPT4  ||OPT5  ||OPT6  ||OPT7  ||OPT8  ||OPT9  ||OPT0  ||OPTMIN||OPTEQ ||              |: Vol  :  :
 // :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
-// :  |          ||OPTQ  ||OPTW  ||TD(E) ||OPTR  ||OPTT  ||OPTY  ||TD(U) ||TD(I) ||OPTO  ||OPTP  ||OPTLBR||OPTRBR||OPTBSL    || Sup1 |  :
+// :  |          ||OPTQ  ||OPTW  ||TD(E) ||OPTR  ||OPTT  ||OPTY  ||TD(U) ||TD(I) ||OPTO  ||OPTP  ||OPTLBR||OPTRBR||OPTBSL    || Sup2 |  :
 // :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
-// :  |             ||OPTA  ||OPTS  ||OPTD  ||OPTF  ||OPTG  ||OPTH  ||OPTJ  ||OPTK  ||OPTL  ||OPTSEM||OPTAPO||               || Sup2 |  :
+// :  |             ||OPTA  ||OPTS  ||OPTD  ||OPTF  ||OPTG  ||OPTH  ||OPTJ  ||OPTK  ||OPTL  ||OPTSEM||OPTAPO||               || Sup3 |  :
 // :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
 // :  |    LShift       ||OPTZ  ||OPTX  ||OPTC  ||OPTV  ||OPTB  ||TD(N) ||OPTM  ||OPTCOM||OPTDOT||OPTSLS||  RShift   ||      || Nbsp |  :
 // :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
@@ -217,8 +217,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [WSYM_LAYR] = LAYOUT_65_ansi_blocker(
         TD(ACT_GRV), TD(ACT_1), OPT2, OPT3, OPT4, OPT5,  OPT6,   OPT7,  OPT8,   OPT9,  OPT0,   OPTMIN,  OPTEQ,     _______, ENC_UNIMENU,
-        _______,    OPTQ,  OPTW, TD(ACT_E), OPTR,  OPTT,   OPTY, TD(ACT_U), TD(ACT_I), OPTO, OPTP,  OPTLBR,  OPTRBR, OPTBSL,       SUP1,
-        _______,        OPTA,  OPTS,  OPTD,  OPTF,   OPTG,     OPTH,   OPTJ,   OPTK,   OPTL,   OPTSEM, OPTAPO,      _______,       SUP2,
+        _______,    OPTQ,  OPTW, TD(ACT_E), OPTR,  OPTT,   OPTY, TD(ACT_U), TD(ACT_I), OPTO, OPTP,  OPTLBR,  OPTRBR, OPTBSL,       SUP2,
+        _______,        OPTA,  OPTS,  OPTD,  OPTF,   OPTG,     OPTH,   OPTJ,   OPTK,   OPTL,   OPTSEM, OPTAPO,      _______,       SUP3,
         KC_LSFT,           OPTZ,  OPTX,  OPTC,   OPTV,   OPTB, TD(ACT_N),  OPTM,  OPTCOM,  OPTDOT, OPTSLS,   KC_RSFT,  _______,    NBSP,
         _______,    _______, TD(SUIT_CYCLE),             _______,              TD(SUP_CYCLE), _______,         _______, _______, _______
     ),
@@ -227,9 +227,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :   _______________________________________________________________________________________________________________________ .----.   :
 // :  |LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||              |: Vol  :  :
 // :  |______||______||______||______||______||______||______||______||______||______||______||______||______||______________|'.____.'  :
-// :  |          ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS    || Sup1 |  :
+// :  |          ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS    || Sup2 |  :
 // :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
-// :  |             ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||               || Sup2 |  :
+// :  |             ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||               || Sup3 |  :
 // :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
 // :  |    LShift       ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||  RShift   ||      || Nbsp |  :
 // :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
@@ -238,8 +238,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [MSYM_LAYR] = LAYOUT_65_ansi_blocker(
         MSYMGRV, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,   _______, ENC_UNIMENU,
-        _______,  LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    LTRANS,       SUP1,
-        _______,    LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,         _______,       SUP2,
+        _______,  LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    LTRANS,       SUP2,
+        _______,    LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,         _______,       SUP3,
         KC_LSFT,      LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        KC_RSFT,  _______,    NBSP,
         _______,    _______,  TD(SUIT_CYCLE),              _______,               TD(SUP_CYCLE), _______,     _______, _______, _______
     ),
