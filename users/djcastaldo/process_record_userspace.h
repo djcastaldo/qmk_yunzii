@@ -21,10 +21,13 @@
 #    define tap_dance_state_t qk_tap_dance_state_t
 extern uint16_t leader_sequence[5];
 #    define leader_sequence_two_keys(k1, k2) \
-        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && leader_sequence[2] == 0)
+        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && \
+         leader_sequence[2] == 0 && leader_sequence[3] == 0 && leader_sequence[4] == 0)
 
 #    define leader_sequence_three_keys(k1, k2, k3) \
-        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && leader_sequence[2] == (k3) && leader_sequence[3] == 0)
+        (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && \
+         leader_sequence[2] == (k3) && \
+         leader_sequence[3] == 0 && leader_sequence[4] == 0)
 
 #    define leader_sequence_four_keys(k1, k2, k3, k4) \
         (leader_sequence[0] == (k1) && leader_sequence[1] == (k2) && \

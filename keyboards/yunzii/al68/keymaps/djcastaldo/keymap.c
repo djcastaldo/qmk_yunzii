@@ -210,17 +210,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
 // :  |             ||OPTA  ||OPTS  ||OPTD  ||OPTF  ||OPTG  ||OPTH  ||OPTJ  ||OPTK  ||OPTL  ||OPTSEM||OPTAPO||               || Sup2 |  :
 // :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
-// :  |    LShift       ||OPTZ  ||OPTX  ||OPTC  ||OPTV  ||OPTB  ||TD(N) ||OPTM  ||OPTCOM||OPTDOT||OPTSLS||  RShift   ||SuitH || Sup3 |  :
+// :  |    LShift       ||OPTZ  ||OPTX  ||OPTC  ||OPTV  ||OPTB  ||TD(N) ||OPTM  ||OPTCOM||OPTDOT||OPTSLS||  RShift   ||      || Nbsp |  :
 // :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
-// :  |         ||        ||         ||                                              || NBSP    ||         |  |SuitD ||SuitC ||SuitS |  :
+// :  |         ||        ||TD(SUIT) ||                                              ||TD(SUP)  ||         |  |      ||      ||      |  :
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [WSYM_LAYR] = LAYOUT_65_ansi_blocker(
         TD(ACT_GRV), TD(ACT_1), OPT2, OPT3, OPT4, OPT5,  OPT6,   OPT7,  OPT8,   OPT9,  OPT0,   OPTMIN,  OPTEQ,     _______, ENC_UNIMENU,
         _______,    OPTQ,  OPTW, TD(ACT_E), OPTR,  OPTT,   OPTY, TD(ACT_U), TD(ACT_I), OPTO, OPTP,  OPTLBR,  OPTRBR, OPTBSL,       SUP1,
         _______,        OPTA,  OPTS,  OPTD,  OPTF,   OPTG,     OPTH,   OPTJ,   OPTK,   OPTL,   OPTSEM, OPTAPO,      _______,       SUP2,
-        KC_LSFT,           OPTZ,  OPTX,  OPTC,   OPTV,   OPTB, TD(ACT_N),  OPTM,  OPTCOM,  OPTDOT, OPTSLS,   KC_RSFT,    SUITH,    SUP3,
-        _______,    _______,  _______,                    _______,                      _______, _______,       SUITD,   SUITC,   SUITS
+        KC_LSFT,           OPTZ,  OPTX,  OPTC,   OPTV,   OPTB, TD(ACT_N),  OPTM,  OPTCOM,  OPTDOT, OPTSLS,   KC_RSFT,  _______,    NBSP,
+        _______,    _______, TD(SUIT_CYCLE),             _______,              TD(SUP_CYCLE), _______,         _______, _______, _______
     ),
 //  [MSYM_LAYR]
 //  ____________________________________________________________________________________________________________________________________
@@ -231,17 +231,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // :  |__________||______||______||______||______||______||______||______||______||______||______||______||______||__________||______|  :
 // :  |             ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||               || Sup2 |  :
 // :  |_____________||______||______||______||______||______||______||______||______||______||______||______||_______________||______|  :
-// :  |    LShift       ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||  RShift   ||SuitH || Sup3 |  :
+// :  |    LShift       ||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||LTRANS||  RShift   ||      || Nbsp |  :
 // :  |_________________||______||______||______||______||______||______||______||______||______||______||___________||______||______|  :
-// :  |         ||        ||         ||                                              || NBSP    ||         |  |SuitD ||SuitC ||SuitS |  :
+// :  |         ||        ||TD(SUIT) ||                                              ||TD(SUP)  ||         |  |      ||      ||      |  :
 // :  |_________||________||_________||______________________________________________||_________||_________|  |______||______||______|  :
 // `------------------------------------------------------------------------------------------------------------------------------------`
     [MSYM_LAYR] = LAYOUT_65_ansi_blocker(
         MSYMGRV, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,   _______, ENC_UNIMENU,
         _______,  LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,    LTRANS,       SUP1,
         _______,    LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,         _______,       SUP2,
-        KC_LSFT,      LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        KC_RSFT,    SUITH,    SUP3,
-        _______,    _______,  _______,                     _______,                        NBSP, _______,       SUITD,   SUITC,   SUITS
+        KC_LSFT,      LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS, LTRANS,        KC_RSFT,  _______,    NBSP,
+        _______,    _______,  TD(SUIT_CYCLE),              _______,               TD(SUP_CYCLE), _______,     _______, _______, _______
     ),
 //  [WIDE_LAYR]
 //  ____________________________________________________________________________________________________________________________________
