@@ -399,6 +399,7 @@ enum userspace_keycodes {
     OSL_FNSYM,
     RSFT_TD,
     FN_HHKB,
+    FN_HHKB_2,
     SP_RCTL,
     NOKEY,
     CSTMTOG,

@@ -350,12 +350,18 @@ static uint16_t rsft_timer = 0;
 static uint8_t rsft_tap_count = 0;
 static bool rsft_pressed = false;
 static bool rsft_interrupted = false;
-// state trackign for FN_HHKB, used in multiple functions
+// state tracking for FN_HHKB, used in multiple functions
 static uint32_t fnhhkb_timer = 0;
 static uint8_t fnhhkb_tap_count = 0;
 static bool fnhhkb_is_pressed = false;
 static bool fnhhkb_interrupted = false;
 static bool fnhhkb_ctrl_active = false;
+// state tracking for FN_HHKB_2, an alternative to FN_HHKB
+static uint32_t fnhhkb2_timer = 0;
+static uint8_t fnhhkb2_tap_count = 0;
+static bool fnhhkb2_is_pressed = false;
+static bool fnhhkb2_interrupted = false;
+static bool fnhhkb2_ctrl_active = false;
 // program vars for macros
 static const char poc_firstname[] PROGMEM = "Firstname";
 static const char poc_lastname[]  PROGMEM = "Lastname";
@@ -647,6 +653,21 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             if (!fnhhkb_ctrl_active) {
                 register_code(KC_LCTL);
                 fnhhkb_ctrl_active = true;
+            }
+        }
+    }
+    // permissive hold setup for FN_HHKB_2 keycode
+    if (record->event.pressed) {
+        // permissive hold interrupt
+        if (fnhhkb2_tap_count > 0 && keycode != FN_HHKB_2) {
+            fnhhkb2_interrupted = true;
+        }
+
+        // Only trigger Ctrl if we are actually ON the first tap and holding it
+        if (keycode != FN_HHKB_2 && fnhhkb2_tap_count == 1 && fnhhkb2_is_pressed) {
+            if (!fnhhkb2_ctrl_active) {
+                register_code(KC_LCTL);
+                fnhhkb2_ctrl_active = true;
             }
         }
     }
@@ -4504,6 +4525,95 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         }
     }
     return false;
+    case FN_HHKB_2:
+    if (record->event.pressed) {
+        fnhhkb2_is_pressed = true;
+        fnhhkb2_interrupted = false;
+        
+        // 1. Check gap BEFORE resetting timer
+        if (fnhhkb2_tap_count > 0 && timer_elapsed32(fnhhkb2_timer) < 250) {
+            fnhhkb2_tap_count++;
+            if (fnhhkb2_tap_count > 1) {
+                // Cancel the OneShot that was armed during the release of Tap 2
+                reset_oneshot_layer();
+            }
+        } else {
+            fnhhkb2_tap_count = 1;
+        }
+
+        // 2. Reset timer for current press duration
+        fnhhkb2_timer = timer_read32();
+
+        // 3. PRESS ACTIONS (Momentary)
+        if (fnhhkb2_tap_count == 2) {
+            layer_on(FN_LAYR);
+        }
+        else if (fnhhkb2_tap_count == 3) {
+            #ifdef CONFIG_HAS_FKEY_LAYR
+            layer_on(FKEY_LAYR);
+            #endif
+        }
+
+    } else {
+        // RELEASE ACTIONS
+        fnhhkb2_is_pressed = false; // Mark physical release
+
+        if (fnhhkb2_ctrl_active) {
+            unregister_code(KC_LCTL);
+            fnhhkb2_ctrl_active = false;
+        }
+
+        uint16_t elapsed = timer_elapsed32(fnhhkb2_timer);
+        bool is_hold = fnhhkb2_interrupted || (elapsed >= 250);
+
+        switch (fnhhkb2_tap_count) {
+            case 1:
+                if (!is_hold) {
+                    // Single Tap -> FN OneShot
+                    set_oneshot_layer(FN_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                }
+                break;
+
+            case 2:
+                if (is_hold) {
+                    if (!is_layer_locked(FN_LAYR))
+                        layer_off(FN_LAYR); 
+                } else {
+                    layer_off(FN_LAYR);
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    // Double Tap -> FKEY OneShot
+                    set_oneshot_layer(FKEY_LAYR, ONESHOT_START);
+                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                    #endif
+                }
+                break;
+
+            case 3:
+                if (is_hold) {
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    if (!is_layer_locked(FKEY_LAYR))
+                        layer_off(FKEY_LAYR); 
+                    #endif
+                } else {
+                    // Triple Tap -> Caps
+                    #ifdef CONFIG_HAS_FKEY_LAYR
+                    layer_off(FKEY_LAYR);
+                    #endif
+                    tap_code(KC_CAPS);
+                    #ifdef KEYBOARD_IS_AGAR
+                    agar_caps_active = !agar_caps_active;
+                    #endif
+                }
+                break;
+        }
+
+        // Reset count if it was a hold or we finished the sequence
+        if (is_hold || fnhhkb2_tap_count >= 3) {
+            fnhhkb2_tap_count = 0;
+        }
+    }
+    return false;
     // i use left control and right control to switch desktops on left/right monitors, so this lets me use both left/right control with one hand
     // this logic should only be used on a single key
     case SP_RCTL:
@@ -6987,6 +7097,12 @@ void matrix_scan_user(void) {
         if (!fnhhkb_ctrl_active && timer_elapsed32(fnhhkb_timer) >= 250) {
             register_code(KC_LCTL);
             fnhhkb_ctrl_active = true;
+        }
+    }
+    if (fnhhkb2_is_pressed && fnhhkb2_tap_count == 1) {
+        if (!fnhhkb2_ctrl_active && timer_elapsed32(fnhhkb2_timer) >= 250) {
+            register_code(KC_LCTL);
+            fnhhkb2_ctrl_active = true;
         }
     }
 
