@@ -4445,6 +4445,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             fnhhkb_tap_count++;
             // Kill FN_LAYR if we are moving to tap 2 or 3
             layer_off(FN_LAYR); 
+            if (fnhhkb_tap_count == 2) {
+                // Cancel the OneShot that was armed during the release of Tap 1
+                clear_oneshot_mods();
+            }
             if (fnhhkb_tap_count == 3) {
                 // Cancel the OneShot that was armed during the release of Tap 2
                 reset_oneshot_layer();
@@ -4483,10 +4487,14 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     if (!is_layer_locked(FN_LAYR))
                         layer_off(FN_LAYR); 
                 } else {
+                    // Single Tap -> KC_LCTL OneShot
+                    if (!is_layer_locked(FN_LAYR))
+                        layer_off(FN_LAYR); 
+                    set_oneshot_mods(MOD_BIT(KC_LCTL));
                     // Single Tap -> FN OneShot
-                    layer_off(FN_LAYR); 
-                    set_oneshot_layer(FN_LAYR, ONESHOT_START);
-                    clear_oneshot_layer_state(ONESHOT_PRESSED);
+                    //layer_off(FN_LAYR); 
+                    //set_oneshot_layer(FN_LAYR, ONESHOT_START);
+                    //clear_oneshot_layer_state(ONESHOT_PRESSED);
                 }
                 break;
 
