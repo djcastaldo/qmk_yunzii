@@ -648,8 +648,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             fnhhkb_interrupted = true;
         }
 
-        // Only trigger Ctrl if we are actually ON the second tap and holding it
-        if (keycode != FN_HHKB && fnhhkb_tap_count == 2 && fnhhkb_is_pressed) {
+        // Only trigger Ctrl if we are actually ON the thrid tap and holding it
+        if (keycode != FN_HHKB && fnhhkb_tap_count == 3 && fnhhkb_is_pressed) {
             if (!fnhhkb_ctrl_active) {
                 register_code(KC_LCTL);
                 fnhhkb_ctrl_active = true;
@@ -4443,16 +4443,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         // 1. Check gap BEFORE resetting timer
         if (fnhhkb_tap_count > 0 && timer_elapsed32(fnhhkb_timer) < 250) {
             fnhhkb_tap_count++;
-            // Kill FN_LAYR if we are moving to tap 2 or 3
-            layer_off(FN_LAYR); 
-            if (fnhhkb_tap_count == 2) {
-                // Cancel the OneShot that was armed during the release of Tap 1
-                clear_oneshot_mods();
-            }
-            if (fnhhkb_tap_count == 3) {
-                // Cancel the OneShot that was armed during the release of Tap 2
-                reset_oneshot_layer();
-            }
         } else {
             fnhhkb_tap_count = 1;
         }
@@ -4463,12 +4453,19 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
         // 3. PRESS ACTIONS (Momentary)
         if (fnhhkb_tap_count == 1) {
             layer_on(FN_LAYR); 
-        } else if (fnhhkb_tap_count == 3) {
+        } else if (fnhhkb_tap_count == 2) {
+            // Cancel the OneShot that was armed during the release of Tap 1
+            clear_oneshot_mods();
             #ifdef CONFIG_HAS_FKEY_LAYR
             layer_on(FKEY_LAYR);
             #endif
+        } else if (fnhhkb_tap_count == 3) {
+            // Cancel the OneShot that was armed during the release of Tap 2
+            #ifdef CONFIG_HAS_FKEY_LAYR
+            clear_oneshot_layer_state(ONESHOT_OTHER_KEY_PRESSED);
+            layer_off(FKEY_LAYR);
+            #endif
         }
-
     } else {
         // RELEASE ACTIONS
         fnhhkb_is_pressed = false; // Mark physical release
@@ -4483,22 +4480,18 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 
         switch (fnhhkb_tap_count) {
             case 1:
-                if (is_hold) {
-                    if (!is_layer_locked(FN_LAYR))
-                        layer_off(FN_LAYR); 
-                } else {
+                if (!is_layer_locked(FN_LAYR))
+                    layer_off(FN_LAYR); 
+                if (!is_hold) {
                     // Single Tap -> KC_LCTL OneShot
-                    if (!is_layer_locked(FN_LAYR))
-                        layer_off(FN_LAYR); 
                     set_oneshot_mods(MOD_BIT(KC_LCTL));
-                    // Single Tap -> FN OneShot
-                    //layer_off(FN_LAYR); 
-                    //set_oneshot_layer(FN_LAYR, ONESHOT_START);
-                    //clear_oneshot_layer_state(ONESHOT_PRESSED);
                 }
                 break;
-
             case 2:
+                #ifdef CONFIG_HAS_FKEY_LAYR
+                if (!is_layer_locked(FKEY_LAYR))
+                    layer_off(FKEY_LAYR); 
+                #endif
                 if (!is_hold) {
                     #ifdef CONFIG_HAS_FKEY_LAYR
                     // Double Tap -> FKEY OneShot
@@ -4507,18 +4500,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     #endif
                 }
                 break;
-
             case 3:
-                if (is_hold) {
-                    #ifdef CONFIG_HAS_FKEY_LAYR
-                    if (!is_layer_locked(FKEY_LAYR))
-                        layer_off(FKEY_LAYR); 
-                    #endif
-                } else {
+                if (!is_hold) {
                     // Triple Tap -> Caps
-                    #ifdef CONFIG_HAS_FKEY_LAYR
-                    layer_off(FKEY_LAYR);
-                    #endif
                     tap_code(KC_CAPS);
                     #ifdef KEYBOARD_IS_AGAR
                     agar_caps_active = !agar_caps_active;
@@ -7100,8 +7084,8 @@ void matrix_scan_user(void) {
         // Sequence is finished, reset everything
         rsft_tap_count = 0;
     }
-    // setup to activate KC_LCTL if FN_HHKB is doing a double-hold (so can work with a mouse-click)
-    if (fnhhkb_is_pressed && fnhhkb_tap_count == 2) {
+    // setup to activate KC_LCTL if FN_HHKB is doing a triple-hold (so can work with a mouse-click)
+    if (fnhhkb_is_pressed && fnhhkb_tap_count == 3) {
         if (!fnhhkb_ctrl_active && timer_elapsed32(fnhhkb_timer) >= 250) {
             register_code(KC_LCTL);
             fnhhkb_ctrl_active = true;
