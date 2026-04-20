@@ -130,29 +130,6 @@ const uint8_t vs_delay = 0;
 #ifdef KEYBOARD_IS_AGAR
 static bool agar_caps_active = false;
 static uint8_t user_brightness = 0;
-static bool caps_lshift_down = false;
-static bool caps_rshift_down = false;
-static uint16_t caps_lshift_time = 0;
-static uint16_t caps_rshift_time = 0;
-#define CAPS_WORD_WINDOW 40
-static void agar_check_caps_word(void) {
-    if (is_caps_word_on()) return;
-    // CASE 1: fast near-simultaneous press
-    bool fast_pair =
-        caps_lshift_time &&
-        caps_rshift_time &&
-        timer_elapsed(caps_lshift_time) < CAPS_WORD_WINDOW &&
-        timer_elapsed(caps_rshift_time) < CAPS_WORD_WINDOW;
-    // CASE 2: slow but both physically held
-    bool held_pair =
-        caps_lshift_down &&
-        caps_rshift_down;
-    if (fast_pair || held_pair) {
-        caps_word_on();
-        caps_lshift_time = 0;
-        caps_rshift_time = 0;
-    }
-}
 #else
 static uint8_t user_brightness = RGB_MATRIX_DEFAULT_VAL;
 #endif
@@ -4818,10 +4795,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
 
     case RSFT_TD:
         if (record->event.pressed) {
-            #ifdef KEYBOARD_IS_AGAR
-            caps_rshift_down = true;
-            caps_rshift_time = timer_read();
-            #endif
             rsft_pressed = true;
             
             if (rsft_tap_count > 0 && timer_elapsed(rsft_timer) < TAPPING_TERM) {
@@ -4838,14 +4811,9 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             if (!(get_mods() & MOD_BIT(KC_LSFT))) {
                 register_code(KC_RSFT);
             } else {
-            #ifndef KEYBOARD_IS_AGAR
                 caps_word_on();
-            #endif
             }
         } else {
-            #ifdef KEYBOARD_IS_AGAR
-            caps_rshift_down = false;
-            #endif
             rsft_pressed = false;
             unregister_code(KC_RSFT);
             rsft_timer = timer_read(); 
@@ -4856,16 +4824,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
-    case KC_LSFT:
-        #ifdef KEYBOARD_IS_AGAR
-        if (record->event.pressed) {
-            caps_lshift_down = true;
-            caps_lshift_time = timer_read();
-        } else {
-            caps_lshift_down = false;
-        }
-        #endif
-        break;
     // this is needed for rliable caps word over windows rdp
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
@@ -7042,9 +7000,6 @@ void rgb_extra_process(LED_TYPE *rgbled) {
 void matrix_scan_user(void) {
     #if defined(RGBLIGHT_ENABLE)
     rgblight_set();
-    #endif
-    #ifdef KEYBOARD_IS_AGAR
-    agar_check_caps_word();
     #endif
     // check for and run active sequences
     process_key_sequence();
