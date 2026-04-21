@@ -156,6 +156,8 @@ uint8_t tk_length = sizeof(tracked_keys) / sizeof(tracked_keys[0]);
 // setup wide-text mode
 uint8_t wide_text_mode = WIDE_STANDARD;
 bool wide_firstchar = false;
+// linux needs this for consistency
+static bool unicode_active = false;
 
 // setup mouse jiggler
 deferred_token jiggler_token = INVALID_DEFERRED_TOKEN;
@@ -709,7 +711,6 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     }
                     else if (user_config.is_linux_base) {
                         symbol_key_linux("00a6","");
-                        wait_ms(10);
                     }
                     else {
                         symbol_key_win("0166","");
@@ -722,6 +723,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                 wide_firstchar = false;
             }
 
+            // delay needed especially for linux
+            while (unicode_active) {
+                wait_us(10);
+            }
             // send keydown from the default layer
             register_code(keymap_key_to_keycode(biton32(default_layer_state), record->event.key));
 
@@ -753,7 +758,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
                     tap_code16(KC_SPC);
                     break;
                 }
-                register_mods(mods);   // reapply mods
+                while (unicode_active) {
+                    wait_us(10);
+                }
+                set_mods(mods);   // reapply mods
             }
         }
         else {
@@ -9198,6 +9206,7 @@ void symbol_key_win(const char *alt_code, const char *shift_alt_code) {
 }
 
 void symbol_key_linux(const char *hex_code, const char *shift_hex_code) {
+    unicode_active = true;
     // get current mod states
     const uint8_t mods = get_mods();
     const uint8_t weak_mods = get_weak_mods();
@@ -9213,7 +9222,9 @@ void symbol_key_linux(const char *hex_code, const char *shift_hex_code) {
     send_string_with_delay(ucode,5);
     // finish sequence
     tap_code(KC_SPC);
+    wait_ms(55);
     register_mods(mods); // add back mods
+    unicode_active = false;
 }
 
 // send_string doesn't use the numpad, so this fn was created to type numbers using the numpad
