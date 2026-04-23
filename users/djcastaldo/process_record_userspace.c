@@ -352,6 +352,10 @@ static uint16_t rsft_timer = 0;
 static uint8_t rsft_tap_count = 0;
 static bool rsft_pressed = false;
 static bool rsft_interrupted = false;
+#ifdef KEYBOARD_IS_AGAR
+#define SHIFT_WINDOW_MS 25
+static uint16_t lsft_timer = 0;
+#endif
 // state tracking for FN_HHKB, used in multiple functions
 static uint32_t fnhhkb_timer = 0;
 static uint8_t fnhhkb_tap_count = 0;
@@ -4832,6 +4836,13 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
             }
         }
         return false;
+    #ifdef KEYBOARD_IS_AGAR
+    case KC_LSFT:
+        if (record->event.pressed) {
+            lsft_timer = timer_read();
+        }
+        break;
+    #endif
     // this is needed for rliable caps word over windows rdp
     case KC_MINS:
         if (is_caps_word_on() && !user_config.is_linux_base && !is_mac_base()) {
@@ -7009,6 +7020,17 @@ void matrix_scan_user(void) {
     #if defined(RGBLIGHT_ENABLE)
     rgblight_set();
     #endif
+    #ifdef KEYBOARD_IS_AGAR
+    // better caps word detection on Agar for very quick tap of both shifts
+    bool both_shifts_recent =
+        (timer_elapsed(lsft_timer) < SHIFT_WINDOW_MS) &&
+        (timer_elapsed(rsft_timer) < SHIFT_WINDOW_MS);
+
+    if (both_shifts_recent && !is_caps_word_on()) {
+        caps_word_on();
+    }
+    #endif
+
     // check for and run active sequences
     process_key_sequence();
     // check for a dynamic layer key hold
