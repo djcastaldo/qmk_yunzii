@@ -4840,6 +4840,10 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_LSFT:
         if (record->event.pressed) {
             lsft_timer = timer_read();
+            if (rsft_pressed && !is_caps_word_on()) {
+                caps_word_on();
+                return false;
+            }
         }
         break;
     #endif
