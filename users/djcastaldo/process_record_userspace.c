@@ -9177,17 +9177,25 @@ void jiggle_mouse(void) {
 }
 
 void dual_key(uint16_t std_keycode, uint16_t alt_keycode, uint8_t mod_mask) {
-    // if mod is being held, send mod_keycode
-    // get current mod states
-    const uint8_t mods = get_mods();
-    const uint8_t oneshot_mods = get_oneshot_mods();
-    if ((mods | oneshot_mods) & mod_mask) {
-        unregister_mods(mod_mask);  // remove mod
+    uint8_t mods = get_mods();
+    uint8_t oneshot_mods = get_oneshot_mods();
+
+    bool has_mod = (mods | oneshot_mods) & mod_mask;
+
+    if (has_mod) {
+        // Consume oneshot mods so they don't leak
+        if (oneshot_mods & mod_mask) {
+            clear_oneshot_mods();
+        }
+
+        // Temporarily remove ONLY the mod we're checking
+        del_mods(mod_mask);
+
         tap_code16(alt_keycode);
-        register_mods(mods); // restore original mods
-    }
-    // otherwise send std_keycode
-    else {
+
+        // Restore original mods exactly
+        set_mods(mods);
+    } else {
         tap_code16(std_keycode);
     }
 }
