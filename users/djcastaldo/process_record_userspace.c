@@ -2184,7 +2184,8 @@ bool process_record_userspace(uint16_t keycode, keyrecord_t *record) {
     case KC_CALC:
         if (is_mac_base() && record->event.pressed) {
             // send command + control + * then delay and then h (setup to open calculator pro)
-            send_string(SS_LCTL(SS_LCMD(SS_TAP(X_PAST))) SS_DELAY(35) "h");
+            //send_string(SS_LCTL(SS_LCMD(SS_TAP(X_PAST))) SS_DELAY(35) "h");
+            send_string(SS_LCTL(SS_LCMD(SS_TAP(X_H))));
             return false;
         }
         break;
